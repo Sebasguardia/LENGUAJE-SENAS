@@ -67,21 +67,21 @@ const AdminDashboard = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-purple-900 flex">
+    <div className="h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-purple-900 flex overflow-hidden">
       {/* Sidebar */}
-      <AdminSidebar 
-        activeSection={activeSection} 
-        onSectionChange={setActiveSection} 
+      <AdminSidebar
+        activeSection={activeSection}
+        onSectionChange={setActiveSection}
       />
-      
+
       {/* Contenido principal */}
-      <div className="flex-1 flex flex-col">
-        <AdminHeader 
-          adminName={adminName} 
-          onLogout={handleLogout} 
+      <div className="flex-1 flex flex-col h-full overflow-hidden">
+        <AdminHeader
+          adminName={adminName}
+          onLogout={handleLogout}
         />
-        
-        <main className="flex-1 p-6 overflow-auto">
+
+        <main className="flex-1 p-6 overflow-y-auto">
           <div className="max-w-7xl mx-auto">
             {renderMainContent()}
           </div>

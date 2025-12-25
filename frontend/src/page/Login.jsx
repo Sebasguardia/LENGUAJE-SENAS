@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { 
-  User, ShieldCheck, Lock, ArrowRightCircle, GraduationCap, 
-  Eye, EyeOff, Mail, Key, Sparkles, BrainCircuit, Zap 
+import {
+  User, ShieldCheck, Lock, ArrowRightCircle, GraduationCap,
+  Eye, EyeOff, Mail, Key, Sparkles, BrainCircuit, Zap, ArrowLeft
 } from 'lucide-react';
 
 const Login = () => {
@@ -48,15 +48,32 @@ const Login = () => {
     // Simulación de llamada a API
     try {
       await new Promise(resolve => setTimeout(resolve, 1500));
-      
-      // Simulación de credenciales (en producción esto vendría del backend)
-      if (email === 'admin@senas.com' && password === 'admin123' && role === 'admin') {
+
+      // 1. Verificar credenciales hardcodeadas (Admin demo)
+      if (role === 'admin' && email === 'admin@senas.com' && password === 'admin123') {
         navigate('/admin');
-      } else if (email === 'usuario@senas.com' && password === 'user123' && role === 'usuario') {
-        navigate('/dashboard');
-      } else {
-        setError('Credenciales incorrectas. Por favor, verifica tu email y contraseña.');
+        return;
       }
+
+      // 2. Verificar credenciales de Usuarios (Backend simulado con LocalStorage)
+      if (role === 'usuario') {
+        // Usuario demo por defecto
+        if (email === 'usuario@senas.com' && password === 'user123') {
+          navigate('/dashboard');
+          return;
+        }
+
+        // Verificar usuarios registrados
+        const users = JSON.parse(localStorage.getItem('users') || '[]');
+        const validUser = users.find(u => u.email === email && u.password === password && u.role === 'usuario');
+
+        if (validUser) {
+          navigate('/dashboard');
+          return;
+        }
+      }
+
+      setError('Credenciales incorrectas o el rol seleccionado no coincide.');
     } catch (err) {
       setError('Error de conexión. Por favor, intenta nuevamente.');
     } finally {
@@ -67,27 +84,24 @@ const Login = () => {
   const RoleCard = ({ type, icon: Icon, title, description, isSelected, onClick }) => (
     <button
       onClick={onClick}
-      className={`w-full p-6 rounded-2xl border-2 transition-all duration-500 transform hover:scale-105 ${
-        isSelected 
-          ? 'border-blue-500 bg-gradient-to-br from-blue-500/10 to-purple-500/10 shadow-2xl shadow-blue-500/25' 
-          : 'border-white/20 bg-white/5 hover:border-white/40'
-      } backdrop-blur-xl`}
+      className={`w-full p-5 rounded-2xl border-2 transition-all duration-500 transform hover:scale-105 ${isSelected
+        ? 'border-blue-500 bg-gradient-to-br from-blue-500/10 to-purple-500/10 shadow-2xl shadow-blue-500/25'
+        : 'border-white/20 bg-white/5 hover:border-white/40'
+        } backdrop-blur-xl flex flex-col items-start text-left`}
     >
-      <div className="flex items-center gap-4 mb-3">
-        <div className={`p-3 rounded-xl ${
-          isSelected 
-            ? 'bg-gradient-to-r from-blue-500 to-purple-500 text-white' 
-            : 'bg-white/10 text-white/60'
+      <div className={`p-3 rounded-xl mb-4 ${isSelected
+        ? 'bg-gradient-to-r from-blue-500 to-purple-500 text-white'
+        : 'bg-white/10 text-white/60'
         }`}>
-          <Icon size={24} />
-        </div>
-        <span className={`text-lg font-bold ${
-          isSelected ? 'text-white' : 'text-white/80'
-        }`}>
+        <Icon size={24} />
+      </div>
+      <div className="mb-2">
+        <span className={`text-base font-bold block ${isSelected ? 'text-white' : 'text-white/80'
+          }`}>
           {title}
         </span>
       </div>
-      <p className="text-white/60 text-sm text-left">{description}</p>
+      <p className="text-white/60 text-xs leading-relaxed">{description}</p>
     </button>
   );
 
@@ -97,7 +111,7 @@ const Login = () => {
       <div className="absolute inset-0 z-0">
         {/* Gradiente animado */}
         <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-blue-900/50 to-purple-900/50 animate-gradient-x"></div>
-        
+
         {/* Partículas flotantes */}
         {particles.map(particle => (
           <div
@@ -115,9 +129,9 @@ const Login = () => {
         {/* Formas geométricas */}
         <div className="absolute top-1/4 -left-10 w-72 h-72 bg-blue-500/10 rounded-full blur-3xl animate-pulse"></div>
         <div className="absolute bottom-1/4 -right-10 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl animate-pulse animation-delay-2000"></div>
-        
+
         {/* Efecto de grid sutil */}
-        <div 
+        <div
           className="absolute inset-0 opacity-10"
           style={{
             backgroundImage: `
@@ -130,8 +144,19 @@ const Login = () => {
       </div>
 
       {/* Card de login mejorado */}
-      <div className="relative z-10 w-full max-w-lg mx-4">
-        <div className="bg-white/5 backdrop-blur-2xl rounded-3xl border border-white/10 shadow-2xl overflow-hidden">
+      <div className="relative z-10 w-full max-w-lg mx-4 my-8">
+        <div className="bg-white/5 backdrop-blur-2xl rounded-3xl border border-white/10 shadow-2xl overflow-hidden relative">
+          {/* Botón de Regresar dentro del modal */}
+          <button
+            onClick={() => navigate('/')}
+            className="absolute top-6 left-6 z-20 flex items-center gap-2 text-white/40 hover:text-white transition-all duration-300 group"
+            title="Regresar al inicio"
+          >
+            <div className="p-2 rounded-xl bg-white/5 border border-white/10 group-hover:bg-white/20 transition-all duration-300">
+              <ArrowLeft size={18} />
+            </div>
+          </button>
+
           {/* Header con gradiente */}
           <div className="bg-gradient-to-r from-blue-600/20 to-purple-600/20 p-8 border-b border-white/10">
             <div className="flex items-center justify-center gap-3 mb-4">
@@ -259,31 +284,30 @@ const Login = () => {
               </div>
               <div className="text-white/60 text-sm">
                 ¿No tienes cuenta?{' '}
-                <button className="text-blue-400 hover:text-blue-300 underline transition-colors">
+                <button
+                  onClick={() => navigate('/register')}
+                  className="text-blue-400 hover:text-blue-300 underline transition-colors"
+                >
                   Regístrate gratis
                 </button>
               </div>
             </div>
           </div>
 
-          {/* Footer de la card */}
-          <div className="bg-white/5 border-t border-white/10 p-4">
-            <div className="flex items-center justify-center gap-2 text-white/40 text-sm">
-              <Sparkles size={16} />
-              <span>Sistema seguro con encriptación avanzada</span>
+          {/* Footer de la card mejorado */}
+          <div className="bg-white/5 border-t border-white/10 p-6">
+            <div className="space-y-2 text-center">
+              <div className="flex items-center justify-center gap-3 text-white/40 text-xs">
+                <BrainCircuit size={14} />
+                <span>Powered by Artificial Intelligence</span>
+              </div>
+              <p className="text-white/30 text-[10px] leading-tight">
+                © 2024 Instituto de Lengua de Señas IA. Todos los derechos reservados.
+              </p>
             </div>
           </div>
         </div>
       </div>
-
-      {/* Footer global */}
-      <footer className="w-full py-6 px-8 text-center text-white/40 text-sm relative z-10 mt-8">
-        <div className="flex items-center justify-center gap-4 mb-2">
-          <BrainCircuit size={16} />
-          <span>Powered by Artificial Intelligence</span>
-        </div>
-        <p>© 2024 Instituto de Lengua de Señas IA. Todos los derechos reservados.</p>
-      </footer>
 
       {/* Estilos CSS para animaciones */}
       <style jsx>{`

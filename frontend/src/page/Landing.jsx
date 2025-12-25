@@ -5,7 +5,9 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import {
   GraduationCap, BookOpen, Sparkles, Users, MessageCircle, BrainCircuit,
   Star, HeartHandshake, Globe2, Phone, Mail, Facebook, Instagram, Twitter,
-  Youtube, Zap, Target, Award, Clock, TrendingUp, ChevronRight, Play, Users2
+  Youtube, Zap, Target, Award, Clock, TrendingUp, ChevronRight, Play, Users2,
+  ShieldCheck, Library, Hand, HandMetal, ThumbsUp, MousePointer2, Hash,
+  MessageSquare, User, Briefcase, Shield, Mic, Book, Menu, X
 } from 'lucide-react';
 
 // Registrar ScrollTrigger
@@ -15,7 +17,8 @@ const Landing = () => {
   const navigate = useNavigate();
   const canvasRef = useRef(null);
   const [currentTestimonial, setCurrentTestimonial] = useState(0);
-  
+  const [isScrolled, setIsScrolled] = useState(false);
+
   // Refs para animaciones
   const heroRef = useRef(null);
   const featuresRef = useRef(null);
@@ -24,10 +27,19 @@ const Landing = () => {
   const ctaRef = useRef(null);
   const headerRef = useRef(null);
   const statsRef = useRef(null);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 20);
+    };
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   useEffect(() => {
     // Animación del header
-    gsap.fromTo(headerRef.current, 
+    gsap.fromTo(headerRef.current,
       { y: -100, opacity: 0 },
       { y: 0, opacity: 1, duration: 1, ease: "power3.out" }
     );
@@ -35,37 +47,37 @@ const Landing = () => {
     // Animación del hero section
     const heroTl = gsap.timeline();
     heroTl
-      .fromTo('.hero-badge', 
+      .fromTo('.hero-badge',
         { scale: 0, rotation: -180 },
         { scale: 1, rotation: 0, duration: 0.8, ease: "back.out(1.7)" }
       )
-      .fromTo('.hero-title', 
+      .fromTo('.hero-title',
         { y: 100, opacity: 0 },
         { y: 0, opacity: 1, duration: 1, ease: "power3.out" }, "-=0.3"
       )
-      .fromTo('.hero-description', 
+      .fromTo('.hero-description',
         { y: 50, opacity: 0 },
         { y: 0, opacity: 1, duration: 0.8 }, "-=0.5"
       )
-      .fromTo('.hero-buttons', 
+      .fromTo('.hero-buttons',
         { y: 50, opacity: 0 },
         { y: 0, opacity: 1, duration: 0.8 }, "-=0.3"
       )
-      .fromTo('.stat-item', 
+      .fromTo('.stat-item',
         { scale: 0, opacity: 0 },
-        { 
-          scale: 1, 
-          opacity: 1, 
-          duration: 0.6, 
+        {
+          scale: 1,
+          opacity: 1,
+          duration: 0.6,
           stagger: 0.2,
           ease: "elastic.out(1, 0.5)"
         }, "-=0.2"
       );
 
     // Animación de features con ScrollTrigger
-    gsap.fromTo('.feature-card', 
-      { 
-        y: 100, 
+    gsap.fromTo('.feature-card',
+      {
+        y: 100,
         opacity: 0,
         rotationX: 45
       },
@@ -86,8 +98,8 @@ const Landing = () => {
     );
 
     // Animación de módulos con efecto cascada
-    gsap.fromTo('.module-card', 
-      { 
+    gsap.fromTo('.module-card',
+      {
         scale: 0.8,
         opacity: 0,
         y: 50
@@ -109,10 +121,10 @@ const Landing = () => {
     );
 
     // Animación de testimonials
-    gsap.fromTo(testimonialsRef.current, 
-      { 
+    gsap.fromTo(testimonialsRef.current,
+      {
         scale: 0.9,
-        opacity: 0 
+        opacity: 0
       },
       {
         scale: 1,
@@ -128,11 +140,11 @@ const Landing = () => {
     );
 
     // Animación del CTA final
-    gsap.fromTo(ctaRef.current, 
-      { 
+    gsap.fromTo(ctaRef.current,
+      {
         scale: 0.8,
         opacity: 0,
-        rotationY: 90 
+        rotationY: 90
       },
       {
         scale: 1,
@@ -222,7 +234,7 @@ const Landing = () => {
 
     const animate = () => {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
-      
+
       const gradient = ctx.createRadialGradient(
         canvas.width / 2, canvas.height / 2, 0,
         canvas.width / 2, canvas.height / 2, canvas.width / 2
@@ -279,7 +291,7 @@ const Landing = () => {
         duration: 0.5,
         onComplete: () => {
           setCurrentTestimonial((prev) => (prev + 1) % testimonials.length);
-          gsap.fromTo('.testimonial-content', 
+          gsap.fromTo('.testimonial-content',
             { opacity: 0, y: 20 },
             { opacity: 1, y: 0, duration: 0.5 }
           );
@@ -300,13 +312,13 @@ const Landing = () => {
     const layers = 5;
     const neuronsPerLayer = 8;
     const layerWidth = canvas.width / (layers + 1);
-    
+
     for (let layer = 1; layer <= layers; layer++) {
       const x = layer * layerWidth;
-      
+
       for (let neuron = 0; neuron < neuronsPerLayer; neuron++) {
         const y = (neuron + 1) * (canvas.height / (neuronsPerLayer + 1));
-        
+
         ctx.save();
         const pulse = Math.sin(Date.now() * 0.002 + layer * 0.5 + neuron * 0.2) * 0.3 + 0.7;
         ctx.globalAlpha = 0.1 * pulse;
@@ -320,7 +332,7 @@ const Landing = () => {
           const nextX = (layer + 1) * layerWidth;
           for (let nextNeuron = 0; nextNeuron < neuronsPerLayer; nextNeuron++) {
             const nextY = (nextNeuron + 1) * (canvas.height / (neuronsPerLayer + 1));
-            
+
             ctx.save();
             const connectionAlpha = 0.05 * Math.random();
             ctx.globalAlpha = connectionAlpha;
@@ -342,19 +354,19 @@ const Landing = () => {
       name: "María González",
       role: "Estudiante de Educación",
       text: "Esta plataforma ha revolucionado mi forma de aprender señas. La IA es increíblemente precisa.",
-      avatar: "👩‍🏫"
+      avatar: User
     },
     {
       name: "Carlos Rodríguez",
       role: "Padre de familia",
       text: "Mi hijo con discapacidad auditiva ahora puede practicar desde casa. ¡Gracias!",
-      avatar: "👨‍👦"
+      avatar: Users
     },
     {
       name: "Ana Martínez",
       role: "Intérprete profesional",
       text: "Como profesional, valoro la precisión y el enfoque educativo de la plataforma.",
-      avatar: "👩‍💼"
+      avatar: Briefcase
     }
   ];
 
@@ -408,82 +420,110 @@ const Landing = () => {
           />
         ))}
 
-        {/* Binary Rain Effect Mejorado */}
-        <div className="absolute inset-0 opacity-30">
-          {[...Array(50)].map((_, i) => (
-            <div
-              key={i}
-              className="absolute text-green-400 text-xs font-mono animate-drop floating-element"
-              style={{
-                left: `${Math.random() * 100}%`,
-                animationDelay: `${Math.random() * 5}s`,
-                animationDuration: `${5 + Math.random() * 10}s`
-              }}
-            >
-              {Math.random() > 0.5 ? '1' : '0'}
-            </div>
-          ))}
-        </div>
-
         {/* Hand Signs Floating Mejorado */}
-        {['👉', '🤙', '👌', '✋', '🤟', '👐', '👍', '👆'].map((sign, i) => (
+        {[Hand, HandMetal, ThumbsUp, MousePointer2, Star, Zap, Sparkles, HeartHandshake].map((Icon, i) => (
           <div
             key={i}
-            className="floating-element absolute text-6xl opacity-10"
+            className="floating-element absolute opacity-10"
             style={{
               left: `${Math.random() * 100}%`,
               top: `${Math.random() * 100}%`,
               animationDelay: `${i * 3}s`,
             }}
           >
-            {sign}
+            <Icon size={64} className="text-white" />
           </div>
         ))}
       </div>
 
-      {/* Header con animación */}
-      <header ref={headerRef} className="w-full py-6 px-8 bg-white/10 backdrop-blur-xl border-b border-white/20 shadow-2xl flex flex-col md:flex-row justify-between items-center relative z-10">
-        <div className="flex items-center gap-3 mb-4 md:mb-0">
+      {/* Header con animación Mejorado */}
+      {/* Header con animación Mejorado y Responsive */}
+      <header
+        ref={headerRef}
+        className={`fixed top-0 left-0 right-0 w-full z-50 transition-all duration-500 border-b ${isScrolled || isMenuOpen
+          ? 'py-3 px-4 sm:px-8 bg-slate-900/95 backdrop-blur-2xl border-white/10 shadow-2xl'
+          : 'py-5 px-4 sm:px-8 bg-transparent border-transparent'
+          } flex justify-between items-center`}
+      >
+        <div className="flex items-center gap-2 sm:gap-3 z-50">
           <div className="relative">
             <div className="absolute inset-0 bg-gradient-to-r from-blue-400 to-purple-400 rounded-full blur-lg opacity-75 animate-pulse"></div>
-            <GraduationCap size={42} className="text-white relative z-10" />
+            <GraduationCap size={32} className="text-white relative z-10 sm:size-[42px]" />
           </div>
-          <span className="text-3xl font-extrabold bg-gradient-to-r from-white to-blue-200 bg-clip-text text-transparent">
-            Instituto de Lengua de Señas IA
+          <span className="text-xl sm:text-2xl font-extrabold bg-gradient-to-r from-white to-blue-200 bg-clip-text text-transparent truncate max-w-[180px] sm:max-w-none">
+            Señas IA
           </span>
         </div>
-        
-        <nav className="flex flex-wrap gap-6 items-center">
+
+        {/* Desktop Navigation */}
+        <nav className="hidden lg:flex gap-8 items-center">
           {['Inicio', 'Módulos', 'Características', 'Testimonios', 'Contacto'].map((item) => (
             <button
               key={item}
-              className="text-white/80 font-semibold hover:text-white transition-all duration-300 hover:scale-110 hover:drop-shadow-glow"
+              className="text-white/70 font-semibold hover:text-white transition-all duration-300 hover:scale-105"
               onClick={() => {
-                if (item === 'Inicio') {
-                  window.scrollTo({ top: 0, behavior: 'smooth' });
-                } else {
-                  document.getElementById(item.toLowerCase())?.scrollIntoView({ behavior: 'smooth' });
-                }
+                const element = document.getElementById(item.toLowerCase());
+                if (item === 'Inicio') window.scrollTo({ top: 0, behavior: 'smooth' });
+                else element?.scrollIntoView({ behavior: 'smooth' });
               }}
             >
               {item}
             </button>
           ))}
           <button
-            className="bg-gradient-to-r from-blue-500 to-purple-500 text-white px-8 py-3 rounded-2xl font-bold shadow-2xl hover:scale-105 hover:shadow-glow transition-all duration-300 group relative overflow-hidden"
+            className="bg-gradient-to-r from-blue-500 to-purple-500 text-white px-6 py-2.5 rounded-xl font-bold hover:scale-105 transition-all duration-300"
             onClick={() => navigate('/login')}
           >
-            <div className="absolute inset-0 bg-gradient-to-r from-white/20 to-transparent transform -skew-x-12 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000"></div>
-            <span className="flex items-center gap-2 relative z-10">
-              Comenzar Ahora
-              <ChevronRight size={20} className="group-hover:translate-x-1 transition-transform" />
-            </span>
+            Comenzar Ahora
           </button>
         </nav>
+
+        {/* Mobile Menu Toggle */}
+        <button
+          className="lg:hidden z-50 p-2 text-white/80 hover:text-white transition-colors"
+          onClick={() => setIsMenuOpen(!isMenuOpen)}
+        >
+          {isMenuOpen ? <X size={30} /> : <Menu size={30} />}
+        </button>
+
+        {/* Mobile Sidebar Overlay */}
+        <div className={`fixed inset-0 bg-slate-900/40 backdrop-blur-sm transition-opacity duration-500 lg:hidden ${isMenuOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'
+          }`} onClick={() => setIsMenuOpen(false)} />
+
+        {/* Mobile Sidebar */}
+        <div className={`fixed top-0 right-0 h-screen w-[280px] bg-slate-900/90 backdrop-blur-3xl border-l border-white/10 z-40 transform transition-transform duration-500 ease-out lg:hidden ${isMenuOpen ? 'translate-x-0' : 'translate-x-full'
+          }`}>
+          <div className="flex flex-col p-8 pt-24 gap-6">
+            {['Inicio', 'Módulos', 'Características', 'Testimonios', 'Contacto'].map((item) => (
+              <button
+                key={item}
+                className="text-left text-2xl font-bold text-white/80 hover:text-white transition-colors"
+                onClick={() => {
+                  setIsMenuOpen(false);
+                  const element = document.getElementById(item.toLowerCase());
+                  if (item === 'Inicio') window.scrollTo({ top: 0, behavior: 'smooth' });
+                  else setTimeout(() => element?.scrollIntoView({ behavior: 'smooth' }), 300);
+                }}
+              >
+                {item}
+              </button>
+            ))}
+            <div className="h-px bg-white/10 my-4" />
+            <button
+              className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white py-4 rounded-2xl font-bold text-lg shadow-xl"
+              onClick={() => {
+                setIsMenuOpen(false);
+                navigate('/login');
+              }}
+            >
+              Comenzar Ahora
+            </button>
+          </div>
+        </div>
       </header>
 
-      {/* Hero Section con animaciones GSAP */}
-      <section ref={heroRef} className="flex-1 flex flex-col justify-center items-center text-center px-4 py-20 relative z-10">
+      {/* Hero Section con animaciones GSAP - Padding-top añadido para compensar header fixed */}
+      <section ref={heroRef} className="flex-1 flex flex-col justify-center items-center text-center px-4 pt-32 sm:pt-40 pb-20 relative z-10">
         <div className="max-w-5xl">
           {/* Badge animado */}
           <div className="hero-badge inline-flex items-center gap-2 bg-gradient-to-r from-blue-500/20 to-purple-500/20 text-white px-6 py-3 rounded-full mb-8 border border-white/10 backdrop-blur-sm">
@@ -491,26 +531,26 @@ const Landing = () => {
             <span className="font-semibold text-white">Plataforma con IA de Vanguardia</span>
             <div className="w-2 h-2 bg-green-400 rounded-full animate-ping"></div>
           </div>
-          
+
           {/* Título principal */}
-          <h1 className="hero-title text-7xl font-black text-white mb-6 leading-tight drop-shadow-2xl">
+          <h1 className="hero-title text-4xl sm:text-6xl md:text-7xl font-black text-white mb-6 leading-tight drop-shadow-2xl px-4">
             Revoluciona tu{' '}
             <span className="bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
               Aprendizaje
             </span>{' '}
             con IA
           </h1>
-          
-          <p className="hero-description text-xl text-white/80 mb-10 leading-relaxed max-w-3xl mx-auto">
-            La primera plataforma que combina <strong>inteligencia artificial avanzada</strong> con 
-            <strong> metodologías pedagógicas innovadoras</strong> para enseñarte lengua de señas de manera 
+
+          <p className="hero-description text-lg sm:text-xl text-white/80 mb-10 leading-relaxed max-w-3xl mx-auto px-6">
+            La primera plataforma que combina <strong>inteligencia artificial avanzada</strong> con
+            <strong> metodologías pedagógicas innovadoras</strong> para enseñarte lengua de señas de manera
             interactiva, personalizada y efectiva.
           </p>
 
           {/* Botones CTA */}
-          <div className="hero-buttons flex flex-col sm:flex-row gap-6 justify-center items-center mb-16">
+          <div className="hero-buttons flex flex-col sm:flex-row gap-4 justify-center items-center mb-16 px-4">
             <button
-              className="group relative bg-gradient-to-r from-blue-600 to-purple-600 text-white px-12 py-5 rounded-2xl font-bold text-lg shadow-2xl hover:scale-105 transition-all duration-500 overflow-hidden"
+              className="w-full sm:w-auto group relative bg-gradient-to-r from-blue-600 to-purple-600 text-white px-8 sm:px-12 py-4 sm:py-5 rounded-2xl font-bold text-lg shadow-2xl hover:scale-105 transition-all duration-500 overflow-hidden"
               onClick={() => navigate('/login')}
             >
               <div className="absolute inset-0 bg-gradient-to-r from-white/20 to-transparent transform -skew-x-12 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000"></div>
@@ -519,19 +559,21 @@ const Landing = () => {
                 Comenzar Gratis Hoy
               </span>
             </button>
-            
+
           </div>
 
           {/* Stats Grid */}
           <div ref={statsRef} className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-16">
             {[
-              { number: "10K+", label: "Usuarios Activos", icon: "👥" },
-              { number: "95%", label: "Precisión IA", icon: "🎯" },
-              { number: "50+", label: "Módulos", icon: "📚" },
-              { number: "24/7", label: "Soporte", icon: "🛡️" }
+              { number: "10K+", label: "Usuarios Activos", icon: Users },
+              { number: "95%", label: "Precisión IA", icon: Target },
+              { number: "50+", label: "Módulos", icon: Library },
+              { number: "24/7", label: "Soporte", icon: ShieldCheck }
             ].map((stat, index) => (
               <div key={index} className="stat-item text-center">
-                <div className="text-4xl mb-2 floating-element">{stat.icon}</div>
+                <div className="mb-4 flex justify-center floating-element">
+                  <stat.icon size={48} className="text-blue-400" />
+                </div>
                 <div className="text-3xl font-bold bg-gradient-to-r from-white to-blue-200 bg-clip-text text-transparent">
                   {stat.number}
                 </div>
@@ -547,7 +589,7 @@ const Landing = () => {
         <div className="text-center mb-16">
           <h2 className="text-5xl font-bold text-white mb-6">Tecnología de Punta</h2>
           <p className="text-xl text-white/60 max-w-3xl mx-auto">
-            Integramos las últimas innovaciones en IA y aprendizaje automático para ofrecerte 
+            Integramos las últimas innovaciones en IA y aprendizaje automático para ofrecerte
             la experiencia educativa más avanzada del mercado
           </p>
         </div>
@@ -559,7 +601,7 @@ const Landing = () => {
               className="feature-card group relative bg-white/5 backdrop-blur-xl rounded-3xl p-8 border border-white/10 hover:border-white/20 shadow-2xl hover:scale-105 transition-all duration-500"
             >
               <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 to-purple-500/10 rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-              
+
               <div className="relative z-10">
                 <div className={`p-4 rounded-2xl bg-gradient-to-br from-blue-500/20 to-purple-500/20 w-fit mb-6 group-hover:scale-110 transition-transform duration-300`}>
                   <feature.icon size={40} className={feature.color} />
@@ -584,12 +626,12 @@ const Landing = () => {
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {[
-            { title: "Fundamentos", icon: "🔰", level: "Básico", lessons: 15, color: "from-green-500 to-blue-500" },
-            { title: "Vocales & Números", icon: "🔢", level: "Básico", lessons: 12, color: "from-blue-500 to-purple-500" },
-            { title: "Abecedario Completo", icon: "📖", level: "Intermedio", lessons: 20, color: "from-purple-500 to-pink-500" },
-            { title: "Vocabulario Esencial", icon: "💬", level: "Intermedio", lessons: 25, color: "from-pink-500 to-red-500" },
-            { title: "Expresiones Diarias", icon: "🗣️", level: "Avanzado", lessons: 18, color: "from-red-500 to-orange-500" },
-            { title: "Conversación Fluida", icon: "👥", level: "Avanzado", lessons: 22, color: "from-orange-500 to-yellow-500" }
+            { title: "Fundamentos", icon: Shield, level: "Básico", lessons: 15, color: "from-green-500 to-blue-500" },
+            { title: "Vocales & Números", icon: Hash, level: "Básico", lessons: 12, color: "from-blue-500 to-purple-500" },
+            { title: "Abecedario Completo", icon: Book, level: "Intermedio", lessons: 20, color: "from-purple-500 to-pink-500" },
+            { title: "Vocabulario Esencial", icon: MessageSquare, level: "Intermedio", lessons: 25, color: "from-pink-500 to-red-500" },
+            { title: "Expresiones Diarias", icon: Mic, level: "Avanzado", lessons: 18, color: "from-red-500 to-orange-500" },
+            { title: "Conversación Fluida", icon: Users2, level: "Avanzado", lessons: 22, color: "from-orange-500 to-yellow-500" }
           ].map((module, index) => (
             <div
               key={index}
@@ -598,17 +640,19 @@ const Landing = () => {
               <div className="absolute top-4 right-4 bg-white/10 px-3 py-1 rounded-full text-xs text-white/80">
                 {module.level}
               </div>
-              
+
               <div className="flex items-center gap-4 mb-6">
-                <div className="text-5xl floating-element">{module.icon}</div>
+                <div className="p-3 rounded-2xl bg-white/5 floating-element">
+                  <module.icon size={36} className="text-blue-400" />
+                </div>
                 <h3 className="text-2xl font-bold text-white">{module.title}</h3>
               </div>
-              
+
               <p className="text-white/60 mb-6">Aprende a través de ejercicios interactivos con feedback en tiempo real</p>
-              
+
               <div className="flex items-center justify-between">
                 <span className="text-white/50 text-sm">{module.lessons} lecciones</span>
-                
+
               </div>
             </div>
           ))}
@@ -621,23 +665,24 @@ const Landing = () => {
           <h2 className="text-5xl font-bold text-white mb-6">Historias de Éxito</h2>
         </div>
 
-        <div className="bg-white/5 backdrop-blur-xl rounded-3xl p-12 border border-white/10 shadow-2xl">
+        <div className="bg-white/5 backdrop-blur-xl rounded-3xl p-6 sm:p-12 border border-white/10 shadow-2xl">
           <div className="text-center mb-8 testimonial-content">
-            <div className="text-8xl mb-6 floating-element">{testimonials[currentTestimonial].avatar}</div>
-            <p className="text-2xl text-white/90 italic mb-6 leading-relaxed">
+            <div className="flex justify-center mb-6 floating-element">
+              {React.createElement(testimonials[currentTestimonial].avatar, { size: 60, className: "text-blue-400 sm:size-80" })}
+            </div>
+            <p className="text-lg sm:text-2xl text-white/90 italic mb-6 leading-relaxed">
               "{testimonials[currentTestimonial].text}"
             </p>
-            <div className="font-bold text-white text-xl">{testimonials[currentTestimonial].name}</div>
-            <div className="text-blue-400">{testimonials[currentTestimonial].role}</div>
+            <div className="font-bold text-white text-lg sm:text-xl">{testimonials[currentTestimonial].name}</div>
+            <div className="text-blue-400 text-sm sm:text-base">{testimonials[currentTestimonial].role}</div>
           </div>
-          
+
           <div className="flex justify-center gap-3">
             {testimonials.map((_, index) => (
               <button
                 key={index}
-                className={`w-4 h-4 rounded-full transition-all duration-300 ${
-                  index === currentTestimonial ? 'bg-blue-500 scale-125' : 'bg-white/30'
-                }`}
+                className={`w-4 h-4 rounded-full transition-all duration-300 ${index === currentTestimonial ? 'bg-blue-500 scale-125' : 'bg-white/30'
+                  }`}
                 onClick={() => {
                   gsap.to('.testimonial-content', {
                     opacity: 0,
@@ -645,7 +690,7 @@ const Landing = () => {
                     duration: 0.3,
                     onComplete: () => {
                       setCurrentTestimonial(index);
-                      gsap.fromTo('.testimonial-content', 
+                      gsap.fromTo('.testimonial-content',
                         { opacity: 0, y: 20 },
                         { opacity: 1, y: 0, duration: 0.3 }
                       );
@@ -660,15 +705,15 @@ const Landing = () => {
 
       {/* Final CTA con animación 3D */}
       <section ref={ctaRef} className="w-full max-w-5xl mx-auto px-4 mb-28 relative z-10">
-        <div className="bg-gradient-to-r from-blue-600/20 to-purple-600/20 rounded-3xl p-16 text-center text-white border border-white/10 shadow-2xl relative overflow-hidden">
+        <div className="bg-gradient-to-r from-blue-600/20 to-purple-600/20 rounded-3xl p-8 sm:p-16 text-center text-white border border-white/10 shadow-2xl relative overflow-hidden">
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.1)_0%,transparent_70%)]"></div>
-          <h2 className="text-5xl font-bold mb-6 relative z-10">¿Listo para el Cambio?</h2>
-          <p className="text-xl mb-10 opacity-90 relative z-10">
+          <h2 className="text-3xl sm:text-5xl font-bold mb-6 relative z-10">¿Listo para el Cambio?</h2>
+          <p className="text-lg sm:text-xl mb-10 opacity-90 relative z-10 px-4">
             Únete a la revolución del aprendizaje de lengua de señas con IA
           </p>
           <button
-            className="bg-gradient-to-r from-white to-blue-200 text-blue-900 px-16 py-5 rounded-2xl font-bold text-lg shadow-2xl hover:scale-105 hover:shadow-glow transition-all duration-500 relative z-10"
-            onClick={() => navigate('/login')}
+            className="w-full sm:w-auto bg-gradient-to-r from-white to-blue-200 text-blue-900 px-8 sm:px-16 py-4 sm:py-5 rounded-2xl font-bold text-lg shadow-2xl hover:scale-105 hover:shadow-glow transition-all duration-500 relative z-10"
+            onClick={() => navigate('/register')}
           >
             Crear Cuenta Gratis
           </button>
@@ -688,7 +733,7 @@ const Landing = () => {
                 Liderando la revolución en educación de lengua de señas mediante inteligencia artificial avanzada.
               </p>
             </div>
-            
+
             <div>
               <h3 className="font-bold text-white text-lg mb-6">Navegación</h3>
               <ul className="space-y-3 text-white/60">
@@ -697,7 +742,7 @@ const Landing = () => {
                 ))}
               </ul>
             </div>
-            
+
             <div>
               <h3 className="font-bold text-white text-lg mb-6">Contacto</h3>
               <ul className="space-y-3 text-white/60">
@@ -705,7 +750,7 @@ const Landing = () => {
                 <li className="flex items-center gap-3"><Phone size={18} /> +1 (555) 123-4567</li>
               </ul>
             </div>
-            
+
             <div>
               <h3 className="font-bold text-white text-lg mb-6">Síguenos</h3>
               <div className="flex gap-4">
@@ -717,7 +762,7 @@ const Landing = () => {
               </div>
             </div>
           </div>
-          
+
           <div className="border-t border-white/10 pt-8 text-center text-white/40">
             <p>© 2024 Instituto de Lengua de Señas IA. Todos los derechos reservados.</p>
           </div>
