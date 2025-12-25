@@ -1,315 +1,366 @@
-import React, { useState, useEffect } from 'react';
-import { Camera, Download, Upload, Database, Target, Zap, RotateCcw, Save, X } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import {
+  Camera, Download, Upload, Database, Target, Zap, RotateCcw,
+  Save, X, Check, Play, Pause, Image as ImageIcon, FileText,
+  AlertCircle, ChevronRight, CheckCircle2, Video
+} from 'lucide-react';
 
 const DataCapture = () => {
-  const [captureStatus, setCaptureStatus] = useState('idle');
+  // Estados Principales
   const [selectedModule, setSelectedModule] = useState('vocals');
-  const [currentElement, setCurrentElement] = useState(0);
-  const [capturedCount, setCapturedCount] = useState(0);
-  const [moduleData, setModuleData] = useState({});
+  const [currentElementIndex, setCurrentElementIndex] = useState(0);
+  const [captureStatus, setCaptureStatus] = useState('idle'); // idle, capturing, reviewing, saved
+  const [progress, setProgress] = useState(0); // 0 to 50
 
-  // Definición completa de módulos y sus elementos
-  const modules = {
+  // Datos Simulados y Estado del Dataset
+  const [moduleData, setModuleData] = useState({
     vocals: {
+      id: 'vocals',
       name: 'Vocales',
-      elements: ['A', 'E', 'I', 'O', 'U'],
-      targetSamples: 100,
-      currentSamples: [45, 32, 28, 51, 39]
+      description: 'Fundamentos básicos',
+      elements: [
+        { name: 'A', captured: 0, status: 'pending', refImage: null, refDesc: 'Puño cerrado con el pulgar a un lado.' },
+        { name: 'E', captured: 0, status: 'pending', refImage: null, refDesc: 'Dedos doblados tocando el pulgar.' },
+        { name: 'I', captured: 0, status: 'pending', refImage: null, refDesc: 'Puño cerrado con el meñique levantado.' },
+        { name: 'O', captured: 0, status: 'pending', refImage: null, refDesc: 'Mano formando un círculo.' },
+        { name: 'U', captured: 0, status: 'pending', refImage: null, refDesc: 'Puño con índice y medio levantados juntos.' },
+      ]
     },
     numbers: {
+      id: 'numbers',
       name: 'Números',
-      elements: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'],
-      targetSamples: 150,
-      currentSamples: [67, 72, 58, 45, 63, 71, 49, 52, 68, 55]
-    },
-    alphabet: {
-      name: 'Abecedario',
-      elements: ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 
-                'N', 'Ñ', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z'],
-      targetSamples: 80,
-      currentSamples: Array(27).fill(0).map(() => Math.floor(Math.random() * 60))
-    },
-    math: {
-      name: 'Signos Matemáticos',
-      elements: ['+', '-', '×', '÷', '=', '>', '<'],
-      targetSamples: 120,
-      currentSamples: [45, 38, 52, 41, 67, 29, 33]
-    },
-    words: {
-      name: 'Palabras',
-      elements: ['HOLA', 'GRACIAS', 'POR FAVOR', 'AMIGO', 'FAMILIA'],
-      targetSamples: 90,
-      currentSamples: [28, 35, 42, 31, 39]
+      description: 'Dígitos del 0 al 9',
+      elements: Array.from({ length: 10 }, (_, i) => ({
+        name: `${i}`,
+        captured: 0,
+        status: 'pending',
+        refImage: null,
+        refDesc: `Representación manual del número ${i}.`
+      }))
     }
-  };
+  });
 
-  // Inicializar datos de módulos
-  useEffect(() => {
-    const savedData = localStorage.getItem('moduleCaptureData');
-    if (savedData) {
-      setModuleData(JSON.parse(savedData));
-    } else {
-      // Datos iniciales
-      const initialData = {};
-      Object.keys(modules).forEach(moduleKey => {
-        initialData[moduleKey] = {
-          elements: modules[moduleKey].elements.map((element, index) => ({
-            name: element,
-            captured: modules[moduleKey].currentSamples[index] || 0,
-            target: modules[moduleKey].targetSamples
-          }))
-        };
-      });
-      setModuleData(initialData);
-    }
-  }, []);
+  // Referencias para simulación
+  const captureIntervalRef = useRef(null);
+  const videoRef = useRef(null);
 
-  const currentModule = modules[selectedModule];
-  const currentElementData = moduleData[selectedModule]?.elements[currentElement] || { captured: 0, target: 100 };
+  // Computed Values
+  const currentModule = moduleData[selectedModule];
+  const currentElement = currentModule.elements[currentElementIndex];
+  const isModuleComplete = currentModule.elements.every(el => el.captured === 50);
+
+  // --- Lógica de Captura ---
 
   const startCapture = () => {
+    if (progress >= 50 && captureStatus !== 'reviewing') {
+      // Si ya tiene datos, confirmar re-captura
+      if (!window.confirm("Este elemento ya tiene datos capturados. ¿Deseas sobrescribirlos?")) return;
+    }
+
     setCaptureStatus('capturing');
-    // Simulación de captura
-    setTimeout(() => {
-      setCaptureStatus('reviewing');
-    }, 2000);
+    setProgress(0);
+
+    // Simular entrada de frames de webcam (0 a 50 frames)
+    let frames = 0;
+    captureIntervalRef.current = setInterval(() => {
+      frames += 1;
+      setProgress(frames);
+
+      if (frames >= 50) {
+        clearInterval(captureIntervalRef.current);
+        setCaptureStatus('reviewing');
+      }
+    }, 100); // 100ms * 50 = 5 segundos de captura aprox
+  };
+
+  const stopCapture = () => {
+    if (captureIntervalRef.current) clearInterval(captureIntervalRef.current);
+    setCaptureStatus('idle');
+    setProgress(0);
   };
 
   const saveCapture = () => {
-    const newModuleData = { ...moduleData };
-    if (!newModuleData[selectedModule]) {
-      newModuleData[selectedModule] = { elements: [] };
-    }
-    
-    if (newModuleData[selectedModule].elements[currentElement]) {
-      newModuleData[selectedModule].elements[currentElement].captured += 1;
-    }
-    
-    setModuleData(newModuleData);
-    localStorage.setItem('moduleCaptureData', JSON.stringify(newModuleData));
+    const updatedModule = { ...currentModule };
+    updatedModule.elements[currentElementIndex] = {
+      ...updatedModule.elements[currentElementIndex],
+      captured: 50,
+      status: 'completed'
+    };
+
+    setModuleData({
+      ...moduleData,
+      [selectedModule]: updatedModule
+    });
+
     setCaptureStatus('saved');
-    setCapturedCount(prev => prev + 1);
-    
+
+    // Auto-avance opcional
     setTimeout(() => {
-      nextElement();
-    }, 1000);
+      setCaptureStatus('idle');
+      setProgress(0);
+      if (currentElementIndex < currentModule.elements.length - 1) {
+        setCurrentElementIndex(prev => prev + 1);
+      }
+    }, 1500);
   };
 
   const discardCapture = () => {
     setCaptureStatus('idle');
+    setProgress(0);
   };
 
-  const nextElement = () => {
-    if (currentElement < currentModule.elements.length - 1) {
-      setCurrentElement(prev => prev + 1);
-    } else {
-      setCurrentElement(0);
+  const handleExport = () => {
+    alert(`Exportando dataset "${currentModule.name}" como archivo .zip...`);
+    // Lógica de exportación real iría aquí
+  };
+
+  const handleRefImageUpload = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const updatedModule = { ...currentModule };
+        updatedModule.elements[currentElementIndex].refImage = reader.result;
+        setModuleData({ ...moduleData, [selectedModule]: updatedModule });
+      };
+      reader.readAsDataURL(file);
     }
-    setCaptureStatus('idle');
   };
 
-  const resetModuleData = () => {
-    const newModuleData = { ...moduleData };
-    newModuleData[selectedModule] = {
-      elements: currentModule.elements.map(element => ({
-        name: element,
-        captured: 0,
-        target: currentModule.targetSamples
-      }))
-    };
-    setModuleData(newModuleData);
-    localStorage.setItem('moduleCaptureData', JSON.stringify(newModuleData));
-    setCurrentElement(0);
-    setCapturedCount(0);
-  };
-
-  const getProgressPercentage = (captured, target) => {
-    return Math.min(100, (captured / target) * 100);
+  const handleDescChange = (val) => {
+    const updatedModule = { ...currentModule };
+    updatedModule.elements[currentElementIndex].refDesc = val;
+    setModuleData({ ...moduleData, [selectedModule]: updatedModule });
   };
 
   return (
-    <div className="bg-white/10 backdrop-blur-xl rounded-2xl p-6 border border-white/20">
-      <div className="flex items-center justify-between mb-6">
-        <h2 className="text-xl font-bold text-white flex items-center gap-2">
-          <Camera size={24} />
-          Captura de Datos para IA
-        </h2>
-        <div className="flex gap-2">
-          <button className="bg-blue-500 text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-blue-600 transition-colors">
-            <Upload size={20} />
-            Importar Dataset
-          </button>
-          <button 
-            onClick={resetModuleData}
-            className="bg-red-500 text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-red-600 transition-colors"
+    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
+
+      {/* Header */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 bg-slate-900/40 backdrop-blur-xl border border-white/10 p-8 rounded-[2.5rem] shadow-2xl">
+        <div className="flex items-center gap-4">
+          <div className={`p-4 rounded-2xl shadow-lg ${captureStatus === 'capturing' ? 'bg-red-500 shadow-red-500/20 animate-pulse' : 'bg-blue-600 shadow-blue-500/20'}`}>
+            <Camera className="text-white" size={32} />
+          </div>
+          <div>
+            <h2 className="text-2xl font-bold text-white tracking-tight">Estudio de Captura</h2>
+            <p className="text-white/40 text-sm">Ingesta de datos visuales para entrenamiento de IA</p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-4">
+          {/* Selector de Módulo */}
+          <div className="relative">
+            <Database className="absolute left-4 top-1/2 -translate-y-1/2 text-white/50" size={16} />
+            <select
+              value={selectedModule}
+              onChange={(e) => {
+                setSelectedModule(e.target.value);
+                setCurrentElementIndex(0);
+                setCaptureStatus('idle');
+                setProgress(0);
+              }}
+              className="bg-white/5 border border-white/10 rounded-2xl pl-10 pr-4 py-3 text-white font-bold text-sm focus:outline-none focus:border-blue-500/50 appearance-none min-w-[200px] cursor-pointer"
+            >
+              {Object.values(moduleData).map(mod => (
+                <option key={mod.id} value={mod.id}>{mod.name}</option>
+              ))}
+            </select>
+          </div>
+
+          <button
+            onClick={handleExport}
+            disabled={!isModuleComplete}
+            className={`flex items-center gap-2 px-6 py-3 rounded-2xl font-black text-sm uppercase tracking-widest transition-all ${isModuleComplete
+                ? 'bg-green-500 hover:bg-green-600 text-white shadow-lg shadow-green-500/20 cursor-pointer'
+                : 'bg-white/5 text-white/20 cursor-not-allowed border border-white/5'
+              }`}
           >
-            <RotateCcw size={20} />
-            Reiniciar Módulo
+            <Download size={18} />
+            Exportar Dataset
           </button>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Panel de control y cámara */}
-        <div className="space-y-4">
-          <div className="bg-white/5 rounded-lg p-4 border border-white/10">
-            <h3 className="text-white font-semibold mb-3">Configuración de Captura</h3>
-            
-            <div className="space-y-3">
-              <div>
-                <label className="text-white/80 text-sm mb-2 block">Módulo de Captura</label>
-                <select 
-                  value={selectedModule}
-                  onChange={(e) => {
-                    setSelectedModule(e.target.value);
-                    setCurrentElement(0);
-                    setCaptureStatus('idle');
-                  }}
-                  className="w-full bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-white"
-                >
-                  {Object.keys(modules).map(moduleKey => (
-                    <option key={moduleKey} value={moduleKey}>
-                      {modules[moduleKey].name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              
-              <div className="grid grid-cols-2 gap-2">
-                <button className="bg-white/10 text-white px-3 py-2 rounded-lg hover:bg-white/20 transition-colors">
-                  <Target size={16} className="inline mr-2" />
-                  Calibrar Cámara
-                </button>
-                <button className="bg-white/10 text-white px-3 py-2 rounded-lg hover:bg-white/20 transition-colors">
-                  <Zap size={16} className="inline mr-2" />
-                  Ajustar IA
-                </button>
-              </div>
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 h-[calc(100vh-280px)] min-h-[600px]">
+
+        {/* Panel Izquierdo: Lista de Elementos (3 cols) */}
+        <div className="lg:col-span-3 bg-slate-900/40 backdrop-blur-xl border border-white/10 rounded-[2.5rem] p-6 flex flex-col overflow-hidden">
+          <h3 className="text-white font-bold mb-4 flex items-center justify-between px-2">
+            <span>Elementos</span>
+            <span className="text-xs bg-white/10 px-2 py-1 rounded-lg text-white/60">
+              {currentModule.elements.filter(e => e.status === 'completed').length} / {currentModule.elements.length}
+            </span>
+          </h3>
+
+          <div className="flex-1 overflow-y-auto space-y-2 pr-2 custom-scrollbar">
+            {currentModule.elements.map((el, idx) => (
+              <button
+                key={idx}
+                onClick={() => {
+                  setCurrentElementIndex(idx);
+                  setCaptureStatus('idle');
+                  setProgress(el.captured);
+                }}
+                className={`w-full flex items-center justify-between p-4 rounded-2xl border transition-all relative overflow-hidden group ${currentElementIndex === idx
+                    ? 'bg-blue-600/20 border-blue-500/50'
+                    : 'bg-white/5 border-white/5 hover:bg-white/10'
+                  }`}
+              >
+                <div className="flex items-center gap-3 relative z-10">
+                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center font-bold text-sm ${el.status === 'completed'
+                      ? 'bg-green-500 text-white shadow-lg shadow-green-500/20'
+                      : currentElementIndex === idx ? 'bg-blue-500 text-white' : 'bg-white/10 text-white/40'
+                    }`}>
+                    {el.name}
+                  </div>
+                  <div className="text-left">
+                    <div className="text-xs font-bold text-white/80 group-hover:text-white transition-colors">{el.name}</div>
+                    <div className="text-[10px] text-white/40 font-mono">{el.captured}/50 frames</div>
+                  </div>
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Panel Central: Área de Captura (6 cols) */}
+        <div className="lg:col-span-6 flex flex-col gap-6">
+
+          {/* Visor de Cámara */}
+          <div className="flex-1 bg-black rounded-[3rem] border-4 border-slate-800 shadow-2xl relative overflow-hidden group">
+            {/* Grid Overlay */}
+            <div className="absolute inset-0 z-10 opacity-20 pointer-events-none"
+              style={{ backgroundImage: 'linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)', backgroundSize: '50px 50px' }}>
+            </div>
+
+            {/* Estado Visual */}
+            <div className="absolute inset-0 flex items-center justify-center z-0">
+              {captureStatus === 'capturing' && (
+                <div className="w-full h-full bg-green-500/10 animate-pulse flex items-center justify-center flex-col gap-4">
+                  <Target size={64} className="text-green-500 animate-spin-slow opacity-50" />
+                </div>
+              )}
+              {captureStatus === 'idle' && progress === 0 && (
+                <div className="flex flex-col items-center opacity-30">
+                  <Video size={64} className="mb-4" />
+                  <p className="font-mono text-sm uppercase tracking-widest">Esperando señal de video...</p>
+                </div>
+              )}
+            </div>
+
+            {/* UI Superpuesta */}
+            <div className="absolute top-6 left-6 z-20 flex gap-2">
+              <span className="bg-red-500/20 backdrop-blur-md border border-red-500/30 text-red-500 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest flex items-center gap-2">
+                <div className={`w-2 h-2 rounded-full bg-red-500 ${captureStatus === 'capturing' ? 'animate-pulse' : ''}`} />
+                REC
+              </span>
+              <span className="bg-black/40 backdrop-blur-md border border-white/10 text-white px-3 py-1 rounded-full text-[10px] font-mono">
+                FRAME: {progress}/50
+              </span>
+            </div>
+
+            {/* Barra de Progreso Inferior */}
+            <div className="absolute bottom-0 left-0 right-0 h-2 bg-slate-800">
+              <div
+                className="h-full bg-gradient-to-r from-green-400 to-blue-500 transition-all duration-100 ease-linear"
+                style={{ width: `${(progress / 50) * 100}%` }}
+              />
             </div>
           </div>
 
-          {/* Cámara */}
-          <div className="relative bg-black rounded-2xl overflow-hidden shadow-2xl">
-            <div className="aspect-video bg-gray-900 flex items-center justify-center">
-              {captureStatus === 'idle' ? (
-                <div className="text-center text-white">
-                  <Camera size={64} className="mx-auto mb-4 opacity-50" />
-                  <p className="text-lg">Elemento: {currentModule.elements[currentElement]}</p>
-                  <p className="text-sm text-white/60">Preparado para capturar</p>
-                </div>
-              ) : captureStatus === 'capturing' ? (
-                <div className="text-center text-white">
-                  <div className="w-16 h-16 border-4 border-green-400 rounded-full animate-spin mx-auto mb-4 border-t-transparent"></div>
-                  <p className="text-lg">Capturando...</p>
-                  <p className="text-sm text-white/60">Mantén la pose</p>
-                </div>
-              ) : captureStatus === 'reviewing' ? (
-                <div className="text-center text-white">
-                  <div className="text-6xl font-bold mb-4">{currentModule.elements[currentElement]}</div>
-                  <p className="text-lg">Revisando captura</p>
-                  <p className="text-sm text-white/60">¿Guardar esta muestra?</p>
-                </div>
-              ) : (
-                <div className="text-center text-white">
-                  <div className="text-6xl font-bold mb-4">✓</div>
-                  <p className="text-lg">¡Captura guardada!</p>
-                  <p className="text-sm text-white/60">Avanzando al siguiente elemento</p>
-                </div>
-              )}
-              
-              <div className="absolute inset-0 flex items-center justify-center">
-                <div className="w-64 h-64 border-4 border-green-400 rounded-full opacity-50 animate-pulse"></div>
-              </div>
-            </div>
-            
+          {/* Controles */}
+          <div className="bg-slate-900/40 backdrop-blur-xl border border-white/10 rounded-[2rem] p-4 flex items-center justify-center gap-4">
+            {captureStatus === 'idle' && progress < 50 && (
+              <button onClick={startCapture} className="flex-1 bg-white text-slate-900 py-4 rounded-2xl font-black text-sm uppercase tracking-widest hover:bg-gray-200 transition-all active:scale-95 flex items-center justify-center gap-2">
+                <Play size={20} fill="currentColor" /> Iniciar Captura
+              </button>
+            )}
+
+            {captureStatus === 'capturing' && (
+              <button onClick={stopCapture} className="flex-1 bg-red-500 text-white py-4 rounded-2xl font-black text-sm uppercase tracking-widest hover:bg-red-600 transition-all active:scale-95 animate-pulse">
+                Detener ({(progress / 50 * 100).toFixed(0)}%)
+              </button>
+            )}
+
             {captureStatus === 'reviewing' && (
-              <div className="absolute bottom-4 left-0 right-0 flex justify-center gap-4">
-                <button 
-                  onClick={saveCapture}
-                  className="bg-green-500 text-white px-6 py-2 rounded-lg flex items-center gap-2 hover:bg-green-600 transition-colors"
-                >
-                  <Save size={20} />
-                  Guardar
+              <>
+                <button onClick={discardCapture} className="flex-1 bg-white/10 text-white py-4 rounded-2xl font-black text-sm uppercase tracking-widest hover:bg-white/20 transition-all">
+                  <RotateCcw size={18} className="mr-2 inline" /> Reintentar
                 </button>
-                <button 
-                  onClick={discardCapture}
-                  className="bg-red-500 text-white px-6 py-2 rounded-lg flex items-center gap-2 hover:bg-red-600 transition-colors"
-                >
-                  <X size={20} />
-                  Descartar
+                <button onClick={saveCapture} className="flex-[2] bg-green-500 text-white py-4 rounded-2xl font-black text-sm uppercase tracking-widest hover:bg-green-600 transition-all shadow-lg shadow-green-500/20 active:scale-95">
+                  <CheckCircle2 size={18} className="mr-2 inline" /> Guardar Muestra
                 </button>
+              </>
+            )}
+
+            {(captureStatus === 'saved' || (captureStatus === 'idle' && progress === 50)) && (
+              <div className="flex-1 flex gap-4">
+                <button onClick={() => setProgress(0)} className="flex-1 bg-white/10 text-white py-4 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-white/20">
+                  Re-capturar
+                </button>
+                <div className="flex-[2] bg-green-500/20 border border-green-500/20 text-green-400 py-4 rounded-2xl font-black text-sm uppercase tracking-widest flex items-center justify-center gap-2">
+                  <Check size={20} /> Completado
+                </div>
               </div>
             )}
           </div>
-
-          <button 
-            onClick={startCapture}
-            disabled={captureStatus !== 'idle'}
-            className={`w-full py-3 rounded-lg font-semibold transition-all ${
-              captureStatus !== 'idle' 
-                ? 'bg-gray-500 cursor-not-allowed' 
-                : 'bg-green-500 hover:bg-green-600'
-            } text-white flex items-center justify-center gap-2`}
-          >
-            <Camera size={20} />
-            {captureStatus === 'idle' ? 'Capturar Muestra' : 'Capturando...'}
-          </button>
         </div>
 
-        {/* Lista de elementos y progreso */}
-        <div className="bg-white/5 rounded-lg p-4 border border-white/10">
-          <h3 className="text-white font-semibold mb-4 flex items-center gap-2">
-            <Database size={20} />
-            Progreso de Captura - {currentModule.name}
-          </h3>
-          
-          <div className="space-y-3 max-h-96 overflow-y-auto">
-            {moduleData[selectedModule]?.elements.map((element, index) => (
-              <div 
-                key={index}
-                className={`p-3 rounded-lg border transition-all cursor-pointer ${
-                  index === currentElement 
-                    ? 'bg-blue-500/20 border-blue-400' 
-                    : 'bg-white/5 border-white/10 hover:bg-white/10'
-                }`}
-                onClick={() => setCurrentElement(index)}
-              >
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-white font-semibold">{element.name}</span>
-                  <span className="text-white/60 text-sm">
-                    {element.captured}/{element.target}
-                  </span>
+        {/* Panel Derecho: Referencia e Instrucciones (3 cols) */}
+        <div className="lg:col-span-3 flex flex-col gap-6">
+
+          {/* Tarjeta de Referencia */}
+          <div className="bg-white/5 border border-white/10 rounded-[2.5rem] p-6 flex-1 flex flex-col relative overflow-hidden group">
+            <div className="absolute top-0 right-0 bg-blue-600 text-white text-[10px] font-bold uppercase tracking-widest px-4 py-2 rounded-bl-2xl z-10">
+              Referencia
+            </div>
+
+            <div className="flex-1 flex flex-col items-center justify-center border-2 border-dashed border-white/10 rounded-3xl bg-black/20 mb-4 relative overflow-hidden hover:border-white/30 transition-colors">
+              {currentElement.refImage ? (
+                <img src={currentElement.refImage} alt="Referencia" className="w-full h-full object-cover opacity-80" />
+              ) : (
+                <div className="text-center p-6">
+                  <ImageIcon size={40} className="mx-auto text-white/20 mb-2" />
+                  <p className="text-white/20 text-xs uppercase font-bold">Sin imagen referencia</p>
+                  <label className="mt-4 inline-block cursor-pointer">
+                    <span className="bg-white/10 hover:bg-white/20 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition-all">Subir Foto</span>
+                    <input type="file" className="hidden" accept="image/*" onChange={handleRefImageUpload} />
+                  </label>
                 </div>
-                <div className="w-full bg-white/20 rounded-full h-2">
-                  <div 
-                    className="bg-gradient-to-r from-green-400 to-blue-400 h-2 rounded-full transition-all duration-300"
-                    style={{ width: `${getProgressPercentage(element.captured, element.target)}%` }}
-                  ></div>
-                </div>
-                <div className="flex justify-between text-white/60 text-xs mt-1">
-                  <span>{Math.round(getProgressPercentage(element.captured, element.target))}% completo</span>
-                  <span>{element.target - element.captured} restantes</span>
-                </div>
-              </div>
-            ))}
-          </div>
-          
-          <div className="mt-4 pt-4 border-t border-white/10">
-            <div className="grid grid-cols-2 gap-4 text-center">
-              <div>
-                <div className="text-2xl font-bold text-white">{capturedCount}</div>
-                <div className="text-white/60 text-sm">Capturas hoy</div>
-              </div>
-              <div>
-                <div className="text-2xl font-bold text-green-400">
-                  {moduleData[selectedModule]?.elements.reduce((total, el) => total + el.captured, 0) || 0}
-                </div>
-                <div className="text-white/60 text-sm">Total capturado</div>
-              </div>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-[10px] font-black text-white/40 uppercase tracking-widest">Instrucción Técnica</label>
+              <textarea
+                className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-white/80 text-sm focus:outline-none focus:border-blue-500/50 transition-all resize-none font-medium h-24"
+                placeholder="Describe cómo realizar la seña..."
+                value={currentElement.refDesc || ''}
+                onChange={(e) => handleDescChange(e.target.value)}
+              />
             </div>
           </div>
+
+          {/* Info de IA */}
+          <div className="bg-blue-600/10 border border-blue-600/20 rounded-[2rem] p-6">
+            <h4 className="flex items-center gap-2 text-blue-400 font-bold mb-2">
+              <Zap size={18} /> Engine V3 Ready
+            </h4>
+            <p className="text-blue-200/60 text-xs leading-relaxed">
+              El sistema capturará exactamente <strong>50 frames</strong> de alta calidad. Asegúrate de una iluminación adecuada y fondo neutro para mejorar la precisión del entrenamiento.
+            </p>
+          </div>
+
         </div>
+
       </div>
+
+      <style>{`
+        .animate-spin-slow { animation: spin 8s linear infinite; }
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.1); border-radius: 10px; }
+      `}</style>
     </div>
   );
 };

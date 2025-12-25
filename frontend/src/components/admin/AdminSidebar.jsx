@@ -26,7 +26,7 @@ const AdminSidebar = ({ activeSection, onSectionChange }) => {
       items: [
         { id: 'capture', label: 'Captura de Datos', icon: Camera },
         { id: 'training', label: 'Entrenamiento IA', icon: TrendingUp },
-        { id: 'validation', label: 'Validación IA', icon: Award },
+
       ]
     },
     {

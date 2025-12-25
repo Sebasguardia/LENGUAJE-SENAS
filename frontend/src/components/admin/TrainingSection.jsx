@@ -1,388 +1,426 @@
-import React, { useState, useEffect } from 'react';
-import { Play, Square, TrendingUp, Cpu, Clock, Award, Save, BarChart3 } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import {
+  Cpu, Play, StopCircle, Save, Upload, Database,
+  CheckCircle2, AlertTriangle, ChevronRight, BarChart2,
+  Activity, Layers, Box, Terminal, Share2, Eye, Package
+} from 'lucide-react';
+import {
+  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
+  AreaChart, Area, Legend
+} from 'recharts';
 
 const TrainingSection = () => {
-  const [trainingStatus, setTrainingStatus] = useState('idle');
-  const [trainingProgress, setTrainingProgress] = useState(0);
-  const [moduleData, setModuleData] = useState({});
-  const [trainingResults, setTrainingResults] = useState({});
-  const TrainingGraph = ({ progress, metrics }) => {
-  const [animatedProgress, setAnimatedProgress] = useState(0);
+  // Estados de Flujo
+  const [step, setStep] = useState('selection'); // selection, training, validation, packaging
+  const [trainingActive, setTrainingActive] = useState(false);
+  const [selectedModules, setSelectedModules] = useState([]);
 
+  // Datos Simulados
+  const [availableModules, setAvailableModules] = useState([
+    { id: 'vocals', name: 'Vocales', samples: 250, status: 'ready', lastUpdate: 'Hoy 14:30', color: '#4ADE80' },
+    { id: 'numbers', name: 'Números', samples: 500, status: 'ready', lastUpdate: 'Ayer', color: '#60A5FA' },
+    { id: 'alphabet', name: 'Abecedario', samples: 1350, status: 'incomplete', lastUpdate: 'Hace 3 días', color: '#F472B6' },
+    { id: 'math', name: 'Matemáticas', samples: 120, status: 'ready', lastUpdate: 'Hace 1 semana', color: '#FACC15' },
+  ]);
+
+  // Métricas de Entrenamiento
+  const [currentEpoch, setCurrentEpoch] = useState(0);
+  const totalEpochs = 50;
+  const [metricsHistory, setMetricsHistory] = useState([]);
+  const [logs, setLogs] = useState([]);
+  const logsEndRef = useRef(null);
+
+  // Auto-scroll logs
   useEffect(() => {
-    if (progress > 0) {
-      setAnimatedProgress(0);
-      const interval = setInterval(() => {
-        setAnimatedProgress(prev => {
-          if (prev >= progress) {
-            clearInterval(interval);
-            return progress;
-          }
-          return prev + 1;
-        });
-      }, 30);
-      return () => clearInterval(interval);
+    logsEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [logs]);
+
+  // --- Lógica del Entrenador ---
+
+  const toggleModuleSelection = (id) => {
+    if (selectedModules.includes(id)) {
+      setSelectedModules(selectedModules.filter(m => m !== id));
+    } else {
+      setSelectedModules([...selectedModules, id]);
     }
-  }, [progress]);
+  };
 
-  // Datos simulados para el gráfico de tendencia
-  const trendData = [65, 68, 72, 75, 78, 82, 85, 88, 92, 94, 96, 94.3];
-  const maxAccuracy = Math.max(...trendData);
-  const minAccuracy = Math.min(...trendData);
+  const handleImport = () => {
+    const fileInput = document.createElement('input');
+    fileInput.type = 'file';
+    fileInput.accept = '.zip,.json';
+    fileInput.onchange = (e) => {
+      const fileName = e.target.files[0]?.name;
+      if (fileName) alert(`Dataset "${fileName}" importado y verificado correctamente.`);
+    };
+    fileInput.click();
+  };
 
-  return (
-    <div className="bg-white/5 rounded-lg p-4 border border-white/10">
-      <h4 className="text-white font-semibold mb-4 flex items-center gap-2">
-        <TrendingUp size={18} />
-        Progreso del Entrenamiento
-      </h4>
-      
-      {/* Gráfico de tendencia animado */}
-      <div className="relative h-32 mb-4">
-        <div className="absolute inset-0 flex items-end">
-          {trendData.map((value, index) => (
-            <div
-              key={index}
-              className="flex-1 flex flex-col items-center mx-1"
-              style={{ height: '100%' }}
-            >
-              <div
-                className="w-full bg-gradient-to-t from-green-400 to-blue-400 rounded-t transition-all duration-500"
-                style={{
-                  height: `${((value - minAccuracy) / (maxAccuracy - minAccuracy)) * 90}%`,
-                  animationDelay: `${index * 100}ms`
-                }}
-              />
-              <div className="text-white/40 text-xs mt-1">
-                {index === trendData.length - 1 ? 'Ahora' : index + 1}
-              </div>
-            </div>
-          ))}
+  const getModuleInfo = (id) => availableModules.find(m => m.id === id);
+
+  const startTraining = () => {
+    setStep('training');
+    setTrainingActive(true);
+    setMetricsHistory([]);
+    setLogs(['Iniciando motor de entrenamiento TensorFlow.js...', 'Cargando tensores en GPU...', 'Normalizando datos por módulo...']);
+    setCurrentEpoch(0);
+
+    let epoch = 0;
+    // Simular estado de precisión inicial para cada módulo
+    const moduleProgress = {};
+    selectedModules.forEach(id => {
+      moduleProgress[id] = 0.1 + Math.random() * 0.2; // Empezar entre 10% y 30%
+    });
+
+    const interval = setInterval(() => {
+      epoch++;
+      setCurrentEpoch(epoch);
+
+      const loss = Math.max(0.1, 2.5 * Math.exp(-0.1 * epoch) + (Math.random() * 0.1));
+
+      // Calcular precisión individual para cada módulo seleccionado
+      const newMetric = { epoch, loss: loss.toFixed(4) };
+
+      selectedModules.forEach(id => {
+        // Curva de aprendizaje logarítmica simulada con ruido
+        const currentAcc = moduleProgress[id];
+        const target = 0.95 + (Math.random() * 0.04); // Meta ~95-99%
+        const speed = 0.05 + (Math.random() * 0.05);
+
+        let nextAcc = currentAcc + ((target - currentAcc) * speed);
+        if (nextAcc > 0.999) nextAcc = 0.999;
+
+        moduleProgress[id] = nextAcc;
+        newMetric[id] = (nextAcc * 100).toFixed(2);
+      });
+
+      // Precisión global promedio
+      const avgAcc = selectedModules.reduce((acc, id) => acc + parseFloat(newMetric[id]), 0) / selectedModules.length;
+      newMetric['accuracy'] = avgAcc.toFixed(2); // Global
+
+      setMetricsHistory(prev => [...prev, newMetric]);
+
+      if (epoch % 5 === 0) {
+        setLogs(prev => [...prev, `Epoch ${epoch}/${totalEpochs} - loss: ${loss.toFixed(4)} - avg_acc: ${(avgAcc / 100).toFixed(4)}`]);
+      }
+
+      if (epoch >= totalEpochs) {
+        clearInterval(interval);
+        setTrainingActive(false);
+        setLogs(prev => [...prev, 'Entrenamiento finalizado exitosamente.', 'Generando manifiesto de versión...']);
+        setTimeout(() => setStep('validation'), 1500);
+      }
+    }, 200);
+  };
+
+  const handlePublish = () => {
+    alert("Modelo v2.0 publicado al servidor de producción. Disponible para todos los usuarios.");
+    setStep('selection');
+    setSelectedModules([]);
+  };
+
+  // --- Vistas ---
+
+  // 1. Selección de Datos
+  const renderSelection = () => (
+    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+      <div className="flex justify-between items-end">
+        <div>
+          <h3 className="text-white font-bold text-lg mb-1">Selección de Datasets</h3>
+          <p className="text-white/40 text-sm">Elige los módulos que conformarán el corpus de entrenamiento.</p>
         </div>
-        
-        {/* Línea de tendencia animada */}
-        <div className="absolute inset-0">
-          <svg width="100%" height="100%" className="overflow-visible">
-            <path
-              d={trendData.map((value, index) => {
-                const x = (index / (trendData.length - 1)) * 100;
-                const y = 100 - ((value - minAccuracy) / (maxAccuracy - minAccuracy)) * 90;
-                return `${index === 0 ? 'M' : 'L'} ${x}% ${y}%`;
-              }).join(' ')}
-              stroke="url(#gradient)"
-              strokeWidth="2"
-              fill="none"
-              strokeDasharray="1000"
-              strokeDashoffset="1000"
-              className="animate-drawPath"
-            />
-            <defs>
-              <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                <stop offset="0%" stopColor="#10B981" />
-                <stop offset="100%" stopColor="#3B82F6" />
-              </linearGradient>
-            </defs>
-          </svg>
-        </div>
-        
-        {/* Flecha indicadora */}
-        <div
-          className="absolute -top-2 transform -translate-x-1/2 transition-all duration-1000"
-          style={{
-            left: `${animatedProgress}%`,
-            opacity: progress > 0 ? 1 : 0
-          }}
+        <button
+          onClick={handleImport}
+          className="flex items-center gap-2 px-4 py-2 bg-white/5 hover:bg-white/10 text-white rounded-xl text-xs font-bold transition-all border border-white/5"
         >
-          <div className="text-green-400 text-lg">↑</div>
-          <div className="text-white text-xs bg-green-500/20 px-2 py-1 rounded-full whitespace-nowrap">
-            {Math.round(animatedProgress)}%
-          </div>
-        </div>
+          <Upload size={14} /> Importar Externo
+        </button>
       </div>
 
-      {/* Métricas en tiempo real */}
-      <div className="grid grid-cols-3 gap-2 text-center">
-        <div>
-          <div className="text-white font-bold text-lg">{animatedProgress}%</div>
-          <div className="text-white/60 text-xs">Progreso</div>
-        </div>
-        <div>
-          <div className="text-green-400 font-bold text-lg">
-            {Math.round(minAccuracy + (animatedProgress / 100) * (maxAccuracy - minAccuracy))}%
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {availableModules.map(mod => (
+          <div
+            key={mod.id}
+            onClick={() => mod.status === 'ready' && toggleModuleSelection(mod.id)}
+            className={`p-5 rounded-2xl border transition-all cursor-pointer relative overflow-hidden group ${selectedModules.includes(mod.id)
+              ? 'bg-blue-600/20 border-blue-500'
+              : mod.status === 'ready'
+                ? 'bg-white/5 border-white/5 hover:border-white/20'
+                : 'bg-white/5 border-white/5 opacity-50 cursor-not-allowed'
+              }`}
+          >
+            <div className="flex justify-between items-start mb-4">
+              <div
+                className={`p-3 rounded-xl`}
+                style={{ backgroundColor: selectedModules.includes(mod.id) ? mod.color : 'rgba(255,255,255,0.1)', color: selectedModules.includes(mod.id) ? 'white' : 'rgba(255,255,255,0.4)' }}
+              >
+                <Database size={20} />
+              </div>
+              {selectedModules.includes(mod.id) && <CheckCircle2 className="text-blue-400" size={20} />}
+            </div>
+
+            <h4 className="text-white font-bold text-lg mb-1">{mod.name}</h4>
+            <div className="flex items-center gap-2 text-xs font-medium text-white/40 mb-4">
+              <span>{mod.samples} Muestras</span>
+              <span>•</span>
+              <span>{mod.lastUpdate}</span>
+            </div>
+
+            {mod.status !== 'ready' && (
+              <div className="flex items-center gap-2 text-yellow-500 text-xs font-bold bg-yellow-500/10 px-3 py-2 rounded-lg">
+                <AlertTriangle size={12} /> Requiere más datos
+              </div>
+            )}
           </div>
-          <div className="text-white/60 text-xs">Precisión</div>
-        </div>
-        <div>
-          <div className="text-blue-400 font-bold text-lg">
-            {Math.round(animatedProgress * 2.5)}
+        ))}
+      </div>
+
+      <div className="flex justify-end pt-6 border-t border-white/5">
+        <button
+          onClick={startTraining}
+          disabled={selectedModules.length === 0}
+          className={`px-8 py-4 rounded-2xl font-black text-sm uppercase tracking-widest flex items-center gap-3 transition-all ${selectedModules.length > 0
+            ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-600/20 hover:scale-[1.02]'
+            : 'bg-white/5 text-white/20 cursor-not-allowed'
+            }`}
+        >
+          <Cpu size={18} /> Iniciar Entrenamiento
+        </button>
+      </div>
+    </div>
+  );
+
+  // 2. Dashboard de Entrenamiento
+  const renderTraining = () => (
+    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Gráficos */}
+        <div className="lg:col-span-2 space-y-6">
+
+          {/* Accuracy Chart Multi-Line */}
+          <div className="bg-slate-900/50 border border-white/10 rounded-3xl p-6">
+            <div className="flex justify-between items-center mb-6">
+              <h4 className="text-white font-bold flex items-center gap-2">
+                <CheckCircle2 className="text-green-400" size={18} /> Precisión por Módulo
+              </h4>
+            </div>
+            <div className="h-64 w-full min-h-[260px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={metricsHistory}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#ffffff10" vertical={false} />
+                  <XAxis dataKey="epoch" hide />
+                  <YAxis domain={[0, 100]} stroke="#ffffff40" fontSize={10} />
+                  <Tooltip
+                    contentStyle={{ backgroundColor: '#0f172a', border: '1px solid #ffffff20', borderRadius: '12px' }}
+                  />
+                  <Legend iconType="circle" wrapperStyle={{ paddingTop: '10px' }} />
+                  {/* Línea Global */}
+                  <Line type="monotone" dataKey="accuracy" name="Promedio Global" stroke="#ffffff" strokeWidth={2} dot={false} strokeDasharray="5 5" />
+
+                  {/* Líneas por Módulo */}
+                  {selectedModules.map(modId => {
+                    const mod = getModuleInfo(modId);
+                    return (
+                      <Line
+                        key={modId}
+                        type="monotone"
+                        dataKey={modId}
+                        name={mod.name}
+                        stroke={mod.color}
+                        strokeWidth={3}
+                        dot={false}
+                        isAnimationActive={false} // Para mejor rendimiento en updates rápidos
+                      />
+                    );
+                  })}
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
           </div>
-          <div className="text-white/60 text-xs">Épocas</div>
+
+          {/* Loss Chart */}
+          <div className="bg-slate-900/50 border border-white/10 rounded-3xl p-6">
+            <div className="flex justify-between items-center mb-2">
+              <h4 className="text-white font-bold flex items-center gap-2">
+                <Activity className="text-orange-400" size={18} /> Función de Pérdida
+              </h4>
+              <span className="text-orange-400 font-mono text-xs">
+                Loss: {metricsHistory[metricsHistory.length - 1]?.loss || '...'}
+              </span>
+            </div>
+            <div className="h-32 w-full min-h-[140px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={metricsHistory}>
+                  <defs>
+                    <linearGradient id="colorLoss" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#FB923C" stopOpacity={0.3} />
+                      <stop offset="95%" stopColor="#FB923C" stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#ffffff10" vertical={false} />
+                  <XAxis dataKey="epoch" hide />
+                  <YAxis stroke="#ffffff40" fontSize={10} tickFormatter={(val) => val.toFixed(1)} />
+                  <Area type="monotone" dataKey="loss" stroke="#FB923C" strokeWidth={2} fillOpacity={1} fill="url(#colorLoss)" isAnimationActive={false} />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+
+        </div>
+
+        {/* Metrics & Logs */}
+        <div className="space-y-6">
+          <div className="bg-white/5 border border-white/10 rounded-[2rem] p-6 text-center relative overflow-hidden">
+            <div className="relative z-10">
+              <div className="text-white/40 text-xs font-bold uppercase tracking-widest mb-2">Época Actual</div>
+              <div className="text-5xl font-black text-white mb-2">{currentEpoch}</div>
+              <div className="text-white/40 text-xs text-center">de {totalEpochs}</div>
+            </div>
+            {/* Progress Ring Background Simulated */}
+            <div className="absolute top-0 left-0 bg-blue-600/10 h-full transition-all duration-200" style={{ width: `${(currentEpoch / totalEpochs) * 100}%` }}></div>
+          </div>
+
+          <div className="bg-black/40 border border-white/10 rounded-[2rem] p-6 h-[400px] overflow-hidden flex flex-col font-mono text-xs">
+            <div className="flex items-center gap-2 text-white/40 mb-4 pb-2 border-b border-white/5">
+              <Terminal size={14} /> System Logs
+            </div>
+            <div className="flex-1 overflow-y-auto space-y-2 custom-scrollbar pr-2">
+              {logs.map((log, i) => (
+                <div key={i} className="text-white/70 break-all">
+                  <span className="text-blue-500 mr-2">[{new Date().toLocaleTimeString()}]</span>
+                  {log}
+                </div>
+              ))}
+              <div ref={logsEndRef} />
+            </div>
+          </div>
         </div>
       </div>
     </div>
   );
-};
 
-  // Cargar datos de módulos desde localStorage
-  useEffect(() => {
-    const savedData = localStorage.getItem('moduleCaptureData');
-    if (savedData) {
-      const data = JSON.parse(savedData);
-      setModuleData(data);
-      
-      // Generar resultados de entrenamiento basados en los datos capturados
-      const results = {};
-      Object.keys(data).forEach(moduleKey => {
-        const totalCaptured = data[moduleKey].elements.reduce((sum, el) => sum + el.captured, 0);
-        const totalTarget = data[moduleKey].elements.reduce((sum, el) => sum + el.target, 0);
-        const completionRate = totalTarget > 0 ? (totalCaptured / totalTarget) * 100 : 0;
-        
-        results[moduleKey] = {
-          accuracy: Math.min(99.9, 70 + (completionRate * 0.3)), // Simular precisión basada en datos
-          samples: totalCaptured,
-          progress: completionRate,
-          elements: data[moduleKey].elements.map(el => ({
-            name: el.name,
-            accuracy: Math.min(99.9, 65 + Math.random() * 30),
-            samples: el.captured
-          }))
-        };
-      });
-      setTrainingResults(results);
-    }
-  }, []);
+  // 3. Validación y Publicación
+  const renderValidation = () => (
+    <div className="max-w-5xl mx-auto space-y-8 animate-in zoom-in duration-500">
+      <div className="text-center space-y-4 py-8">
+        <div className="w-24 h-24 bg-green-500 rounded-full mx-auto flex items-center justify-center shadow-[0_0_50px_rgba(34,197,94,0.3)] animate-bounce">
+          <CheckCircle2 size={48} className="text-white" />
+        </div>
+        <h2 className="text-4xl font-black text-white">¡Modelo Entrenado!</h2>
+        <p className="text-white/60 text-lg">El nuevo modelo ha alcanzado un <strong>98.4%</strong> de precisión promedio.</p>
+      </div>
 
-  const moduleNames = {
-    vocals: 'Vocales',
-    numbers: 'Números',
-    alphabet: 'Abecedario',
-    math: 'Signos Matemáticos',
-    words: 'Palabras'
-  };
+      {/* Resumen de Modelos a Publicar */}
+      <div className="bg-white/5 border border-white/10 rounded-[2.5rem] p-8">
+        <h3 className="text-white font-bold text-lg mb-6 flex items-center gap-3">
+          <Package className="text-blue-400" />
+          Módulos incluidos en esta versión
+        </h3>
 
-  const startTraining = () => {
-    setTrainingStatus('training');
-    let progress = 0;
-    const interval = setInterval(() => {
-      progress += Math.random() * 5;
-      if (progress >= 100) {
-        progress = 100;
-        clearInterval(interval);
-        setTimeout(() => {
-          setTrainingStatus('completed');
-          // Mejorar resultados después del entrenamiento
-          const improvedResults = { ...trainingResults };
-          Object.keys(improvedResults).forEach(moduleKey => {
-            improvedResults[moduleKey].accuracy = Math.min(99.9, improvedResults[moduleKey].accuracy + Math.random() * 5);
-          });
-          setTrainingResults(improvedResults);
-        }, 1000);
-      }
-      setTrainingProgress(progress);
-    }, 300);
-  };
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
+          {selectedModules.map(modId => {
+            const mod = getModuleInfo(modId);
+            // Simular métrica final para este módulo (tomada del historial o al azar alto)
+            const finalAcc = metricsHistory.length > 0 ? metricsHistory[metricsHistory.length - 1][modId] : '99.0';
 
-  const stopTraining = () => {
-    setTrainingStatus('idle');
-    setTrainingProgress(0);
-  };
+            return (
+              <div key={modId} className="flex items-center gap-4 bg-black/20 p-4 rounded-2xl border border-white/5">
+                <div className="w-12 h-12 rounded-xl flex items-center justify-center font-bold text-white shadow-lg" style={{ backgroundColor: mod.color }}>
+                  {mod.name.charAt(0)}
+                </div>
+                <div>
+                  <h4 className="text-white font-bold">{mod.name}</h4>
+                  <div className="text-green-400 text-xs font-bold">Acc: {finalAcc}%</div>
+                </div>
+                <CheckCircle2 size={20} className="text-green-500 ml-auto" />
+              </div>
+            );
+          })}
+        </div>
 
-  const saveModel = () => {
-    // Guardar modelo entrenado
-    localStorage.setItem('trainedModel', JSON.stringify({
-      timestamp: new Date().toISOString(),
-      results: trainingResults
-    }));
-    alert('Modelo guardado exitosamente!');
-  };
-
-  const hasDataToTrain = Object.keys(moduleData).length > 0 && 
-    Object.values(moduleData).some(module => 
-      module.elements.some(el => el.captured > 0)
-    );
-
-  return (
-    <div className="bg-white/10 backdrop-blur-xl rounded-2xl p-6 border border-white/20">
-      <div className="flex items-center justify-between mb-6">
-        <h2 className="text-xl font-bold text-white flex items-center gap-2">
-          <Cpu size={24} />
-          Entrenamiento del Modelo IA
-        </h2>
-        <div className="flex items-center gap-4">
-          <div className="bg-green-500/20 text-green-400 px-3 py-1 rounded-full text-sm font-semibold">
-            Modelo: v2.1.4
+        <div className="grid grid-cols-3 gap-6 pt-6 border-t border-white/5">
+          <div className="text-center">
+            <div className="text-white/40 text-xs font-bold uppercase tracking-widest mb-1">Muestras Totales</div>
+            <div className="text-2xl font-black text-white">
+              {selectedModules.reduce((acc, id) => acc + getModuleInfo(id).samples, 0)}
+            </div>
           </div>
-          {hasDataToTrain && (
-            <button 
-              onClick={saveModel}
-              className="bg-blue-500 text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-blue-600 transition-colors"
-            >
-              <Save size={16} />
-              Guardar Modelo
-            </button>
-          )}
+          <div className="text-center">
+            <div className="text-white/40 text-xs font-bold uppercase tracking-widest mb-1">Pérdida (Loss)</div>
+            <div className="text-2xl font-black text-orange-400">0.0241</div>
+          </div>
+          <div className="text-center">
+            <div className="text-white/40 text-xs font-bold uppercase tracking-widest mb-1">Tamaño Est.</div>
+            <div className="text-2xl font-black text-blue-400">14.2 MB</div>
+          </div>
         </div>
       </div>
 
-      {!hasDataToTrain ? (
-        <div className="text-center py-12">
-          <BarChart3 size={64} className="mx-auto text-white/40 mb-4" />
-          <h3 className="text-white text-lg mb-2">No hay datos para entrenar</h3>
-          <p className="text-white/60">Captura datos en la sección de Captura de Datos primero</p>
+      <div className="bg-slate-900 border border-white/10 rounded-3xl p-8 flex items-center justify-between gap-8 shadow-2xl">
+        <div className="flex-1">
+          <h4 className="text-white font-bold text-lg mb-2">Publicar Versión 2.0</h4>
+          <p className="text-white/40 text-sm">Al publicar, estos {selectedModules.length} módulos estarán inmediatamente disponibles para el reconocimiento en tiempo real.</p>
         </div>
-      ) : (
-        <>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-            {/* Panel de control de entrenamiento */}
-            <div className="space-y-4">
-              <div className="bg-white/5 rounded-lg p-4 border border-white/10">
-                <h3 className="text-white font-semibold mb-3">Control de Entrenamiento</h3>
-                
-                <div className="space-y-3">
-                  <div className="flex gap-2">
-                    <button 
-                      onClick={trainingStatus === 'training' ? stopTraining : startTraining}
-                      disabled={!hasDataToTrain}
-                      className={`flex-1 py-2 rounded-lg font-semibold transition-all ${
-                        !hasDataToTrain ? 'bg-gray-500 cursor-not-allowed' :
-                        trainingStatus === 'training' 
-                          ? 'bg-red-500 hover:bg-red-600' 
-                          : 'bg-green-500 hover:bg-green-600'
-                      } text-white flex items-center justify-center gap-2`}
-                    >
-                      {trainingStatus === 'training' ? (
-                        <>
-                          <Square size={16} />
-                          Detener Entrenamiento
-                        </>
-                      ) : (
-                        <>
-                          <Play size={16} />
-                          Iniciar Entrenamiento
-                        </>
-                      )}
-                    </button>
-                  </div>
+        <div className="flex gap-4">
+          <button
+            onClick={() => setStep('selection')}
+            className="px-6 py-4 rounded-2xl border border-white/10 text-white font-bold text-sm hover:bg-white/5"
+          >
+            Cancelar
+          </button>
+          <button
+            onClick={handlePublish}
+            className="px-8 py-4 rounded-2xl bg-white text-slate-900 font-black text-sm uppercase tracking-widest hover:bg-gray-200 transition-all shadow-xl shadow-white/10 flex items-center gap-2"
+          >
+            <Share2 size={18} />
+            Publicar Ahora
+          </button>
+        </div>
+      </div>
+    </div>
+  );
 
-                  {trainingStatus === 'training' && (
-                    <div className="space-y-2">
-                      <div className="flex justify-between text-white text-sm">
-                        <span>Progreso del entrenamiento:</span>
-                        <span>{Math.round(trainingProgress)}%</span>
-                      </div>
-                      <div className="w-full bg-white/20 rounded-full h-2">
-                        <div 
-                          className="bg-gradient-to-r from-green-400 to-blue-400 h-2 rounded-full transition-all duration-300"
-                          style={{ width: `${trainingProgress}%` }}
-                        ></div>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
+  return (
+    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
 
-              <div className="grid grid-cols-2 gap-4">
-                <div className="bg-white/5 rounded-lg p-3 text-center">
-                  <Clock size={20} className="mx-auto text-blue-400 mb-1" />
-                  <div className="text-white font-semibold">24.5h</div>
-                  <div className="text-white/60 text-xs">Tiempo total</div>
-                </div>
-                <div className="bg-white/5 rounded-lg p-3 text-center">
-                  <Award size={20} className="mx-auto text-green-400 mb-1" />
-                  <div className="text-white font-semibold">
-                    {Object.values(moduleData).reduce((total, module) => 
-                      total + module.elements.reduce((sum, el) => sum + el.captured, 0), 0
-                    )}
-                  </div>
-                  <div className="text-white/60 text-xs">Muestras totales</div>
-                </div>
-              </div>
-            </div>
-
-            {/* Métricas generales */}
-            <div className="bg-white/5 rounded-lg p-4 border border-white/10">
-              <h3 className="text-white font-semibold mb-4 flex items-center gap-2">
-                <TrendingUp size={20} />
-                Métricas Generales del Modelo
-              </h3>
-              
-              <div className="space-y-3">
-                {[
-                  { 
-                    label: 'Precisión General', 
-                    value: Object.values(trainingResults).reduce((acc, curr) => acc + curr.accuracy, 0) / Object.keys(trainingResults).length || 0,
-                    color: 'green' 
-                  },
-                  { 
-                    label: 'Muestras Totales', 
-                    value: Object.values(trainingResults).reduce((acc, curr) => acc + curr.samples, 0),
-                    color: 'blue',
-                    isCount: true
-                  },
-                  { 
-                    label: 'Progreso Promedio', 
-                    value: Object.values(trainingResults).reduce((acc, curr) => acc + curr.progress, 0) / Object.keys(trainingResults).length || 0,
-                    color: 'purple' 
-                  }
-                ].map((metric, index) => (
-                  <div key={index}>
-                    <div className="flex justify-between text-white text-sm mb-1">
-                      <span>{metric.label}</span>
-                      <span>{metric.isCount ? metric.value : metric.value.toFixed(1)}{metric.isCount ? '' : '%'}</span>
-                    </div>
-                    <div className="w-full bg-white/20 rounded-full h-2">
-                      <div 
-                        className={`h-2 rounded-full transition-all duration-300 ${
-                          metric.color === 'green' ? 'bg-green-400' :
-                          metric.color === 'blue' ? 'bg-blue-400' :
-                          'bg-purple-400'
-                        }`}
-                        style={{ width: `${metric.isCount ? Math.min(100, (metric.value / 1000) * 100) : metric.value}%` }}
-                      ></div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
+      {/* Header Interactivo */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 bg-slate-900/40 backdrop-blur-xl border border-white/10 p-8 rounded-[2.5rem] shadow-2xl">
+        <div className="flex items-center gap-4">
+          <div className="p-4 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl shadow-lg shadow-indigo-500/20">
+            <Layers className="text-white" size={32} />
           </div>
-
-          {/* Gráficos por módulo */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {Object.keys(trainingResults).map(moduleKey => (
-              <div key={moduleKey} className="bg-white/5 rounded-lg p-4 border border-white/10">
-                <h3 className="text-white font-semibold mb-3 flex items-center gap-2">
-                  <BarChart3 size={18} />
-                  {moduleNames[moduleKey]}
-                </h3>
-                
-                <div className="space-y-2">
-                  <div className="flex justify-between text-white text-xs">
-                    <span>Precisión: {trainingResults[moduleKey].accuracy.toFixed(1)}%</span>
-                    <span>Muestras: {trainingResults[moduleKey].samples}</span>
-                  </div>
-                  
-                  {trainingResults[moduleKey].elements.map((element, idx) => (
-                    <div key={idx} className="flex items-center justify-between text-sm">
-                      <span className="text-white/80 w-20 truncate">{element.name}</span>
-                      <div className="flex-1 mx-2">
-                        <div className="w-full bg-white/20 rounded-full h-1">
-                          <div 
-                            className="bg-gradient-to-r from-green-400 to-blue-400 h-1 rounded-full"
-                            style={{ width: `${element.accuracy}%` }}
-                          ></div>
-                        </div>
-                      </div>
-                      <span className="text-white/60 text-xs w-12 text-right">
-                        {element.accuracy.toFixed(0)}%
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            ))}
+          <div>
+            <h2 className="text-2xl font-bold text-white tracking-tight">Centro de Entrenamiento</h2>
+            <p className="text-white/40 text-sm">Pipeline de Machine Learning y gestión de modelos</p>
           </div>
-        </>
-      )}
+        </div>
+
+        {/* Stepper Wizard */}
+        <div className="flex items-center bg-black/20 rounded-full p-2 border border-white/5">
+          {['selection', 'training', 'validation'].map((s, i) => (
+            <div key={s} className="flex items-center">
+              <div className={`px-4 py-2 rounded-full text-xs font-bold uppercase tracking-widest transition-all ${step === s ? 'bg-white text-black' :
+                (['selection', 'training', 'validation'].indexOf(step) > i) ? 'text-green-400' : 'text-white/20'
+                }`}>
+                {s === 'selection' ? 'Datos' : s === 'training' ? 'Entreno' : 'Validación'}
+              </div>
+              {i < 2 && <ChevronRight size={14} className="text-white/10 mx-1" />}
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Main Content */}
+      <div className="min-h-[500px]">
+        {step === 'selection' && renderSelection()}
+        {step === 'training' && renderTraining()}
+        {step === 'validation' && renderValidation()}
+      </div>
+
+      <style>{`
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.1); border-radius: 10px; }
+      `}</style>
     </div>
   );
 };
