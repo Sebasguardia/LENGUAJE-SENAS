@@ -53,20 +53,29 @@ const Login = () => {
       // 2. Obtener Perfil
       const userData = await authService.getMeWithToken(tempToken);
 
-      // Check Maintenance
-      const config = JSON.parse(localStorage.getItem('public_config') || '{}');
-      const isMaint = String(config.maintenance_mode).toLowerCase() === 'true';
-      const isAdminUser = userData.role === 'admin' || userData.role === 'super_admin' || userData.role === 'superadmin';
+      // Helper para validar si es administrador real
+      const checkIsAdmin = (u) => {
+        const r = u?.role?.toLowerCase();
+        return r === 'admin' || r === 'super_admin' || r === 'superadmin';
+      };
 
-      if (isMaint && !isAdminUser) {
-        setShowMaintenanceModal(true);
+      const isAdminUser = checkIsAdmin(userData);
+
+      // --- RESTRICCIÓN DE ACCESO SEGÚN ROL SELECCIONADO ---
+
+      // 1. Si eligió ADMINISTRADOR pero es un usuario normal -> BLOQUEAR
+      if (role === 'admin' && !isAdminUser) {
+        setError(`Acceso denegado. La cuenta ${email} no tiene privilegios administrativos.`);
         setIsLoading(false);
         return;
       }
 
-      // Check Role
-      if (role === 'admin' && !isAdminUser) {
-        setError(`Acceso denegado. Tu cuenta no tiene permisos administrativos.`);
+      // Check Maintenance
+      const config = JSON.parse(localStorage.getItem('public_config') || '{}');
+      const isMaint = String(config.maintenance_mode).toLowerCase() === 'true';
+
+      if (isMaint && !isAdminUser) {
+        setShowMaintenanceModal(true);
         setIsLoading(false);
         return;
       }
@@ -83,18 +92,24 @@ const Login = () => {
 
       // B. Check 2FA
       if (userData.is_2fa_enabled) {
-        setTempTokenData({ token: tempToken, user: userData });
+        setTempTokenData({ token: tempToken, user: userData, selectedRole: role });
         setShow2FAModal(true);
         setIsLoading(false);
         return;
       }
 
-      // 3. Login Normal
+      // 3. Login Exitoso - Guardar sesión
       localStorage.setItem('token', tempToken);
       localStorage.setItem('userData', JSON.stringify(userData));
 
-      if (isAdminUser) navigate('/admin');
-      else navigate('/dashboard');
+      // Redirección inteligente: 
+      // Si eligió admin y lo es -> /admin
+      // Si eligió usuario (siendo admin o no) -> /dashboard
+      if (role === 'admin' && isAdminUser) {
+        navigate('/admin');
+      } else {
+        navigate('/dashboard');
+      }
 
     } catch (err) {
       console.error('Login error:', err);
@@ -111,13 +126,17 @@ const Login = () => {
     if (twoFACode === '123456') { // Código de demo
       localStorage.setItem('token', tempTokenData.token);
       localStorage.setItem('userData', JSON.stringify(tempTokenData.user));
-      toast.success("Verificación 2FA Exitosa");
 
-      const isAdmin = tempTokenData.user.role === 'admin' || tempTokenData.user.role === 'super_admin';
-      if (isAdmin) navigate('/admin');
-      else navigate('/dashboard');
+      // Aplicar misma lógica de redirección que en el login normal
+      const isAdminUser = tempTokenData.user.role === 'admin' || tempTokenData.user.role === 'super_admin' || tempTokenData.user.role === 'superadmin';
+
+      if (tempTokenData.selectedRole === 'admin' && isAdminUser) {
+        navigate('/admin');
+      } else {
+        navigate('/dashboard');
+      }
     } else {
-      toast.error("Código incorrecto. Prueba con 123456 (Demo)");
+      setError("Código 2FA incorrecto. Prueba con 123456");
     }
   };
 

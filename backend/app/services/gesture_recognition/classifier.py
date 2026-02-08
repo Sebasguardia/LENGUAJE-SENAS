@@ -7,15 +7,25 @@ from app.models.content import Element
 
 class GestureClassifier:
     def __init__(self):
-        self.templates = {} # Dict de {nombre_seña: vector_normalizado}
         self.processor = GestureProcessor()
         self.is_trained = False
+        self.global_templates = {}  # Templates globales
+        self.module_cache = {}      # Cache de {module_slug: templates_dict}
+        self.templates = {}         # Templates activos de la última operación
 
     def load_templates(self, db: Session, module_slug: Optional[str] = None):
         """
-        ENTRENAMIENTO: Carga capturas, limpia outliers y genera modelos maestros (templates).
-        Utiliza desviación estándar para eliminar datos ruidosos y mejorar la precisión.
+        ENTRENAMIENTO: Carga capturas y genera modelos maestros (templates).
+        Implementa caché para evitar re-entrenamiento constante.
         """
+        # Si ya tenemos este módulo en caché, no re-entrenar
+        if module_slug and module_slug in self.module_cache:
+            self.templates = self.module_cache[module_slug]
+            return
+        elif not module_slug and self.is_trained:
+            self.templates = self.global_templates
+            return
+
         try:
             query = db.query(HandCapture)
             if module_slug:
@@ -25,6 +35,7 @@ class GestureClassifier:
             captures = query.all()
             
             if not captures:
+                # Si no hay capturas para el módulo, usamos las globales como fallback
                 if module_slug:
                     self.load_templates(db, None)
                 return
@@ -32,71 +43,62 @@ class GestureClassifier:
             new_templates = {}
             temp_data = {}
             
-            # 1. Agrupar datos crudos
+            # 1. Agrupar y normalizar
             for cap in captures:
                 label = cap.element.name.lower()
                 if not label: continue 
                 if label not in temp_data:
                     temp_data[label] = []
                 
-                # Normalizar
                 normalized = self.processor.normalize_landmarks(cap.landmarks)
                 temp_data[label].append(normalized)
             
-            # 2. Refinamiento Estadístico (Entrenamiento)
-            print(f"--- Iniciando Entrenamiento ({module_slug or 'Global'}) ---")
+            # 2. Refinamiento Estadístico
             for label, vectors in temp_data.items():
                 if not vectors: continue
-                
                 vector_stack = np.array(vectors)
-                
-                # A. Calcular centroide inicial
                 initial_mean = np.mean(vector_stack, axis=0)
                 
-                # B. Detectar Outliers (Muestras malas)
-                # Calculamos distancia de cada muestra al centroide
                 distances = np.linalg.norm(vector_stack - initial_mean, axis=1)
-                
-                # Criterio: Descartar muestras más allá de 1.5 desviaciones estándar
                 mean_dist = np.mean(distances)
                 std_dist = np.std(distances)
                 threshold = mean_dist + (1.5 * std_dist)
                 
-                # Filtrar vectores buenos
                 clean_vectors = vector_stack[distances < threshold]
                 
-                # C. Generar Template Final (Promedio Refinado)
                 if len(clean_vectors) > 0:
-                    final_template = np.mean(clean_vectors, axis=0)
-                    new_templates[label] = final_template
-                    
-                    # Métricas de entrenamiento
-                    discarded = len(vector_stack) - len(clean_vectors)
-                    quality = 100 - (discarded / len(vector_stack) * 100)
-                    print(f"  > Clase '{label}': {len(clean_vectors)}/{len(vector_stack)} muestras usadas. Calidad: {quality:.1f}%")
+                    new_templates[label] = np.mean(clean_vectors, axis=0)
                 else:
-                    # Fallback si todo es muy disperso
                     new_templates[label] = initial_mean
             
-            # 3. Actualizar Modelo en Memoria
+            # 3. Guardar en Caché
             if module_slug:
+                self.module_cache[module_slug] = new_templates
                 self.templates = new_templates
             else:
-                self.templates.update(new_templates)
-            
-            self.is_trained = True
-            print(f"--- Entrenamiento Completado. {len(self.templates)} modelos optimizados. ---")
+                self.global_templates = new_templates
+                self.templates = new_templates
+                self.is_trained = True
+                
+            print(f"--- Entrenamiento completado para: {module_slug or 'Global'} ({len(new_templates)} clases) ---")
             
         except Exception as e:
             print(f"Error Crítico en Entrenamiento: {e}")
 
     def predict(self, raw_landmarks: List[Dict[str, float]], db: Optional[Session] = None, module_slug: Optional[str] = None, expected_label: Optional[str] = None) -> Dict:
         """
-        Recibe landmarks y devuelve la seña más probable + top 3.
-        Si se provee expected_label, devuelve la confianza específicamente para esa seña.
+        Recibe landmarks y devuelve la seña más probable.
+        Usa caché de modelos para máximo rendimiento (millonésimas de segundo).
         """
-        if (not self.is_trained or module_slug) and db:
-            self.load_templates(db, module_slug)
+        # Carga inteligente: Solo consulta la DB si el módulo no está en memoria
+        if db:
+            if module_slug:
+                if module_slug not in self.module_cache:
+                    self.load_templates(db, module_slug)
+                else:
+                    self.templates = self.module_cache[module_slug]
+            elif not self.is_trained:
+                self.load_templates(db, None)
 
         if not self.templates:
             return {
@@ -108,11 +110,9 @@ class GestureClassifier:
 
         normalized = self.processor.normalize_landmarks(raw_landmarks)
         
-        # Calcular distancias para todos los templates
         results = []
         for label, template in self.templates.items():
             dist = self.processor.calculate_distance(normalized, template)
-            # Normalizar confianza: 2.5 es distancia máxima aproximada (ajustado para ser más indulgente)
             conf = max(0, 1 - (dist / 2.5))
             results.append({
                 "name": label,
@@ -120,13 +120,11 @@ class GestureClassifier:
                 "distance": dist
             })
         
-        # Ordenar por confianza (mayor a menor)
         results.sort(key=lambda x: x["confidence"], reverse=True)
         
         best_match_item = results[0]
         top_3 = results[:3]
         
-        # Si hay una seña esperada, calcular su confianza específica si no es la primera
         target_confidence = best_match_item["confidence"]
         if expected_label:
             target_label = expected_label.lower()

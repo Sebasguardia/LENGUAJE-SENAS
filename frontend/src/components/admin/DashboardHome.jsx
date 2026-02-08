@@ -29,69 +29,71 @@ const DashboardHome = () => {
             try {
                 setIsLoading(true);
 
-                // 1. Obtener distribución de capturas por MÓDULO
-                const moduleDist = await adminService.getModuleDistribution();
-                setModuleDistribution(moduleDist.map(d => ({
-                    name: d.label,
-                    capturado: d.value,
-                    objetivo: 250
-                })));
-
-                // 2. Obtener Top Estudiantes (Nuevo)
-                try {
-                    const topUsers = await adminService.getTopStudents();
-                    setTopStudents(topUsers);
-                } catch (e) {
-                    console.error("Error fetching top students", e);
-                    setTopStudents([]);
-                }
-
-                // 3. Obtener Progreso Semanal (Nuevo)
-                try {
-                    const weekly = await adminService.getWeeklyProgress();
-                    setWeeklyProgress(weekly);
-                } catch (e) {
-                    console.error("Error fetching weekly progress", e);
-                    setWeeklyProgress([]);
-                }
-
-                // 4. Obtener estadísticas generales reales
-                const genStats = await adminService.getGeneralStats();
-
-                setStats([
-                    {
-                        label: 'Imágenes Totales',
-                        value: genStats.total_captures.toLocaleString(),
-                        subValue: `${genStats.captures_today || 0} capturadas hoy`,
-                        icon: Camera,
-                        color: 'blue',
-                        trend: 'Dataset Real'
-                    },
-                    {
-                        label: 'Módulos Publicados',
-                        value: `${genStats.published_modules} / ${genStats.total_modules}`,
-                        subValue: `${genStats.total_modules - genStats.published_modules} módulos en borrador`,
-                        icon: BookOpen,
-                        color: 'green',
-                        trend: 'En Vivo'
-                    },
-                    {
-                        label: 'Usuarios Activos',
-                        value: genStats.total_users,
-                        subValue: 'Estudiantes en plataforma',
-                        icon: Users,
-                        color: 'purple',
-                        trend: 'Crecimiento'
-                    },
-                    {
-                        label: 'Precisión Motor IA',
-                        value: `${genStats.avg_accuracy}%`,
-                        subValue: 'Promedio global histórico',
-                        icon: Cpu,
-                        color: 'yellow',
-                        trend: 'Optimizado'
-                    }
+                // OPTIMIZACIÓN: Lanzar todas las peticiones al mismo tiempo
+                const results = await Promise.allSettled([
+                    adminService.getModuleDistribution(),
+                    adminService.getTopStudents(),
+                    adminService.getWeeklyProgress(),
+                    adminService.getGeneralStats()
                 ]);
+
+                // 1. Distribución (results[0])
+                if (results[0].status === 'fulfilled') {
+                    setModuleDistribution(results[0].value.map(d => ({
+                        name: d.label,
+                        capturado: d.value,
+                        objetivo: 250
+                    })));
+                }
+
+                // 2. Top Estudiantes (results[1])
+                if (results[1].status === 'fulfilled') {
+                    setTopStudents(results[1].value);
+                }
+
+                // 3. Progreso Semanal (results[2])
+                if (results[2].status === 'fulfilled') {
+                    setWeeklyProgress(results[2].value);
+                }
+
+                // 4. Estadísticas Generales (results[3])
+                if (results[3].status === 'fulfilled') {
+                    const genStats = results[3].value;
+                    setStats([
+                        {
+                            label: 'Imágenes Totales',
+                            value: genStats.total_captures.toLocaleString(),
+                            subValue: `${genStats.captures_today || 0} capturadas hoy`,
+                            icon: Camera,
+                            color: 'blue',
+                            trend: 'Dataset Real'
+                        },
+                        {
+                            label: 'Módulos Publicados',
+                            value: `${genStats.published_modules} / ${genStats.total_modules}`,
+                            subValue: `${genStats.total_modules - genStats.published_modules} módulos en borrador`,
+                            icon: BookOpen,
+                            color: 'green',
+                            trend: 'En Vivo'
+                        },
+                        {
+                            label: 'Usuarios Activos',
+                            value: genStats.total_users,
+                            subValue: 'Estudiantes en plataforma',
+                            icon: Users,
+                            color: 'purple',
+                            trend: 'Crecimiento'
+                        },
+                        {
+                            label: 'Precisión Motor IA',
+                            value: `${genStats.avg_accuracy}%`,
+                            subValue: 'Promedio global histórico',
+                            icon: Cpu,
+                            color: 'yellow',
+                            trend: 'Optimizado'
+                        }
+                    ]);
+                }
 
             } catch (error) {
                 console.error("Error cargando dashboard admin:", error);

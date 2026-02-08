@@ -105,40 +105,58 @@ def register_new_user(
     user_in: schemas.UserCreate,
 ) -> Any:
     """
-    Create new user.
+    Registrar un nuevo usuario en el sistema.
     """
-    # 1. Verificar si existe
+    # 1. Verificar si el email ya está en uso
     user = db.query(User).filter(User.email == user_in.email).first()
     if user:
         raise HTTPException(
             status_code=400,
-            detail="The user with this username already exists in the system.",
+            detail="El correo electrónico ya se encuentra registrado.",
         )
         
-    # 2. Crear usuario
-    user = User(
-        email=user_in.email,
-        hashed_password=security.get_password_hash(user_in.password),
-        full_name=user_in.full_name,
-        dni=user_in.dni,
-        phone=user_in.phone,
-        role="user", # Forzar user por seguridad pública
-        status="active",
-        avatar_initials=user_in.full_name[:2].upper() if user_in.full_name else "??"
-    )
+    # 2. Crear instancia de usuario
+    try:
+        # Generar iniciales de avatar de forma segura
+        initials = "??"
+        if user_in.full_name and len(user_in.full_name) > 0:
+            initials = user_in.full_name[:2].upper()
 
-    db.add(user)
-    db.commit()
-    db.refresh(user)
+        user = User(
+            email=user_in.email,
+            hashed_password=security.get_password_hash(user_in.password),
+            full_name=user_in.full_name,
+            dni=user_in.dni,
+            phone=user_in.phone,
+            role="user",
+            status="active",
+            avatar_initials=initials
+        )
 
-    from app.utils.notifications import notify_all_admins
-    notify_all_admins(
-        db,
-        title="NUEVO USUARIO",
-        message=f"El usuario {user.full_name} ({user.email}) se ha registrado.",
-        type="success",
-        category="user"
-    )
+        db.add(user)
+        db.commit()
+        db.refresh(user)
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(
+            status_code=500, 
+            detail=f"Error crítico al guardar el perfil: {str(e)}"
+        )
+
+    # 3. Notificación administrativa (Opcional, no bloquea el registro)
+    try:
+        from app.utils.notifications import notify_all_admins
+        notify_all_admins(
+            db,
+            title="NUEVO USUARIO",
+            message=f"El usuario {user.full_name} ({user.email}) se ha registrado exitosamente.",
+            type="success",
+            category="user"
+        )
+    except Exception:
+        # Si falla la notificación interna (ej. por secuencias), el usuario no debería enterarse
+        # ya que su registro fue exitoso.
+        pass
 
     return user
 

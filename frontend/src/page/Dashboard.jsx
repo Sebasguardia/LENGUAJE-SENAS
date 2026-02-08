@@ -46,49 +46,70 @@ const Dashboard = () => {
   const fetchDashboardData = async () => {
     try {
       setIsLoading(true);
-      // 1. Obtener User Actualizado
-      const user = await authService.getMe();
-      setCurrentUser(user);
 
-      // 2. Obtener Ranking Real
-      const ranking = await progressService.getRanking(5);
-      setTopRanking(ranking.map((u, idx) => ({
-        ...u,
-        name: u.full_name,
-        avatar: u.avatar_initials || u.full_name.charAt(0).toUpperCase(),
-        color: idx === 0 ? 'bg-yellow-500' : idx === 1 ? 'bg-slate-300' : idx === 2 ? 'bg-orange-500' : 'bg-blue-500/20'
-      })));
+      // OPTIMIZACIÓN: Realizar todas las peticiones en paralelo para evitar latencia acumulada
+      const results = await Promise.allSettled([
+        authService.getMe(),
+        progressService.getRanking(5),
+        progressService.getDashboardStats(),
+        progressService.getHistory(50),
+        moduleService.getModules()
+      ]);
 
-      // 3. Obtener Estadísticas Reales
-      const stats = await progressService.getDashboardStats();
-      setDashboardStats(stats);
+      // 1. Procesar Usuario
+      if (results[0].status === 'fulfilled') {
+        setCurrentUser(results[0].value);
+      }
 
-      // 4. Obtener Historial Real (Aumentamos el límite para el modal completo)
-      const history = await progressService.getHistory(50);
-      setUserHistory(history);
+      // 2. Procesar Ranking
+      if (results[1].status === 'fulfilled') {
+        const ranking = results[1].value;
+        setTopRanking(ranking.map((u, idx) => ({
+          ...u,
+          name: u.full_name,
+          avatar: u.avatar_initials || u.full_name.charAt(0).toUpperCase(),
+          color: idx === 0 ? 'bg-yellow-500' : idx === 1 ? 'bg-slate-300' : idx === 2 ? 'bg-orange-500' : 'bg-blue-500/20'
+        })));
+      }
 
-      // 5. Obtener Módulos Reales
-      const modsData = await moduleService.getModules();
-      setModules(modsData.sort((a, b) => a.order_index - b.order_index).map(m => {
-        const modProgress = stats.module_progress?.find(p => p.module_id == m.id);
-        return {
-          id: m.id,
-          slug: m.slug,
-          title: m.title,
-          description: m.description,
-          difficulty: m.difficulty,
-          elementsCount: m.elements_count,
-          duration: m.duration,
-          tags: m.tags ? m.tags.split(',') : [],
-          progress: modProgress ? Number(modProgress.progress) : 0,
-          precision: modProgress ? Number(modProgress.precision) : 0, // Nueva precisión persistente
-          is_locked: m.is_locked,
-          icon: iconMap[m.icon_name] || BookText
-        };
-      }));
+      // 3. Procesar Estadísticas
+      let stats = null;
+      if (results[2].status === 'fulfilled') {
+        stats = results[2].value;
+        setDashboardStats(stats);
+      }
+
+      // 4. Procesar Historial
+      if (results[3].status === 'fulfilled') {
+        setUserHistory(results[3].value);
+      }
+
+      // 5. Procesar Módulos (Depende de stats para el progreso)
+      if (results[4].status === 'fulfilled') {
+        const modsData = results[4].value;
+        const moduleProgress = stats?.module_progress || [];
+
+        setModules(modsData.sort((a, b) => a.order_index - b.order_index).map(m => {
+          const modProgress = moduleProgress.find(p => p.module_id == m.id);
+          return {
+            id: m.id,
+            slug: m.slug,
+            title: m.title,
+            description: m.description,
+            difficulty: m.difficulty,
+            elementsCount: m.elements_count,
+            duration: m.duration,
+            tags: m.tags ? m.tags.split(',') : [],
+            progress: modProgress ? Number(modProgress.progress) : 0,
+            precision: modProgress ? Number(modProgress.precision) : 0,
+            is_locked: m.is_locked,
+            icon: iconMap[m.icon_name] || BookText
+          };
+        }));
+      }
 
     } catch (err) {
-      console.error("Error loading dashboard data:", err);
+      console.error("Error al sincronizar el Dashboard:", err);
     } finally {
       setIsLoading(false);
     }

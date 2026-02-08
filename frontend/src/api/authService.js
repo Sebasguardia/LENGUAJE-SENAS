@@ -37,6 +37,22 @@ export const authService = {
     },
 
     getMe: async () => {
+        // OPTIMIZACIÓN SWR: Retornar datos cacheados inmediatamente para eliminar espera visual
+        const cached = localStorage.getItem('userData');
+        if (cached) {
+            // Retornamos el cache e iniciamos la actualización en segundo plano
+            const parsed = JSON.parse(cached);
+
+            // Llamada asíncrona "silenciosa" para actualizar el cache
+            apiClient.get('/auth/me').then(response => {
+                localStorage.setItem('userData', JSON.stringify(response.data));
+                window.dispatchEvent(new CustomEvent('user-profile-updated', { detail: response.data }));
+            }).catch(e => console.warn("Background profile sync failed", e));
+
+            return parsed;
+        }
+
+        // Si no hay cache, hacemos la petición normal
         const response = await apiClient.get('/auth/me');
         localStorage.setItem('userData', JSON.stringify(response.data));
         return response.data;

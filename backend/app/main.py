@@ -19,10 +19,16 @@ if not os.path.exists(uploads_dir):
     os.makedirs(uploads_dir)
 app.mount("/uploads", StaticFiles(directory=uploads_dir), name="uploads")
 
-# Configuración CORS (Permitir todo por ahora en desarrollo)
+# Configuración CORS adaptada para desarrollo y producción
+origins = [
+    "http://localhost:5173",    # Frontend local (Vite)
+    "http://127.0.0.1:5173",
+    "http://localhost:3000",
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"], # En prod cambiar a ["http://localhost:5173"]
+    allow_origins=origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

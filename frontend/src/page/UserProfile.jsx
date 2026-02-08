@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import {
     ArrowLeft, User, Mail, Phone, CreditCard, Calendar,
     Award, Target, Flame, Edit2,
-    Save, X, Lock, Shield, Medal, Crown, Zap, Play, Crosshair, Book, Clock, Trophy, Activity
+    Save, X, Lock, Shield, Medal, Crown, Zap, Play, Crosshair, Book, Clock, Trophy, Activity, History
 } from 'lucide-react';
 import { getGlobalRank } from '../data/achievements';
 import { authService } from '../api/authService';
@@ -15,8 +15,15 @@ import { toast } from 'react-hot-toast';
 const UserProfile = () => {
     const navigate = useNavigate();
     const [isEditing, setIsEditing] = useState(false);
-    const [userData, setUserData] = useState({});
-    const [isLoading, setIsLoading] = useState(true);
+    // --- Estado Inteligente (Carga desde Cache) ---
+    const [userData, setUserData] = useState(() => {
+        const stored = localStorage.getItem('userData');
+        return stored ? JSON.parse(stored) : {};
+    });
+
+    // Solo mostramos loader si NO hay nada en cache
+    const [isLoading, setIsLoading] = useState(!localStorage.getItem('userData'));
+
     const [userStats, setUserStats] = useState(null);
     const [categories, setCategories] = useState([]);
     const [realModules, setRealModules] = useState([]);
@@ -30,67 +37,56 @@ const UserProfile = () => {
 
     const fetchUserData = async () => {
         try {
-            setIsLoading(true);
+            // El fetch inicial suele ser instantáneo gracias al nuevo apiClient con cache
+            const results = await Promise.allSettled([
+                authService.getMe(),
+                achievementService.getUserAchievements(),
+                moduleService.getModules(),
+                progressService.getDashboardStats(),
+                progressService.getHistory(20)
+            ]);
 
-            // Fetch auth data first as it is critical
-            const user = await authService.getMe();
-            setUserData(user);
-            setFormData({
-                name: user.full_name || user.name || '',
-                phone: user.phone || '',
-                dni: user.dni || ''
-            });
-
-            // Try fetching achievements, but don't block if it fails
-            try {
-                const achievementsData = await achievementService.getUserAchievements();
-                if (achievementsData) {
-                    setUserStats(achievementsData.stats);
-                    setCategories(achievementsData.categories || []);
-                }
-            } catch (achError) {
-                console.warn("Could not fetch achievements:", achError);
-                // Optionally show a subtle toast or just ignore
+            // 1. Datos de Usuario
+            if (results[0].status === 'fulfilled') {
+                const user = results[0].value;
+                setUserData(user);
+                setFormData({
+                    name: user.full_name || user.name || '',
+                    phone: user.phone || '',
+                    dni: user.dni || ''
+                });
             }
 
-            // Fetch Real Module Progress & History
-            try {
-                const [allModules, stats, history] = await Promise.all([
-                    moduleService.getModules(),
-                    progressService.getDashboardStats(),
-                    progressService.getHistory(20)
-                ]);
+            // 2. Logros
+            if (results[1].status === 'fulfilled' && results[1].value) {
+                const achData = results[1].value;
+                setUserStats(achData.stats);
+                setCategories(achData.categories || []);
+            }
 
-                setRecentHistory(history || []);
+            // 3. Módulos y Estadísticas de Progreso
+            const allModules = results[2].status === 'fulfilled' ? results[2].value : [];
+            const stats = results[3].status === 'fulfilled' ? results[3].value : null;
 
-                if (allModules && stats.module_progress) {
-                    const modulesWithProgress = allModules.map(m => {
-                        const prog = stats.module_progress.find(p => p.module_id == m.id);
-                        return {
-                            ...m,
-                            progress: prog ? Number(prog.progress) : 0
-                        };
-                    });
+            if (allModules.length > 0 && stats?.module_progress) {
+                const modulesWithProgress = allModules.map(m => {
+                    const prog = stats.module_progress.find(p => p.module_id == m.id);
+                    return {
+                        ...m,
+                        progress: prog ? Number(prog.progress) : 0
+                    };
+                });
+                const sorted = [...modulesWithProgress].sort((a, b) => b.progress - a.progress);
+                setRealModules(sorted.slice(0, 4));
+            }
 
-                    // Sort by: 1. In progress (1-94%) -> 2. Not started (0%) -> 3. Completed (95%+)
-                    const sorted = [...modulesWithProgress].sort((a, b) => {
-                        const getScore = (p) => {
-                            if (p > 0 && p < 95) return 100 + p;
-                            if (p === 0) return 50;
-                            return p;
-                        };
-                        return getScore(b.progress) - getScore(a.progress);
-                    });
-
-                    setRealModules(sorted.slice(0, 4));
-                }
-            } catch (modError) {
-                console.warn("Could not fetch module progress:", modError);
+            // 4. Historial
+            if (results[4].status === 'fulfilled') {
+                setRecentHistory(results[4].value || []);
             }
 
         } catch (err) {
             console.error("Error loading profile:", err);
-            toast.error("No se pudieron cargar los datos del usuario");
         } finally {
             setIsLoading(false);
         }
@@ -98,6 +94,17 @@ const UserProfile = () => {
 
     useEffect(() => {
         fetchUserData();
+
+        // Escuchar actualizaciones silenciosas de cache en background
+        const handleCacheUpdate = (e) => {
+            const { url, data } = e.detail;
+            if (url.includes('/auth/me')) {
+                setUserData(data);
+            }
+        };
+
+        window.addEventListener('api-cache-updated', handleCacheUpdate);
+        return () => window.removeEventListener('api-cache-updated', handleCacheUpdate);
     }, []);
 
     const handleChange = (e) => {
