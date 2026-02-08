@@ -21,10 +21,15 @@ app.mount("/uploads", StaticFiles(directory=uploads_dir), name="uploads")
 
 # Configuración CORS adaptada para desarrollo y producción
 origins = [
-    "http://localhost:5173",    # Frontend local (Vite)
+    "http://localhost:5173",          # desarrollo local
     "http://127.0.0.1:5173",
     "http://localhost:3000",
+
+    # ✅ Tus dominios en Render (LOS IMPORTANTES)
+    "https://lenguaje-senas-5-we.onrender.com",   # TU FRONTEND ACTUAL
+    "https://lenguaje-senas.vercel.app",          # TU FRONTEND EN VERCEL (SI LO USAS)
 ]
+
 
 app.add_middleware(
     CORSMiddleware,
