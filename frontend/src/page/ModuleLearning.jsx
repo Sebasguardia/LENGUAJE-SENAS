@@ -239,6 +239,9 @@ const ModuleLearning = () => {
     // Tema de Color Seguro
     let themeColor = 'blue-500';
     let glowColor = 'rgba(59, 130, 246, 0.5)';
+    const glowShadowStyle = {
+    boxShadow: `0 0 10px ${glowColor}`
+    };
     if (moduleInfo && moduleInfo.color && typeof moduleInfo.color === 'string') {
         const parts = moduleInfo.color.split(' ');
         if (parts.length > 0) themeColor = parts[0].replace('from-', '');
@@ -525,7 +528,9 @@ const ModuleLearning = () => {
                     {/* Barra Record (Fondo tenue) */}
                     <div className="absolute inset-0 h-full bg-white/10 transition-all duration-700" style={{ width: `${recordProgress}%` }}></div>
                     {/* Barra Sesión (Brillante) */}
-                    <div className={`absolute inset-0 h-full bg-${themeColor} shadow-[0_0_10px_${glowColor}] transition-all duration-300 ease-out`} style={{ width: `${sessionProgressValue}%` }}></div>
+                    <div
+                        className={`absolute inset-0 h-full bg-${themeColor} transition-all duration-300 ease-out`}
+                        style={glowShadowStyle}></div>
                 </div>
 
                 <div className="flex items-center gap-2 sm:gap-4 shrink-0">
@@ -727,7 +732,10 @@ const ModuleLearning = () => {
                         </div>
                         <div className="h-1.5 w-full bg-slate-800 rounded-full overflow-hidden relative">
                             <div className="absolute inset-0 bg-white/10" style={{ width: `${recordProgress}%` }}></div>
-                            <div className={`absolute h-full bg-${themeColor} transition-all duration-300 shadow-[0_0_8px_${glowColor}]`} style={{ width: `${sessionProgressValue}%` }}></div>
+                            <div
+                            className={`absolute h-full bg-${themeColor} transition-all duration-300`}
+                            style={{ boxShadow: `0 0 8px ${glowColor}` }}
+                            ></div>
                         </div>
                     </div>
 
@@ -857,7 +865,11 @@ const ModuleLearning = () => {
                                             </div>
                                         )}
                                     </div>
-                                    {isCurrent && <div className={`absolute right-3 w-1.5 h-1.5 rounded-full bg-${themeColor} shadow-[0_0_8px_${glowColor}]`}></div>}
+                                    {isCurrent && <div
+                                        className={`absolute right-3 w-1.5 h-1.5 rounded-full bg-${themeColor}`}
+                                        style={{ boxShadow: `0 0 8px ${glowColor}` }}
+                                        ></div>
+                                    }
                                 </button>
                             );
                         })}

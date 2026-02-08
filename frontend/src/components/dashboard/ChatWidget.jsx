@@ -160,31 +160,28 @@ const ChatWidget = ({ userStats, currentUser, allModules = [], onSpeak, isMuted 
                 return quotes[Math.floor(Math.random() * quotes.length)];
 
             // Logic for Dynamic Module Info
-            case (actionId.startsWith('info_mod_') ? actionId : null):
-                const modId = actionId.replace('info_mod_', '');
-                const mod = allModules.find(m => m.id == modId);
-                if (!mod) return "No encuentro los detalles de ese módulo ahorita. ¡Pero inténtalo, te gustará!";
-
-                let modStatus = mod.is_locked ? "🔒 Bloqueado (falta contenido)" : "✅ Disponible";
-                if (mod.progress >= 100) modStatus = "🏆 Completado al 100%";
-                else if (mod.progress > 0) modStatus = `⏳ En progreso (${mod.progress}%)`;
-
-                return `El módulo "${mod.title}" es de dificultad ${mod.difficulty}. Tiene ${mod.elementsCount} elementos para aprender y dura aprox. ${mod.duration}. Estado actual: ${modStatus}.`;
-
-            case 'explain_xp':
-                return `Tienes un total de ${userStats?.totalXP || 0} XP. Ganarás XP así: 10 XP por cada sesión perfecta, 5 XP por racha diaria y 2 XP por cada seña nueva capturada en el Traductor Libre. ¡Haz sesiones con precisión mayor al 90% para bonos extra!`;
-
-            case 'wait_mods':
-                return "Dame un segundo, estoy sincronizando la lista de módulos desde nuestra base de datos...";
-
             default:
                 if (actionId.startsWith('info_mod_')) {
-                    const id = actionId.replace('info_mod_', '');
-                    const m = allModules.find(x => x.id == id);
-                    return m ? `Módulo ${m.title}: ${m.description}` : "¿Qué módulo te interesa?";
+                    const modId = actionId.replace('info_mod_', '');
+                    const mod = allModules.find(m => m.id == modId);
+
+                    if (!mod) {
+                        return "No encuentro los detalles de ese módulo ahora, intenta nuevamente.";
+                    }
+
+                    let modStatus = mod.is_locked
+                        ? "🔒 Bloqueado (falta contenido)"
+                        : "✅ Disponible";
+
+                    if (mod.progress >= 100) modStatus = "🏆 Completado al 100%";
+                    else if (mod.progress > 0) modStatus = `⏳ En progreso (${mod.progress}%)`;
+
+                    return `El módulo "${mod.title}" es de dificultad ${mod.difficulty}. Tiene ${mod.elementsCount} elementos para aprender y dura aprox. ${mod.duration}. Estado actual: ${modStatus}.`;
                 }
+
                 return "Entendido. ¿Hay algo más en lo que pueda apoyarte?";
-        }
+                        
+                    }
     };
 
     return (
