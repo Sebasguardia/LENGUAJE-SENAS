@@ -1,0 +1,24 @@
+services:
+  - type: web
+    name: lenguaje-senas-backend
+    env: python
+    pythonVersion: 3.11
+    plan: free
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: >
+      alembic -c alembic.ini upgrade head &&
+      uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: DATABASE_URL
+        scope: run
+      - key: SECRET_KEY
+        scope: run
+      - key: ALGORITHM
+        value: HS256
+      - key: ACCESS_TOKEN_EXPIRE_MINUTES
+        value: "10080"
+      - key: FIRST_SUPERUSER
+        scope: run
+      - key: FIRST_SUPERUSER_PASSWORD
+        scope: run
