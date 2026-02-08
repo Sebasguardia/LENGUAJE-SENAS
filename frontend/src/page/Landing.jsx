@@ -380,14 +380,21 @@ const Landing = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-purple-900 flex flex-col relative overflow-hidden">
-      {/* Canvas Background */}
+    <div className="min-h-screen bg-slate-950 flex flex-col relative overflow-hidden font-sans selection:bg-blue-500/30 text-white">
+      {/* Background Ambient Glow (Matching Dashboard) */}
+      <div className="fixed inset-0 z-0 pointer-events-none">
+        <div className="absolute top-[-20%] left-[-10%] w-[70%] h-[70%] bg-blue-600/10 rounded-full blur-[160px] animate-pulse"></div>
+        <div className="absolute bottom-[-10%] right-[-10%] w-[60%] h-[60%] bg-purple-600/10 rounded-full blur-[160px] animate-pulse duration-[5s]"></div>
+        <div className="absolute inset-0 opacity-[0.03]" style={{ backgroundImage: 'radial-gradient(#ffffff 1px, transparent 1px)', backgroundSize: '35px 35px' }}></div>
+      </div>
+
+      {/* Canvas Background (Neural Network) - Manteniendo animación original */}
       <canvas
         ref={canvasRef}
-        className="absolute inset-0 z-0 pointer-events-none"
+        className="absolute inset-0 z-0 pointer-events-none opacity-40 mix-blend-screen"
       />
 
-      {/* Floating Elements Mejorados */}
+      {/* Floating Elements (Manteniendo lógica original pero ajustada al nuevo tema) */}
       <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden">
         {/* Partículas que siguen el cursor */}
         {[...Array(3)].map((_, i) => (
@@ -401,37 +408,18 @@ const Landing = () => {
           />
         ))}
 
-        {/* Elementos flotantes animados */}
-        {[...Array(8)].map((_, i) => (
-          <div
-            key={i}
-            className="floating-element absolute rounded-full opacity-20"
-            style={{
-              width: `${100 + Math.random() * 200}px`,
-              height: `${100 + Math.random() * 200}px`,
-              top: `${Math.random() * 100}%`,
-              left: `${Math.random() * 100}%`,
-              background: `radial-gradient(circle, 
-                hsl(${200 + i * 20}, 70%, 60%) 0%, 
-                transparent 70%)`,
-              animationDelay: `${i * 2}s`,
-              filter: 'blur(40px)'
-            }}
-          />
-        ))}
-
         {/* Hand Signs Floating Mejorado */}
         {[Hand, HandMetal, ThumbsUp, MousePointer2, Star, Zap, Sparkles, HeartHandshake].map((Icon, i) => (
           <div
             key={i}
-            className="floating-element absolute opacity-10"
+            className="floating-element absolute opacity-10 text-white/20"
             style={{
               left: `${Math.random() * 100}%`,
               top: `${Math.random() * 100}%`,
               animationDelay: `${i * 3}s`,
             }}
           >
-            <Icon size={64} className="text-white" />
+            <Icon size={64} />
           </div>
         ))}
       </div>
@@ -770,7 +758,7 @@ const Landing = () => {
       </footer>
 
       {/* Custom CSS Animations */}
-      <style jsx>{`
+      <style>{`
         @keyframes float-slow {
           0%, 100% { transform: translateY(0px) rotate(0deg) scale(1); }
           33% { transform: translateY(-30px) rotate(120deg) scale(1.1); }

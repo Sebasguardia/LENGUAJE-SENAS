@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import ReactDOM from 'react-dom';
 import { MessageCircle, X, Mic, MicOff, Send, Bot } from 'lucide-react';
 
 const AgentIA = () => {
@@ -7,6 +8,7 @@ const AgentIA = () => {
   const [inputMessage, setInputMessage] = useState('');
   const [isListening, setIsListening] = useState(false);
   const [botPosition, setBotPosition] = useState({ x: 50, y: 50 });
+  const [isMobile, setIsMobile] = useState(false);
   const messagesEndRef = useRef(null);
 
   // Mensaje de bienvenida automático
@@ -20,9 +22,19 @@ const AgentIA = () => {
     setMessages([welcomeMessage]);
   }, []);
 
-  // Efecto para seguir el mouse
+  // Check if mobile
   useEffect(() => {
-    if (!isOpen) return;
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 640);
+    };
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
+  // Efecto para seguir el mouse (solo desktop)
+  useEffect(() => {
+    if (!isOpen || isMobile) return;
 
     const handleMouseMove = (e) => {
       const x = (e.clientX / window.innerWidth) * 100;
@@ -32,7 +44,7 @@ const AgentIA = () => {
 
     window.addEventListener('mousemove', handleMouseMove);
     return () => window.removeEventListener('mousemove', handleMouseMove);
-  }, [isOpen]);
+  }, [isOpen, isMobile]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -60,7 +72,7 @@ const AgentIA = () => {
     setTimeout(() => {
       const botResponse = generateBotResponse(inputMessage);
       setMessages(prev => [...prev, botResponse]);
-      
+
       // Text-to-speech para la respuesta del bot
       if ('speechSynthesis' in window) {
         const speech = new SpeechSynthesisUtterance(botResponse.text);
@@ -73,7 +85,7 @@ const AgentIA = () => {
 
   const generateBotResponse = (userMessage) => {
     const message = userMessage.toLowerCase();
-    
+
     if (message.includes('hola') || message.includes('hi')) {
       return {
         id: messages.length + 2,
@@ -119,38 +131,40 @@ const AgentIA = () => {
 
   return (
     <>
-      {/* Botón flotante del bot */}
-      <button
-        className={`fixed z-50 transition-all duration-500 ease-out ${
-          isOpen ? 'opacity-0 scale-0' : 'opacity-100 scale-100'
-        }`}
-        style={{
-          left: `${botPosition.x}%`,
-          top: `${botPosition.y}%`,
-          transform: 'translate(-50%, -50%)'
-        }}
-        onClick={() => setIsOpen(true)}
-      >
-        <div className="bg-gradient-to-r from-blue-500 to-purple-500 p-4 rounded-full shadow-2xl hover:shadow-blue-500/25 transition-all hover:scale-110">
-          <Bot className="text-white" size={28} />
-        </div>
-      </button>
+      {/* Botón flotante del bot - En Portal */}
+      {ReactDOM.createPortal(
+        <button
+          className={`fixed bottom-4 right-4 sm:bottom-auto sm:right-auto z-[100] transition-all duration-500 ease-out ${isOpen ? 'opacity-0 scale-0' : 'opacity-100 scale-100'
+            }`}
+          style={isMobile ? {} : {
+            left: `${botPosition.x}%`,
+            top: `${botPosition.y}%`,
+            transform: 'translate(-50%, -50%)'
+          }}
+          onClick={() => setIsOpen(true)}
+        >
+          <div className="bg-gradient-to-r from-blue-500 to-purple-500 p-3 sm:p-4 rounded-full shadow-2xl hover:shadow-blue-500/25 transition-all hover:scale-110">
+            <Bot className="text-white" size={20} />
+          </div>
+        </button>,
+        document.body
+      )}
 
-      {/* Chat del bot */}
-      {isOpen && (
-        <div className="fixed bottom-6 right-6 w-96 h-96 bg-white/95 backdrop-blur-xl rounded-3xl border border-white/20 shadow-2xl z-50 flex flex-col">
+      {/* Chat del bot - En Portal */}
+      {isOpen && ReactDOM.createPortal(
+        <div className="fixed bottom-0 left-0 right-0 sm:left-auto sm:right-6 sm:bottom-6 sm:w-96 w-full h-[85vh] sm:h-[500px] bg-white/95 backdrop-blur-xl sm:rounded-3xl rounded-t-3xl border border-white/20 shadow-2xl z-[100] flex flex-col transition-all duration-300 ease-out transform translate-y-0">
           {/* Header del chat */}
-          <div className="bg-gradient-to-r from-blue-600 to-purple-600 p-4 rounded-t-3xl text-white flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="bg-white/20 p-2 rounded-full">
-                <Bot size={20} />
+          <div className="bg-gradient-to-r from-blue-600 to-purple-600 p-3 sm:p-4 sm:rounded-t-3xl rounded-t-3xl text-white flex items-center justify-between">
+            <div className="flex items-center gap-2 sm:gap-3">
+              <div className="bg-white/20 p-1.5 sm:p-2 rounded-full">
+                <Bot size={18} className="sm:w-5 sm:h-5" />
               </div>
               <div>
-                <div className="font-semibold">Asistente IA</div>
-                <div className="text-xs opacity-80">En línea • Listo para ayudar</div>
+                <div className="font-semibold text-sm sm:text-base">Lexa IA</div>
+                <div className="text-[10px] sm:text-xs opacity-80">ASISTENTE VIRTUAL</div>
               </div>
             </div>
-            <button 
+            <button
               onClick={() => setIsOpen(false)}
               className="p-1 hover:bg-white/20 rounded-full transition-colors"
             >
@@ -159,25 +173,24 @@ const AgentIA = () => {
           </div>
 
           {/* Área de mensajes */}
-          <div className="flex-1 p-4 overflow-y-auto">
+          <div className="flex-1 p-3 sm:p-4 overflow-y-auto">
             {messages.map((message) => (
               <div
                 key={message.id}
-                className={`mb-4 ${message.isBot ? 'text-left' : 'text-right'}`}
+                className={`mb-3 sm:mb-4 ${message.isBot ? 'text-left' : 'text-right'}`}
               >
                 <div
-                  className={`inline-block max-w-xs p-3 rounded-2xl ${
-                    message.isBot
-                      ? 'bg-blue-50 text-gray-800 rounded-bl-none'
-                      : 'bg-gradient-to-r from-blue-500 to-purple-500 text-white rounded-br-none'
-                  }`}
+                  className={`inline-block max-w-[85%] sm:max-w-xs p-2.5 sm:p-3 rounded-2xl text-sm sm:text-base ${message.isBot
+                    ? 'bg-blue-50 text-gray-800 rounded-bl-none'
+                    : 'bg-gradient-to-r from-blue-500 to-purple-500 text-white rounded-br-none'
+                    }`}
                 >
                   {message.text}
                 </div>
-                <div className={`text-xs text-gray-500 mt-1 ${message.isBot ? 'text-left' : 'text-right'}`}>
-                  {message.timestamp.toLocaleTimeString('es-ES', { 
-                    hour: '2-digit', 
-                    minute: '2-digit' 
+                <div className={`text-[10px] sm:text-xs text-gray-500 mt-1 ${message.isBot ? 'text-left' : 'text-right'}`}>
+                  {message.timestamp.toLocaleTimeString('es-ES', {
+                    hour: '2-digit',
+                    minute: '2-digit'
                   })}
                 </div>
               </div>
@@ -186,17 +199,16 @@ const AgentIA = () => {
           </div>
 
           {/* Input de mensaje */}
-          <div className="p-4 border-t border-white/20">
+          <div className="p-3 sm:p-4 border-t border-white/20">
             <div className="flex gap-2">
               <button
                 onClick={toggleListening}
-                className={`p-2 rounded-xl transition-colors ${
-                  isListening 
-                    ? 'bg-red-100 text-red-600' 
-                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                }`}
+                className={`p-2 rounded-xl transition-colors ${isListening
+                  ? 'bg-red-100 text-red-600'
+                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  }`}
               >
-                {isListening ? <MicOff size={18} /> : <Mic size={18} />}
+                {isListening ? <MicOff size={16} className="sm:w-[18px] sm:h-[18px]" /> : <Mic size={16} className="sm:w-[18px] sm:h-[18px]" />}
               </button>
               <input
                 type="text"
@@ -204,18 +216,19 @@ const AgentIA = () => {
                 onChange={(e) => setInputMessage(e.target.value)}
                 onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
                 placeholder="Escribe tu mensaje..."
-                className="flex-1 bg-gray-100 rounded-xl px-4 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="flex-1 bg-gray-100 rounded-xl px-3 sm:px-4 text-sm sm:text-base focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
               <button
                 onClick={handleSendMessage}
                 disabled={!inputMessage.trim()}
                 className="bg-gradient-to-r from-blue-500 to-purple-500 text-white p-2 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-lg transition-all"
               >
-                <Send size={18} />
+                <Send size={16} className="sm:w-[18px] sm:h-[18px]" />
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </>
   );

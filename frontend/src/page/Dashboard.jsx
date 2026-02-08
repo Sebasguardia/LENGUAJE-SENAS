@@ -1,468 +1,514 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import Header from '../components/dashboard/Header';
-import PhaseSelector from '../components/dashboard/PhaseSelector';
-import ModuleCard from '../components/dashboard/ModuleCard';
+import ChatWidget from '../components/dashboard/ChatWidget';
+import HeroVisual from '../components/dashboard/HeroVisual';
 import Footer from '../components/dashboard/Footer';
-import { 
+import RankingModal from '../components/dashboard/RankingModal';
+import HistoryModal from '../components/dashboard/HistoryModal';
+import {
   BookText, MessageSquare, Hash, Calculator, BookOpen, Plus,
-  TrendingUp, Clock, Award, MessageCircle, Bot, PlayCircle,
-  BrainCircuit, Mic
+  Target, Trophy, Zap, Award, Activity, Cpu,
+  History, Clock, Star, PlayCircle, BarChart3, Medal, Crown, Calendar,
+  ArrowUpRight, Users, ChevronRight, X, Flame, Sparkles, Lock as LockIcon, Check
 } from 'lucide-react';
 
-// ... (los modulesData se mantienen igual)
-// Datos de ejemplo mejorados
-const modulesData = [
-  {
-    id: 1,
-    icon: BookText,
-    title: 'Vocales',
-    elements: '5 elementos',
-    status: 'Completado',
-    isLearnEnabled: true,
-    progress: 100,
-    timeSpent: '45 min',
-    lastPractice: '2024-01-15',
-    accuracy: 95,
-    color: 'from-green-500 to-blue-500'
-  },
-  {
-    id: 2,
-    icon: MessageSquare,
-    title: 'Palabras',
-    elements: '25 elementos',
-    status: 'En progreso',
-    isLearnEnabled: true,
-    progress: 60,
-    timeSpent: '1h 20min',
-    lastPractice: '2024-01-14',
-    accuracy: 88,
-    color: 'from-blue-500 to-purple-500'
-  },
-  {
-    id: 3,
-    icon: Hash,
-    title: 'Números',
-    elements: '10 elementos',
-    status: 'Completado',
-    isLearnEnabled: true,
-    progress: 100,
-    timeSpent: '30 min',
-    lastPractice: '2024-01-13',
-    accuracy: 92,
-    color: 'from-purple-500 to-pink-500'
-  },
-  {
-    id: 4,
-    icon: Calculator,
-    title: 'Signos Matemáticos',
-    elements: '4 elementos',
-    status: 'Pendiente',
-    isLearnEnabled: true,
-    progress: 30,
-    timeSpent: '0 min',
-    lastPractice: '-',
-    accuracy: 0,
-    color: 'from-pink-500 to-red-500'
-  },
-  {
-    id: 5,
-    icon: BookOpen,
-    title: 'Abecedario',
-    elements: '26 elementos',
-    status: 'En progreso',
-    isLearnEnabled: true,
-    progress: 40,
-    timeSpent: '2h 15min',
-    lastPractice: '2024-01-14',
-    accuracy: 85,
-    color: 'from-red-500 to-orange-500'
-  },
-  {
-    id: 6,
-    icon: Plus,
-    title: 'Operaciones',
-    elements: '8 elementos',
-    status: 'Pendiente',
-    isLearnEnabled: true,
-    progress: 60,
-    timeSpent: '0 min',
-    lastPractice: '-',
-    accuracy: 0,
-    color: 'from-orange-500 to-yellow-500'
-  }
-];
+import { authService } from '../api/authService';
+import { moduleService } from '../api/moduleService';
+import { progressService } from '../api/progressService';
+import { getGlobalRank } from '../data/achievements';
+
+const iconMap = {
+  BookText, MessageSquare, Hash, Calculator, BookOpen, Plus, Sparkles, Cpu
+};
 
 const Dashboard = () => {
   const navigate = useNavigate();
-  const [activePhase, setActivePhase] = useState('all');
-  const [userStats, setUserStats] = useState({
-    totalModules: 6,
-    completedModules: 2,
-    totalTime: '4h 50min',
-    averageAccuracy: 89,
-    streak: 7,
-    totalPractice: '24 sesiones'
-  });
-  const [chatMessage, setChatMessage] = useState('');
-  const [particles, setParticles] = useState([]);
+  const location = useLocation();
 
-  // Función para hablar (Text-to-Speech)
+  // --- Estado Global ---
+  const [currentUser, setCurrentUser] = useState(() => {
+    return JSON.parse(localStorage.getItem('userData')) || usersData[0];
+  });
+  const [topRanking, setTopRanking] = useState([]);
+  const [modules, setModules] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [dashboardStats, setDashboardStats] = useState(null);
+  const [userHistory, setUserHistory] = useState([]);
+  const [isMuted, setIsMuted] = useState(() => localStorage.getItem('app_muted') === 'true');
+  const [isBotSpeaking, setIsBotSpeaking] = useState(false);
+
+  // Modal States
+  const [isRankingOpen, setIsRankingOpen] = useState(false);
+  const [isHistoryOpen, setIsHistoryOpen] = useState(false);
+  const [filter, setFilter] = useState('all');
+
+  const fetchDashboardData = async () => {
+    try {
+      setIsLoading(true);
+      // 1. Obtener User Actualizado
+      const user = await authService.getMe();
+      setCurrentUser(user);
+
+      // 2. Obtener Ranking Real
+      const ranking = await progressService.getRanking(5);
+      setTopRanking(ranking.map((u, idx) => ({
+        ...u,
+        name: u.full_name,
+        avatar: u.avatar_initials || u.full_name.charAt(0).toUpperCase(),
+        color: idx === 0 ? 'bg-yellow-500' : idx === 1 ? 'bg-slate-300' : idx === 2 ? 'bg-orange-500' : 'bg-blue-500/20'
+      })));
+
+      // 3. Obtener Estadísticas Reales
+      const stats = await progressService.getDashboardStats();
+      setDashboardStats(stats);
+
+      // 4. Obtener Historial Real (Aumentamos el límite para el modal completo)
+      const history = await progressService.getHistory(50);
+      setUserHistory(history);
+
+      // 5. Obtener Módulos Reales
+      const modsData = await moduleService.getModules();
+      setModules(modsData.sort((a, b) => a.order_index - b.order_index).map(m => {
+        const modProgress = stats.module_progress?.find(p => p.module_id == m.id);
+        return {
+          id: m.id,
+          slug: m.slug,
+          title: m.title,
+          description: m.description,
+          difficulty: m.difficulty,
+          elementsCount: m.elements_count,
+          duration: m.duration,
+          tags: m.tags ? m.tags.split(',') : [],
+          progress: modProgress ? Number(modProgress.progress) : 0,
+          precision: modProgress ? Number(modProgress.precision) : 0, // Nueva precisión persistente
+          is_locked: m.is_locked,
+          icon: iconMap[m.icon_name] || BookText
+        };
+      }));
+
+    } catch (err) {
+      console.error("Error loading dashboard data:", err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchDashboardData();
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem('app_muted', isMuted);
+  }, [isMuted]);
+
+  // --- Datos derivados ---
+  const userStats = dashboardStats ? {
+    totalXP: dashboardStats.total_xp,
+    currentStreak: dashboardStats.current_streak,
+    globalAccuracy: Math.round(dashboardStats.global_accuracy),
+    globalPrecision: Math.round(dashboardStats.global_precision), // Promedio de mejores precisiones
+    globalProgress: Math.round(dashboardStats.global_progress),  // Promedio de progreso real
+    completedModules: dashboardStats.completed_modules,
+    totalSessions: dashboardStats.total_sessions
+  } : { totalXP: 0, currentStreak: 0, globalAccuracy: 0, globalPrecision: 0, completedModules: 0, totalSessions: 0, globalProgress: 0 };
+
+  const globalRank = getGlobalRank(currentUser.xp);
+
+  // Limitar a solo las últimas 4 sesiones para la vista previa del dashboard
+  const recentHistory = userHistory.slice(0, 4);
+
+  // Helper para tiempo relativo
+  const formatRelativeTime = (dateString) => {
+    const now = new Date();
+    const date = new Date(dateString);
+    const diffInSeconds = Math.floor((now - date) / 1000);
+
+    if (diffInSeconds < 60) return 'hace unos segundos';
+    if (diffInSeconds < 3600) return `hace ${Math.floor(diffInSeconds / 60)} min`;
+    if (diffInSeconds < 86400) return `hace ${Math.floor(diffInSeconds / 3600)} horas`;
+    if (diffInSeconds < 172800) return 'ayer';
+    return `hace ${Math.floor(diffInSeconds / 86400)} días`;
+  };
+
+  // --- Handlers ---
+  const handleModuleClick = (module) => {
+    if (module.is_locked) return;
+    // Usar el slug para navegación SEO-friendly
+    navigate(`/module/${module.slug}`);
+  };
+
   const speak = (text) => {
-    if ('speechSynthesis' in window) {
-      window.speechSynthesis.cancel(); // Cancelar cualquier speech anterior
-      const speech = new SpeechSynthesisUtterance(text);
-      speech.lang = 'es-ES';
-      speech.rate = 0.9;
-      speech.volume = 0.8;
-      window.speechSynthesis.speak(speech);
+    if (!isMuted && 'speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = 'es-ES';
+      utterance.onstart = () => setIsBotSpeaking(true);
+      utterance.onend = () => setIsBotSpeaking(false);
+      window.speechSynthesis.speak(utterance);
     }
   };
 
-  // Mensaje de bienvenida al cargar el dashboard
-  useEffect(() => {
-    const userData = JSON.parse(localStorage.getItem('userData') || '{}');
-    const userName = userData.name || 'Estudiante';
-    const welcomeMessage = `¡Bienvenido ${userName} al dashboard! Tienes ${userStats.completedModules} módulos completados de ${userStats.totalModules}. Tu precisión promedio es del ${userStats.averageAccuracy}%. ¿En qué módulo te gustaría practicar hoy?`;
-
-    const timer = setTimeout(() => {
-      speak(welcomeMessage);
-    }, 1000);
-
-    return () => clearTimeout(timer);
-  }, []);
-
-  // Partículas flotantes para el fondo
-  useEffect(() => {
-    const newParticles = Array.from({ length: 20 }, (_, i) => ({
-      id: i,
-      x: Math.random() * 100,
-      y: Math.random() * 100,
-      size: Math.random() * 3 + 1,
-      duration: Math.random() * 10 + 5
-    }));
-    setParticles(newParticles);
-  }, []);
-
-  const filteredModules = modulesData.filter(module => {
-    if (activePhase === 'all') return true;
-    if (activePhase === 'completed') return module.status === 'Completado';
-    if (activePhase === 'progress') return module.status === 'En progreso';
-    if (activePhase === 'pending') return module.status === 'Pendiente';
-    return true;
-  });
-
-  const handleModuleClick = (moduleId) => {
-    const module = modulesData.find(m => m.id === moduleId);
-    if (module.isLearnEnabled) {
-      // Mensaje de voz según el progreso del módulo
-      let message = '';
-      if (module.progress === 0) {
-        message = `Comenzando módulo de ${module.title}. ¡Vamos a aprender!`;
-      } else if (module.progress === 100) {
-        message = `Repasando módulo de ${module.title}. ¡Excelente trabajo completado!`;
-      } else {
-        message = `Continuando con ${module.title}. Llevas el ${module.progress}% completado.`;
-      }
-      speak(message);
-
-      const routeMap = {
-        1: '/vocals',
-        2: '/words',
-        3: '/numeros',
-        4: '/math-signs',
-        5: '/alphabet',
-        6: '/operations'
-      };
-      navigate(routeMap[moduleId]);
-    }
-  };
-
-  const handleAssistantClick = () => {
-    speak("¡Hola! Soy tu asistente de aprendizaje. Puedo explicarte los módulos disponibles, tu progreso actual o ayudarte a elegir qué practicar. ¿En qué te puedo ayudar?");
-  };
-
-  const handleContinueLearning = () => {
-    // Encontrar el módulo en progreso o el primero pendiente
-    const nextModule = modulesData.find(m => m.status === 'En progreso') || 
-                      modulesData.find(m => m.status === 'Pendiente' && m.isLearnEnabled);
-    if (nextModule) {
-      speak(`Continuando con ${nextModule.title}. ${nextModule.progress > 0 ? `Llevas el ${nextModule.progress}% completado.` : '¡Vamos a comenzar!'}`);
-      handleModuleClick(nextModule.id);
-    } else {
-      speak("¡Felicidades! Has completado todos los módulos disponibles. Pronto agregaremos más contenido.");
-    }
-  };
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center space-y-4">
+        <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+        <p className="text-blue-400 font-bold animate-pulse">Sincronizando con la red neuronal...</p>
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-purple-900 flex flex-col relative overflow-hidden">
-      {/* Fondo idéntico al login/landing */}
-      <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden">
-        {/* Partículas flotantes */}
-        {particles.map(particle => (
-          <div
-            key={particle.id}
-            className="absolute w-2 h-2 bg-blue-400 rounded-full opacity-30 animate-float"
-            style={{
-              left: `${particle.x}%`,
-              top: `${particle.y}%`,
-              animationDuration: `${particle.duration}s`,
-              animationDelay: `${particle.id * 0.5}s`
-            }}
-          />
-        ))}
-
-        {/* Formas geométricas animadas */}
-        <div className="absolute top-1/4 -left-10 w-72 h-72 bg-blue-500/10 rounded-full blur-3xl animate-pulse"></div>
-        <div className="absolute bottom-1/4 -right-10 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl animate-pulse animation-delay-2000"></div>
-        
-        {/* Efecto de grid sutil */}
-        <div 
-          className="absolute inset-0 opacity-10"
-          style={{
-            backgroundImage: `
-              linear-gradient(rgba(255, 255, 255, 0.1) 1px, transparent 1px),
-              linear-gradient(90deg, rgba(255, 255, 255, 0.1) 1px, transparent 1px)
-            `,
-            backgroundSize: '50px 50px'
-          }}
-        />
-
-        {/* Olas animadas en la parte inferior */}
-        <div className="absolute bottom-0 left-0 w-full h-32">
-          <svg viewBox="0 0 1200 120" preserveAspectRatio="none" className="absolute bottom-0 w-full h-full">
-            <path d="M0,0V46.29c47.79,22.2,103.59,32.17,158,28,70.36-5.37,136.33-33.31,206.8-37.5C438.64,32.43,512.34,53.67,583,72.05c69.27,18,138.3,24.88,209.4,13.08,36.15-6,69.85-17.84,104.45-29.34C989.49,25,1113-14.29,1200,52.47V0Z" opacity=".25" className="fill-blue-600"></path>
-            <path d="M0,0V15.81C13,36.92,27.64,56.86,47.69,72.05,99.41,111.27,165,111,224.58,91.58c31.15-10.15,60.09-26.07,89.67-39.8,40.92-19,84.73-46,130.83-49.67,36.26-2.85,70.9,9.42,98.6,31.56,31.77,25.39,62.32,62,103.63,73,40.44,10.79,81.35-6.69,119.13-24.28s75.16-39,116.92-43.05c59.73-5.85,113.28,22.88,168.9,38.84,30.2,8.66,59,6.17,87.09-7.5,22.43-10.89,48-26.93,60.65-49.24V0Z" opacity=".5" className="fill-purple-600"></path>
-            <path d="M0,0V5.63C149.93,59,314.09,71.32,475.83,42.57c43-7.64,84.23-20.12,127.61-26.46,59-8.63,112.48,12.24,165.56,35.4C827.93,77.22,886,95.24,951.2,90c86.53-7,172.46-45.71,248.8-84.81V0Z" className="fill-indigo-600"></path>
-          </svg>
-        </div>
+    <div className="min-h-screen bg-slate-950 font-sans selection:bg-blue-500/30 overflow-x-hidden text-white flex flex-col">
+      {/* BACKGROUND EFFECTS */}
+      <div className="fixed inset-0 z-0 pointer-events-none">
+        <div className="absolute top-[-20%] left-[-10%] w-[70%] h-[70%] bg-blue-600/10 rounded-full blur-[160px] animate-pulse"></div>
+        <div className="absolute bottom-[-10%] right-[-10%] w-[60%] h-[60%] bg-purple-600/10 rounded-full blur-[160px] animate-pulse duration-[5s]"></div>
+        <div className="absolute inset-0 opacity-[0.03]" style={{ backgroundImage: 'radial-gradient(#ffffff 1px, transparent 1px)', backgroundSize: '35px 35px' }}></div>
       </div>
 
-      <div className="relative z-10 flex-1 p-6">
-        <div className="max-w-7xl mx-auto">
-          <Header />
-          
-          {/* Hero Principal SIN robot que sigue mouse */}
-          <section className="text-center mb-12 py-12">
-            {/* Icono del agente IA en lugar del robot que sigue mouse */}
-            <div className="flex justify-center mb-8">
-              <div className="relative">
-                <div className="bg-gradient-to-r from-blue-500 to-purple-500 p-6 rounded-3xl shadow-2xl">
-                  <BrainCircuit className="text-white" size={48} />
+      <div className="relative z-10 max-w-7xl mx-auto px-6 lg:px-8 py-8 space-y-12 flex-1 w-full">
+        <Header user={currentUser} isMuted={isMuted} setIsMuted={setIsMuted} />
+
+        <main className="space-y-12">
+          {/* IA CHAT WIDGET */}
+          <ChatWidget
+            userStats={userStats}
+            currentUser={currentUser}
+            allModules={modules}
+            onSpeak={speak}
+            isMuted={isMuted}
+          />
+
+          {/* HERO SECTION */}
+          <section className="relative overflow-hidden rounded-[4rem] bg-slate-900/40 backdrop-blur-2xl border border-white/5 p-8 lg:p-14 shadow-2xl">
+            <div className="flex flex-col xl:flex-row items-center justify-between gap-12 relative z-10">
+              <div className="flex-1 space-y-8 text-center xl:text-left max-w-2xl">
+                <div className="inline-flex items-center gap-2 px-5 py-2 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 text-[10px] font-black uppercase tracking-[0.2em]">
+                  <Target size={12} className="animate-pulse" /> Sistema de Aprendizaje Adaptativo
+                  <span className="ms-2 opacity-50">v2.4.0</span>
                 </div>
-                <div className="absolute -top-2 -right-2 bg-green-500 rounded-full p-1">
-                  <Mic size={16} className="text-white" />
+                <div className="space-y-4">
+                  <h1 className="text-4xl sm:text-6xl lg:text-8xl font-black text-white tracking-tight leading-[0.85]">
+                    Hola, <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400">{currentUser?.full_name ? currentUser.full_name.split(' ')[0] : 'Estudiante'}</span>
+                  </h1>
+                  <p className="text-xl text-white/50 font-medium max-w-xl mx-auto xl:mx-0 pt-4 leading-relaxed">
+                    Has recolectado <strong className="text-white text-2xl">{userStats.totalXP} XP</strong>. Sigue así para subir en el <span className="text-blue-400">ranking global</span>.
+                  </p>
+
+                  {/* BARRA DE PROGRESO GENERAL */}
+                  <div className="max-w-md mx-auto xl:mx-0 pt-6 space-y-3">
+                    <div className="flex justify-between items-end">
+                      <span className="text-[10px] font-black text-blue-400 uppercase tracking-[0.2em]">Progreso de Maestría</span>
+                      <span className="text-2xl font-black text-white">{userStats.globalProgress}%</span>
+                    </div>
+                    <div className="h-3 w-full bg-white/5 rounded-full border border-white/5 overflow-hidden p-0.5">
+                      <div
+                        className="h-full bg-gradient-to-r from-blue-600 via-indigo-500 to-purple-500 rounded-full transition-all duration-1000 shadow-[0_0_15px_rgba(37,99,235,0.4)]"
+                        style={{ width: `${userStats.globalProgress}%` }}
+                      ></div>
+                    </div>
+                  </div>
+                </div>
+                <div className="flex flex-wrap justify-center xl:justify-start gap-4 pt-4">
+                  <button onClick={() => document.getElementById('modules-section').scrollIntoView({ behavior: 'smooth' })} className="px-10 py-5 bg-blue-600 hover:bg-blue-500 text-white rounded-3xl font-black flex items-center gap-3 shadow-2xl shadow-blue-600/30 hover:scale-105 transition-all group">
+                    <PlayCircle size={24} className="group-hover:rotate-12 transition-transform" /> EMPEZAR A PRACTICAR
+                  </button>
+                  <button onClick={() => navigate('/practice')} className="px-10 py-5 bg-white/5 hover:bg-white/10 text-white rounded-3xl font-black border border-white/10 backdrop-blur-md transition-all">
+                    TRADUCTOR IA
+                  </button>
                 </div>
               </div>
-            </div>
-            
-            <h1 className="text-6xl font-bold text-white mb-6">
-              ¡Hola, <span className="bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">Ana</span>!
-            </h1>
-            
-            <p className="text-xl text-white/80 mb-8 max-w-3xl mx-auto leading-relaxed">
-              Bienvenida a tu centro de aprendizaje inteligente. Tu asistente IA te guiará en cada paso.
-            </p>
-            
-            <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-              <button 
-                onClick={handleContinueLearning}
-                className="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-8 py-4 rounded-2xl font-bold text-lg shadow-2xl hover:shadow-blue-500/25 hover:scale-105 transition-all duration-300 flex items-center gap-3"
-              >
-                <PlayCircle size={24} />
-                Continuar Aprendiendo
-              </button>
-              <button 
-                onClick={handleAssistantClick}
-                className="border-2 border-white/30 text-white px-8 py-4 rounded-2xl font-bold hover:bg-white/10 backdrop-blur-sm transition-all duration-300 flex items-center gap-3"
-              >
-                <Bot size={24} />
-                Asistente IA
-              </button>
+              <div className="flex-1 w-full max-w-md xl:max-w-none flex justify-center scale-110">
+                <HeroVisual userName={currentUser.name || currentUser.full_name} userStats={userStats} onVoiceWelcome={speak} />
+              </div>
             </div>
           </section>
 
-          {/* Chat de bienvenida */}
-          <div className="mb-8 animate-fade-in">
-            <div className="bg-white/10 backdrop-blur-xl rounded-3xl p-6 border border-white/20 shadow-2xl">
-              <div className="flex items-center gap-4">
-                <div className="bg-gradient-to-r from-blue-500 to-purple-500 p-3 rounded-2xl">
-                  <MessageCircle className="text-white" size={28} />
-                </div>
-                <div className="flex-1">
-                  <p className="text-white font-medium text-lg">
-                    Tu asistente IA está listo para ayudarte. Haz clic en "Asistente IA" para hablar conmigo.
-                  </p>
-                  <div className="flex gap-4 mt-3">
-                    <button 
-                      onClick={handleAssistantClick}
-                      className="text-blue-300 font-medium hover:text-blue-200 transition-colors flex items-center gap-2"
-                    >
-                      <Bot size={16} />
-                      Hablar con el Asistente
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* ... (el resto del código se mantiene igual: estadísticas, módulos, etc.) */}
-          {/* Estadísticas principales */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+          {/* DASHBOARD STATS GRID */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
             {[
-              { 
-                icon: Award, 
-                value: `${userStats.completedModules}/${userStats.totalModules}`, 
-                label: 'Módulos completados',
-                color: 'from-green-500 to-emerald-500'
-              },
-              { 
-                icon: Clock, 
-                value: userStats.totalTime, 
-                label: 'Tiempo total',
-                color: 'from-blue-500 to-cyan-500'
-              },
-              { 
-                icon: TrendingUp, 
-                value: `${userStats.averageAccuracy}%`, 
-                label: 'Precisión promedio',
-                color: 'from-purple-500 to-pink-500'
-              },
-              { 
-                icon: BrainCircuit, 
-                value: `${userStats.streak} días`, 
-                label: 'Racha actual',
-                color: 'from-orange-500 to-red-500'
-              }
-            ].map((stat, index) => (
-              <div 
-                key={index}
-                className="bg-white/10 backdrop-blur-xl rounded-3xl p-6 border border-white/20 shadow-2xl hover:shadow-3xl transition-all duration-500 hover:scale-105"
-              >
-                <div className="flex items-center gap-4">
-                  <div className={`p-3 rounded-2xl bg-gradient-to-r ${stat.color}`}>
-                    <stat.icon className="text-white" size={28} />
+              { icon: Flame, value: userStats.currentStreak, label: 'Días de Racha', color: 'text-orange-500', bg: 'bg-orange-500/10' },
+              { icon: Award, value: userStats.completedModules, label: 'Módulos Listos', color: 'text-green-400', bg: 'bg-green-400/10' },
+              { icon: Zap, value: userStats.totalXP, label: 'XP Total', color: 'text-yellow-400', bg: 'bg-yellow-400/10' },
+              { icon: Target, value: `${userStats.globalPrecision}%`, label: 'Precisión General', color: 'text-blue-400', bg: 'bg-blue-400/10' },
+            ].map((stat, i) => (
+              <div key={i} className="p-8 rounded-[2.5rem] bg-slate-900/40 border border-white/5 backdrop-blur-xl relative overflow-hidden group hover:border-white/20 transition-all font-sans">
+                <div className={`absolute -right-4 -bottom-4 opacity-[0.03] group-hover:opacity-[0.08] transition-opacity`}>
+                  <stat.icon size={120} />
+                </div>
+                <div className="relative z-10 flex flex-col items-center sm:items-start text-center sm:text-left gap-4">
+                  <div className={`p-4 rounded-2xl ${stat.bg} ${stat.color}`}>
+                    <stat.icon size={28} />
                   </div>
                   <div>
-                    <p className="text-3xl font-bold text-white">{stat.value}</p>
-                    <p className="text-white/60">{stat.label}</p>
+                    <p className="text-4xl font-black text-white leading-none mb-1">{stat.value}</p>
+                    <p className="text-[10px] font-black text-white/30 uppercase tracking-[0.2em]">{stat.label}</p>
                   </div>
                 </div>
               </div>
             ))}
           </div>
 
-          <main className="animate-fade-in-up">
-            <PhaseSelector 
-              activePhase={activePhase}
-              onPhaseChange={setActivePhase}
-            />
-            
-            {/* Módulos de aprendizaje */}
-            <div className="mt-12">
-              <div className="text-center mb-12">
-                <h2 className="text-5xl font-bold text-white mb-4">
-                  Módulos de Aprendizaje
-                </h2>
-                <p className="text-xl text-white/80 max-w-3xl mx-auto leading-relaxed">
-                  Domina el lenguaje de señas paso a paso. Cada módulo utiliza IA avanzada 
-                  para ofrecerte una experiencia de aprendizaje personalizada y efectiva.
-                </p>
+          {/* MODULES SECTION */}
+          <section id="modules-section" className="space-y-8">
+            <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+              <div>
+                <h2 className="text-5xl font-black text-white mb-2 tracking-tight">Tu Ruta Maestra</h2>
+                <p className="text-white/40 font-medium text-lg">Domina el lenguaje de señas paso a paso.</p>
               </div>
-              
-              <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-8">
-                {filteredModules.map((module, index) => (
-                  <div 
-                    key={module.id} 
-                    className="animate-fade-in-up hover-lift group cursor-pointer"
-                    style={{ animationDelay: `${index * 0.1}s` }}
-                    onClick={() => handleModuleClick(module.id)}
+              <div className="flex flex-wrap gap-1 sm:gap-2 p-1 sm:p-1.5 bg-white/5 rounded-xl sm:rounded-2xl border border-white/5 backdrop-blur-md">
+                {[
+                  { id: 'all', label: 'Todos' },
+                  { id: 'Básico', label: 'Básico' },
+                  { id: 'Intermedio', label: 'Intermedio' },
+                  { id: 'Avanzado', label: 'Avanzado' }
+                ].map(f => (
+                  <button
+                    key={f.id}
+                    onClick={() => setFilter(f.id)}
+                    className={`px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg sm:rounded-xl text-[9px] sm:text-[10px] font-black uppercase tracking-widest transition-all ${filter === f.id ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30' : 'text-white/40 hover:text-white hover:bg-white/5'}`}
                   >
-                    <ModuleCard
-                      icon={module.icon}
-                      title={module.title}
-                      elements={module.elements}
-                      status={module.status}
-                      isLearnEnabled={module.isLearnEnabled}
-                      progress={module.progress}
-                      timeSpent={module.timeSpent}
-                      lastPractice={module.lastPractice}
-                      accuracy={module.accuracy}
-                      color={module.color}
-                    />
-                  </div>
+                    {f.label}
+                  </button>
                 ))}
               </div>
             </div>
 
-            {/* Progreso reciente */}
-            <div className="mt-16 bg-white/10 backdrop-blur-xl rounded-3xl p-8 border border-white/20 shadow-2xl">
-              <div className="flex items-center justify-between mb-8">
-                <div>
-                  <h3 className="text-3xl font-bold text-white mb-2">Progreso Reciente</h3>
-                  <p className="text-white/60">Resumen de tus actividades de aprendizaje</p>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {/* Featured Card: Practice IA */}
+              {filter === 'all' && (
+                <div className="group relative bg-gradient-to-br from-blue-600 to-indigo-700 rounded-[3rem] p-10 overflow-hidden shadow-2xl shadow-blue-600/20 cursor-pointer hover:scale-[1.02] transition-all" onClick={() => navigate('/practice')}>
+                  <div className="absolute top-0 right-0 p-12 opacity-10 rotate-12">
+                    <Sparkles size={180} />
+                  </div>
+                  <div className="relative z-10 h-full flex flex-col">
+                    <div className="w-16 h-16 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center text-white mb-8 border border-white/20 shadow-xl">
+                      <Sparkles size={32} />
+                    </div>
+                    <h3 className="text-3xl font-black text-white mb-4 leading-tight">Traductor en Tiempo Real</h3>
+                    <p className="text-blue-100/70 text-sm mb-10 leading-relaxed font-medium">Usa nuestra IA de visión computacional para traducir tus señas a voz al instante.</p>
+                    <div className="mt-auto">
+                      <button className="w-full py-5 rounded-2.5rem bg-white text-blue-600 font-black text-xs uppercase tracking-[0.2em] flex items-center justify-center gap-2 hover:bg-blue-50 transition-all">
+                        ABRIR CÁMARA <ArrowUpRight size={16} />
+                      </button>
+                    </div>
+                  </div>
                 </div>
-                <button className="bg-gradient-to-r from-blue-500 to-purple-500 text-white px-6 py-3 rounded-2xl font-semibold hover:shadow-lg transition-all">
-                  Ver historial completo
-                </button>
+              )}
+
+              {modules
+                .filter(m => filter === 'all' || m.difficulty === filter)
+                .map((module) => (
+                  <div key={module.id} className="group relative bg-slate-900/40 backdrop-blur-xl border border-white/5 rounded-[3rem] p-10 overflow-hidden hover:border-blue-500/30 transition-all duration-500 flex flex-col shadow-xl">
+                    <div className="flex items-start justify-between mb-8 relative">
+                      <div className={`relative w-16 h-16 rounded-2xl flex items-center justify-center text-white text-2xl bg-blue-600/10 border border-blue-500/10 shadow-lg group-hover:bg-blue-600/20 transition-all ${module.progress >= 95 ? 'bg-green-500/10 border-green-500/20' : ''}`}>
+                        <module.icon size={28} className={module.progress >= 95 ? 'text-green-400' : ''} />
+                        {module.progress >= 95 && (
+                          <div className="absolute -top-2 -right-2 w-6 h-6 bg-green-500 rounded-full flex items-center justify-center border-2 border-slate-950 shadow-lg">
+                            <Check size={12} className="text-white fill-current" strokeWidth={4} />
+                          </div>
+                        )}
+                      </div>
+                      {module.progress >= 95 && (
+                        <div className="px-3 py-1 bg-green-500/20 border border-green-500/40 rounded-full">
+                          <span className="text-[8px] font-black text-green-400 uppercase tracking-widest">COMPLETADO</span>
+                        </div>
+                      )}
+                    </div>
+                    <h3 className="text-3xl font-black text-white mb-2 tracking-tight">{module.title}</h3>
+                    <div className="flex flex-wrap items-center gap-2 mb-6">
+                      <span className="px-3 py-1 rounded-full bg-white/5 text-white/40 text-[9px] font-black uppercase tracking-widest border border-white/5">
+                        {module.difficulty}
+                      </span>
+                      <span className="px-3 py-1 rounded-full bg-blue-500/10 text-blue-400 text-[9px] font-black uppercase tracking-widest border border-blue-500/10">
+                        {module.elementsCount || 0} SEÑAS
+                      </span>
+                      {module.duration && (
+                        <span className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-purple-500/10 text-purple-400 text-[9px] font-black uppercase tracking-widest border border-purple-500/10">
+                          <Clock size={10} /> {module.duration}
+                        </span>
+                      )}
+                      {/* Tags integrados en la misma fila */}
+                      {module.tags && module.tags.map((tag, idx) => (
+                        <span key={idx} className="px-3 py-1 rounded-full bg-white/5 text-white/20 text-[9px] font-bold lowercase border border-white/5 before:content-['#']">
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+
+                    <p className="text-white/40 text-sm leading-relaxed mb-10 font-medium">
+                      {module.description.substring(0, 100)}...
+                    </p>
+
+                    <div className={`mt-auto space-y-4 ${module.is_locked ? 'opacity-50 grayscale' : ''}`}>
+                      <div className="flex justify-between items-end mb-2 px-1">
+                        <div className="flex flex-col">
+                          <span className="text-[9px] font-black text-white/20 uppercase tracking-[0.15em]">Maestría</span>
+                          <span className="text-xl font-black text-white">{module.progress}%</span>
+                        </div>
+                        <div className="flex flex-col text-right">
+                          <span className="text-[9px] font-black text-blue-400/40 uppercase tracking-[0.15em]">Precisión</span>
+                          <span className="text-xl font-black text-blue-400">{module.precision}%</span>
+                        </div>
+                      </div>
+                      <div className="h-2 w-full bg-white/5 rounded-full overflow-hidden border border-white/5">
+                        <div
+                          className="h-full bg-gradient-to-r from-blue-600 to-indigo-500 transition-all duration-1000"
+                          style={{ width: `${module.progress}%` }}
+                        ></div>
+                      </div>
+                      <button
+                        onClick={() => handleModuleClick(module)}
+                        disabled={module.is_locked}
+                        className={`w-full mt-4 py-5 rounded-3xl font-black text-xs uppercase tracking-[0.2em] flex items-center justify-center gap-2 transition-all border border-white/5 ${module.is_locked
+                          ? 'bg-slate-800 text-white/20 cursor-not-allowed'
+                          : 'bg-white/5 hover:bg-blue-600 text-white'
+                          }`}
+                      >
+                        {module.is_locked ? (
+                          <><LockIcon size={18} /> BLOQUEADO (SIN DATOS)</>
+                        ) : (
+                          <>CONTINUAR <ChevronRight size={18} /></>
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                ))}
+            </div>
+          </section>
+
+          {/* RANKING & HISTORY SECTION */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 pb-12">
+
+            {/* Ranking Global */}
+            <section className="lg:col-span-4 bg-slate-900/40 backdrop-blur-2xl border border-white/5 rounded-[3.5rem] p-10 flex flex-col h-full shadow-2xl">
+              <div className="flex items-center justify-between mb-10">
+                <div>
+                  <h3 className="text-3xl font-black text-white tracking-tight">Ranking Global</h3>
+                  <p className="text-white/40 text-[10px] font-black uppercase tracking-widest">Podio de Estudiantes</p>
+                </div>
+                <div className="p-4 bg-yellow-500/10 rounded-2xl text-yellow-500 shadow-lg">
+                  <Trophy size={24} />
+                </div>
               </div>
-              
-              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {modulesData.filter(m => m.lastPractice !== '-').slice(0, 3).map(module => (
-                  <div key={module.id} className="bg-white/5 rounded-2xl p-6 border border-white/10">
-                    <div className="flex items-center gap-4 mb-4">
-                      <div className={`p-3 rounded-xl bg-gradient-to-r ${module.color}`}>
-                        <module.icon size={24} className="text-white" />
+
+              <div className="space-y-4 flex-1">
+                {topRanking.map((topUser) => (
+                  <div key={topUser.id} className="flex items-center justify-between p-5 rounded-3xl bg-white/[0.03] border border-white/5 hover:bg-white/[0.06] transition-all group cursor-pointer relative overflow-hidden">
+                    <div className="flex items-center gap-4 relative z-10">
+                      <div className="relative">
+                        <div className={`w-12 h-12 rounded-2xl flex items-center justify-center font-black text-md bg-slate-800 text-white border border-white/10 group-hover:scale-110 transition-transform shadow-lg`}>
+                          {topUser.avatar}
+                        </div>
+                        <div className={`absolute -top-2 -right-2 w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-black ${topUser.color} text-slate-900 shadow-xl border-2 border-slate-900`}>
+                          {topUser.rank}
+                        </div>
                       </div>
                       <div>
-                        <p className="font-bold text-white">{module.title}</p>
-                        <p className="text-sm text-white/60">{module.lastPractice}</p>
+                        <p className="font-bold text-white group-hover:text-blue-400 transition-colors uppercase tracking-tight">{topUser.name}</p>
+                        <p className="text-[10px] text-white/30 font-black uppercase tracking-widest">{topUser.xp} XP</p>
                       </div>
                     </div>
-                    <div className="flex justify-between items-center">
+                    {topUser.rank === 1 && <Crown className="text-yellow-500 relative z-10 animate-bounce" size={18} />}
+                  </div>
+                ))}
+              </div>
+
+              <button
+                onClick={() => setIsRankingOpen(true)}
+                className="mt-10 w-full py-5 rounded-3xl bg-white/5 hover:bg-white/10 border border-white/5 text-white/60 text-[10px] font-black uppercase tracking-[0.2em] transition-all"
+              >
+                MI POSICIÓN EN LA TABLA
+              </button>
+            </section>
+
+            {/* Progreso Reciente */}
+            <section className="lg:col-span-8 bg-slate-900/40 backdrop-blur-2xl border border-white/5 rounded-[3.5rem] p-10 flex flex-col h-full shadow-2xl">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 mb-10">
+                <div className="flex items-center gap-4">
+                  <div className="p-4 bg-blue-500/10 rounded-2xl text-blue-500 shadow-lg">
+                    <History size={24} />
+                  </div>
+                  <div>
+                    <h3 className="text-3xl font-black text-white tracking-tight">Progreso Reciente</h3>
+                    <p className="text-white/40 text-[10px] font-black uppercase tracking-widest">Actividad del día</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-green-500/10 border border-green-500/20 text-green-400 text-[10px] font-black uppercase tracking-widest shadow-xl">
+                  <Flame size={14} className="animate-pulse" /> {userStats.currentStreak} Días de Racha
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 flex-1">
+                {recentHistory.map((session, idx) => (
+                  <div key={idx} className="p-8 rounded-[2.5rem] bg-white/[0.03] border border-white/5 hover:border-blue-500/30 transition-all group relative overflow-hidden flex flex-col justify-between">
+                    <div className={`absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-blue-600/20 to-purple-600/10 opacity-0 group-hover:opacity-100 blur-3xl transition-opacity animate-pulse`} />
+
+                    <div className="flex justify-between items-start mb-8 relative z-10">
                       <div>
-                        <p className="text-2xl font-bold text-white">{module.accuracy}%</p>
-                        <p className="text-sm text-white/60">Precisión</p>
+                        <div className="flex items-center gap-2 mb-1">
+                          <Calendar size={10} className="text-white/20" />
+                          <span className="text-[8px] font-black text-white/20 uppercase tracking-widest">
+                            {formatRelativeTime(session.created_at)}
+                          </span>
+                        </div>
+                        <p className="text-[10px] text-white/30 font-black uppercase tracking-[0.2em] mb-1">Módulo</p>
+                        <h4 className="font-black text-white text-2xl leading-none">{session.module_title}</h4>
                       </div>
-                      <div className="text-right">
-                        <p className="font-semibold text-white">{module.timeSpent}</p>
-                        <p className="text-sm text-white/60">Duración</p>
+                      <div className="px-4 py-1.5 rounded-xl bg-white/5 text-white/60 text-[10px] font-black uppercase tracking-widest border border-white/5">
+                        {session.duration}
+                      </div>
+                    </div>
+
+                    <div className="flex items-end justify-between relative z-10">
+                      <div>
+                        <div className="flex items-baseline gap-1">
+                          <span className="text-5xl font-black text-white">{session.accuracy}</span>
+                          <span className="text-xl font-black text-white/40">%</span>
+                        </div>
+                        <p className="text-[10px] font-black text-blue-400 uppercase tracking-widest mt-1">Precisión Lograda</p>
+                      </div>
+                      <div className="w-14 h-14 rounded-2xl bg-white/5 flex items-center justify-center text-white/20 group-hover:text-white group-hover:bg-blue-600 transition-all shadow-xl">
+                        <ArrowUpRight size={24} />
                       </div>
                     </div>
                   </div>
                 ))}
+                {recentHistory.length === 0 && (
+                  <div className="col-span-full py-12 flex flex-col items-center justify-center text-center space-y-4">
+                    <div className="p-6 rounded-full bg-white/5 border border-dashed border-white/20 text-white/20">
+                      <BarChart3 size={48} />
+                    </div>
+                    <p className="text-white/40 font-bold">Aún no hay sesiones registradas hoy.<br />¡Empieza tu primera práctica!</p>
+                  </div>
+                )}
               </div>
-            </div>
-          </main>
-          
-          <Footer />
-        </div>
+
+              <button
+                onClick={() => setIsHistoryOpen(true)}
+                className="mt-10 w-full py-5 rounded-3xl bg-blue-600 hover:bg-blue-500 text-white font-black text-[10px] uppercase tracking-[0.2em] shadow-2xl shadow-blue-600/30 transition-all"
+              >
+                VER HISTORIAL COMPLETO
+              </button>
+            </section>
+          </div>
+        </main>
+        <Footer />
       </div>
 
-      {/* Estilos CSS para animaciones */}
-      <style jsx>{`
-        @keyframes float {
-          0%, 100% { transform: translateY(0px) rotate(0deg); }
-          50% { transform: translateY(-20px) rotate(180deg); }
-        }
-        
-        .animate-float {
-          animation: float 6s ease-in-out infinite;
-        }
-        
-        .animation-delay-2000 {
-          animation-delay: 2s;
-        }
-        
-        .hover-lift:hover {
-          transform: translateY(-8px);
-        }
-        
-        .shadow-3xl {
-          box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
-        }
-      `}</style>
+      {/* MODALS */}
+      <RankingModal
+        isOpen={isRankingOpen}
+        onClose={() => setIsRankingOpen(false)}
+        currentUserId={currentUser.id}
+        usersData={topRanking}
+      />
+      <HistoryModal
+        isOpen={isHistoryOpen}
+        onClose={() => setIsHistoryOpen(false)}
+        userHistory={userHistory}
+      />
     </div>
   );
 };

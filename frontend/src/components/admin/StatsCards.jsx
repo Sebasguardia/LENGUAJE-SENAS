@@ -66,26 +66,25 @@ const StatsCards = () => {
   };
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mb-6 sm:mb-8">
       {stats.map((stat, index) => {
         const Icon = stat.icon;
         return (
-          <div 
+          <div
             key={index}
-            className={`bg-white/10 backdrop-blur-xl rounded-2xl p-6 border border-white/20 transition-all hover:scale-105 hover:shadow-xl`}
+            className={`bg-white/10 backdrop-blur-xl rounded-xl sm:rounded-2xl p-4 sm:p-6 border border-white/20 transition-all hover:scale-105 hover:shadow-xl`}
           >
-            <div className="flex items-center justify-between mb-4">
-              <div className={`p-3 rounded-xl ${getColorClasses(stat.color)}`}>
-                <Icon size={24} />
+            <div className="flex items-center justify-between mb-3 sm:mb-4">
+              <div className={`p-2 sm:p-3 rounded-lg sm:rounded-xl ${getColorClasses(stat.color)}`}>
+                <Icon size={20} className="sm:w-6 sm:h-6" />
               </div>
-              <span className={`text-sm font-semibold ${
-                stat.trend === 'up' ? 'text-green-400' : 'text-red-400'
-              }`}>
+              <span className={`text-xs sm:text-sm font-semibold ${stat.trend === 'up' ? 'text-green-400' : 'text-red-400'
+                }`}>
                 {stat.change}
               </span>
             </div>
-            <h3 className="text-3xl font-bold text-white mb-1">{stat.value}</h3>
-            <p className="text-white/60 text-sm">{stat.label}</p>
+            <h3 className="text-2xl sm:text-3xl font-bold text-white mb-1">{stat.value}</h3>
+            <p className="text-white/60 text-xs sm:text-sm truncate">{stat.label}</p>
           </div>
         );
       })}

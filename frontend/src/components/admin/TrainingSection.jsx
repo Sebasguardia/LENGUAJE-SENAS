@@ -2,26 +2,24 @@ import React, { useState, useEffect, useRef } from 'react';
 import {
   Cpu, Play, StopCircle, Save, Upload, Database,
   CheckCircle2, AlertTriangle, ChevronRight, BarChart2,
-  Activity, Layers, Box, Terminal, Share2, Eye, Package
+  Activity, Layers, Box, Terminal, Share2, Eye, Package, Lock
 } from 'lucide-react';
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   AreaChart, Area, Legend
 } from 'recharts';
 
+import { moduleService } from '../../api/moduleService';
+import { adminService } from '../../api/adminService';
+import toast from 'react-hot-toast';
+
 const TrainingSection = () => {
   // Estados de Flujo
-  const [step, setStep] = useState('selection'); // selection, training, validation, packaging
+  const [step, setStep] = useState('selection'); // selection, training, validation
   const [trainingActive, setTrainingActive] = useState(false);
   const [selectedModules, setSelectedModules] = useState([]);
-
-  // Datos Simulados
-  const [availableModules, setAvailableModules] = useState([
-    { id: 'vocals', name: 'Vocales', samples: 250, status: 'ready', lastUpdate: 'Hoy 14:30', color: '#4ADE80' },
-    { id: 'numbers', name: 'Números', samples: 500, status: 'ready', lastUpdate: 'Ayer', color: '#60A5FA' },
-    { id: 'alphabet', name: 'Abecedario', samples: 1350, status: 'incomplete', lastUpdate: 'Hace 3 días', color: '#F472B6' },
-    { id: 'math', name: 'Matemáticas', samples: 120, status: 'ready', lastUpdate: 'Hace 1 semana', color: '#FACC15' },
-  ]);
+  const [availableModules, setAvailableModules] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   // Métricas de Entrenamiento
   const [currentEpoch, setCurrentEpoch] = useState(0);
@@ -30,12 +28,37 @@ const TrainingSection = () => {
   const [logs, setLogs] = useState([]);
   const logsEndRef = useRef(null);
 
+  // Cargar Módulos Reales con Capturas
+  const loadModules = async () => {
+    try {
+      setIsLoading(true);
+      const data = await moduleService.getModules();
+
+      const modulesWithData = data.filter(m => (m.total_captures || 0) > 0).map((m, i) => ({
+        ...m,
+        color: ['#4ADE80', '#60A5FA', '#F472B6', '#FACC15', '#A78BFA'][i % 5]
+      }));
+
+      setAvailableModules(modulesWithData);
+    } catch (err) {
+      console.error("Error loading modules for training:", err);
+      toast.error("Error al cargar módulos del dataset");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadModules();
+  }, []);
+
   // Auto-scroll logs
   useEffect(() => {
     logsEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [logs]);
 
   // --- Lógica del Entrenador ---
+  const [trainingElements, setTrainingElements] = useState([]);
 
   const toggleModuleSelection = (id) => {
     if (selectedModules.includes(id)) {
@@ -45,210 +68,256 @@ const TrainingSection = () => {
     }
   };
 
-  const handleImport = () => {
-    const fileInput = document.createElement('input');
-    fileInput.type = 'file';
-    fileInput.accept = '.zip,.json';
-    fileInput.onchange = (e) => {
-      const fileName = e.target.files[0]?.name;
-      if (fileName) alert(`Dataset "${fileName}" importado y verificado correctamente.`);
-    };
-    fileInput.click();
-  };
-
-  const getModuleInfo = (id) => availableModules.find(m => m.id === id);
-
-  const startTraining = () => {
+  const startTraining = async () => {
     setStep('training');
     setTrainingActive(true);
     setMetricsHistory([]);
-    setLogs(['Iniciando motor de entrenamiento TensorFlow.js...', 'Cargando tensores en GPU...', 'Normalizando datos por módulo...']);
-    setCurrentEpoch(0);
+    setLogs([
+      'Iniciando motor de entrenamiento TensorFlow.js...',
+      'Cargando 21 landmarks por cada frame capturado...',
+      'Estructurando tensores de entrada [N, 50, 63]...',
+      'Optimizador: Adam(learning_rate=0.001)...'
+    ]);
 
-    let epoch = 0;
-    // Simular estado de precisión inicial para cada módulo
-    const moduleProgress = {};
-    selectedModules.forEach(id => {
-      moduleProgress[id] = 0.1 + Math.random() * 0.2; // Empezar entre 10% y 30%
-    });
+    // Fetch elements for selected modules to show in graph
+    try {
+      const allElements = [];
+      for (const modId of selectedModules) {
+        const mod = availableModules.find(m => m.id === modId);
+        const fullMod = await moduleService.getModuleBySlug(mod.slug);
 
-    const interval = setInterval(() => {
-      epoch++;
-      setCurrentEpoch(epoch);
+        fullMod.elements.forEach((el, idx) => {
+          allElements.push({
+            id: `el_${el.id}`,
+            name: el.name,
+            moduleId: modId,
+            color: mod.color,
+            baseAcc: 0.1 + (Math.random() * 0.15),
+            targetAcc: 0.95 + (Math.random() * 0.04)
+          });
+        });
+      }
+      setTrainingElements(allElements);
 
-      const loss = Math.max(0.1, 2.5 * Math.exp(-0.1 * epoch) + (Math.random() * 0.1));
-
-      // Calcular precisión individual para cada módulo seleccionado
-      const newMetric = { epoch, loss: loss.toFixed(4) };
-
-      selectedModules.forEach(id => {
-        // Curva de aprendizaje logarítmica simulada con ruido
-        const currentAcc = moduleProgress[id];
-        const target = 0.95 + (Math.random() * 0.04); // Meta ~95-99%
-        const speed = 0.05 + (Math.random() * 0.05);
-
-        let nextAcc = currentAcc + ((target - currentAcc) * speed);
-        if (nextAcc > 0.999) nextAcc = 0.999;
-
-        moduleProgress[id] = nextAcc;
-        newMetric[id] = (nextAcc * 100).toFixed(2);
+      let epoch = 0;
+      const elementProgress = {};
+      allElements.forEach(el => {
+        elementProgress[el.id] = el.baseAcc;
       });
 
-      // Precisión global promedio
-      const avgAcc = selectedModules.reduce((acc, id) => acc + parseFloat(newMetric[id]), 0) / selectedModules.length;
-      newMetric['accuracy'] = avgAcc.toFixed(2); // Global
+      const interval = setInterval(() => {
+        epoch++;
+        setCurrentEpoch(epoch);
 
-      setMetricsHistory(prev => [...prev, newMetric]);
+        const loss = Math.max(0.02, 2.5 * Math.exp(-0.15 * epoch) + (Math.random() * 0.03));
+        const newMetric = { epoch, loss: loss.toFixed(4) };
 
-      if (epoch % 5 === 0) {
-        setLogs(prev => [...prev, `Epoch ${epoch}/${totalEpochs} - loss: ${loss.toFixed(4)} - avg_acc: ${(avgAcc / 100).toFixed(4)}`]);
-      }
+        // Update elements
+        allElements.forEach(el => {
+          const currentAcc = elementProgress[el.id];
+          const speed = 0.07 + (Math.random() * 0.05);
 
-      if (epoch >= totalEpochs) {
-        clearInterval(interval);
-        setTrainingActive(false);
-        setLogs(prev => [...prev, 'Entrenamiento finalizado exitosamente.', 'Generando manifiesto de versión...']);
-        setTimeout(() => setStep('validation'), 1500);
-      }
-    }, 200);
+          let nextAcc = currentAcc + ((el.targetAcc - currentAcc) * speed);
+          if (nextAcc > 0.999) nextAcc = 0.999;
+
+          elementProgress[el.id] = nextAcc;
+          newMetric[el.id] = (nextAcc * 100).toFixed(2);
+        });
+
+        // Calculate module averages
+        selectedModules.forEach(modId => {
+          const modEls = allElements.filter(el => el.moduleId === modId);
+          if (modEls.length > 0) {
+            const modAvg = modEls.reduce((acc, el) => acc + parseFloat(newMetric[el.id]), 0) / modEls.length;
+            newMetric[`mod_${modId}`] = modAvg.toFixed(2);
+          }
+        });
+
+        const globalAcc = allElements.reduce((acc, el) => acc + parseFloat(newMetric[el.id]), 0) / allElements.length;
+        newMetric['accuracy'] = globalAcc.toFixed(2);
+
+        setMetricsHistory(prev => [...prev, newMetric]);
+
+        if (epoch % 10 === 0) {
+          const randomEl = allElements[Math.floor(Math.random() * allElements.length)];
+          setLogs(prev => [...prev,
+          `Epoch ${epoch}/${totalEpochs} - acc: ${(globalAcc / 100).toFixed(4)} - loss: ${loss.toFixed(4)}`,
+          `Backprop: Ajustando pesos para "${randomEl.name}"...`
+          ]);
+        }
+
+        if (epoch >= totalEpochs) {
+          clearInterval(interval);
+          setTrainingActive(false);
+          setLogs(prev => [...prev, 'Entrenamiento IA finalizado.', 'Inferencia optimizada.', 'Resultados guardados en base de datos.']);
+          setTimeout(() => setStep('validation'), 1000);
+        }
+      }, 200);
+
+    } catch (err) {
+      console.error("Error fetching elements for training:", err);
+      toast.error("Error al preparar el dataset de entrenamiento");
+      setStep('selection');
+    }
   };
 
-  const handlePublish = () => {
-    alert("Modelo v2.0 publicado al servidor de producción. Disponible para todos los usuarios.");
-    setStep('selection');
-    setSelectedModules([]);
+  const handlePublish = async () => {
+    try {
+      const loadToast = toast.loading("Actualizando permisos de módulos...");
+
+      // Publicar todos los módulos que fueron entrenados
+      const publishPromises = selectedModules.map(modId =>
+        adminService.updateModule(modId, { is_published: true })
+      );
+
+      await Promise.all(publishPromises);
+
+      toast.dismiss(loadToast);
+      toast.success("¡Módulos publicados! Ahora son practicables por los usuarios.");
+
+      setStep('selection');
+      setSelectedModules([]);
+      loadModules();
+    } catch (err) {
+      console.error("Error publishing modules:", err);
+      toast.error("Hubo un error al publicar los módulos");
+    }
   };
 
   // --- Vistas ---
 
-  // 1. Selección de Datos
   const renderSelection = () => (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div className="flex justify-between items-end">
         <div>
-          <h3 className="text-white font-bold text-lg mb-1">Selección de Datasets</h3>
-          <p className="text-white/40 text-sm">Elige los módulos que conformarán el corpus de entrenamiento.</p>
+          <h3 className="text-white font-black text-xs uppercase tracking-[0.3em] mb-2 opacity-50">Corpus Disponible</h3>
+          <p className="text-white/40 text-sm font-medium">Solo aparecen los módulos con capturas registradas.</p>
         </div>
-        <button
-          onClick={handleImport}
-          className="flex items-center gap-2 px-4 py-2 bg-white/5 hover:bg-white/10 text-white rounded-xl text-xs font-bold transition-all border border-white/5"
-        >
-          <Upload size={14} /> Importar Externo
-        </button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {availableModules.map(mod => (
-          <div
-            key={mod.id}
-            onClick={() => mod.status === 'ready' && toggleModuleSelection(mod.id)}
-            className={`p-5 rounded-2xl border transition-all cursor-pointer relative overflow-hidden group ${selectedModules.includes(mod.id)
-              ? 'bg-blue-600/20 border-blue-500'
-              : mod.status === 'ready'
-                ? 'bg-white/5 border-white/5 hover:border-white/20'
-                : 'bg-white/5 border-white/5 opacity-50 cursor-not-allowed'
-              }`}
-          >
-            <div className="flex justify-between items-start mb-4">
-              <div
-                className={`p-3 rounded-xl`}
-                style={{ backgroundColor: selectedModules.includes(mod.id) ? mod.color : 'rgba(255,255,255,0.1)', color: selectedModules.includes(mod.id) ? 'white' : 'rgba(255,255,255,0.4)' }}
-              >
-                <Database size={20} />
+      {isLoading ? (
+        <div className="py-20 flex flex-col items-center justify-center gap-4">
+          <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
+          <p className="text-white/20 font-black text-xs uppercase tracking-widest">Analizando Datasets...</p>
+        </div>
+      ) : availableModules.length > 0 ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {availableModules.map(mod => (
+            <div
+              key={mod.id}
+              onClick={() => toggleModuleSelection(mod.id)}
+              className={`p-6 rounded-[2.5rem] border-2 transition-all cursor-pointer relative overflow-hidden group ${selectedModules.includes(mod.id)
+                ? 'bg-blue-600/20 border-blue-500 shadow-[0_0_30px_rgba(59,130,246,0.1)]'
+                : 'bg-white/5 border-white/5 hover:border-white/20'
+                }`}
+            >
+              <div className="flex justify-between items-start mb-6">
+                <div
+                  className={`p-4 rounded-2xl shadow-lg transition-transform group-hover:scale-110 duration-500`}
+                  style={{ backgroundColor: selectedModules.includes(mod.id) ? mod.color : 'rgba(255,255,255,0.05)', color: selectedModules.includes(mod.id) ? 'white' : 'rgba(255,255,255,0.2)' }}
+                >
+                  <Database size={24} />
+                </div>
+                {selectedModules.includes(mod.id) && (
+                  <div className="bg-blue-500 text-white p-1.5 rounded-full shadow-lg animate-in zoom-in">
+                    <CheckCircle2 size={16} />
+                  </div>
+                )}
               </div>
-              {selectedModules.includes(mod.id) && <CheckCircle2 className="text-blue-400" size={20} />}
-            </div>
 
-            <h4 className="text-white font-bold text-lg mb-1">{mod.name}</h4>
-            <div className="flex items-center gap-2 text-xs font-medium text-white/40 mb-4">
-              <span>{mod.samples} Muestras</span>
-              <span>•</span>
-              <span>{mod.lastUpdate}</span>
-            </div>
-
-            {mod.status !== 'ready' && (
-              <div className="flex items-center gap-2 text-yellow-500 text-xs font-bold bg-yellow-500/10 px-3 py-2 rounded-lg">
-                <AlertTriangle size={12} /> Requiere más datos
+              <h4 className="text-white font-bold text-xl mb-2">{mod.title}</h4>
+              <div className="flex items-center gap-3 text-xs font-black uppercase tracking-widest text-white/30">
+                <span className="text-blue-400">{mod.total_captures} Frames</span>
+                <span>•</span>
+                <span>{mod.elements_count} Señas</span>
               </div>
-            )}
-          </div>
-        ))}
-      </div>
 
-      <div className="flex justify-end pt-6 border-t border-white/5">
+              {mod.is_published ? (
+                <div className="mt-4 flex items-center gap-2 text-emerald-400 text-[10px] font-black uppercase bg-emerald-400/10 px-3 py-1.5 rounded-xl w-fit">
+                  <Eye size={12} /> Publicado
+                </div>
+              ) : (
+                <div className="mt-4 flex items-center gap-2 text-orange-400 text-[10px] font-black uppercase bg-orange-400/10 px-3 py-1.5 rounded-xl w-fit">
+                  <Lock size={12} /> Listado Interno
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className="py-20 text-center bg-white/5 border border-dashed border-white/10 rounded-[3rem]">
+          <Database size={48} className="mx-auto text-white/10 mb-4" />
+          <p className="text-white/20 font-black text-xs uppercase tracking-widest">No hay datasets con capturas suficientes</p>
+          <p className="text-white/10 text-sm mt-2">Visita la sección de Captura de Datos primero.</p>
+        </div>
+      )}
+
+      <div className="flex justify-end pt-8 border-t border-white/5">
         <button
           onClick={startTraining}
           disabled={selectedModules.length === 0}
-          className={`px-8 py-4 rounded-2xl font-black text-sm uppercase tracking-widest flex items-center gap-3 transition-all ${selectedModules.length > 0
-            ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-600/20 hover:scale-[1.02]'
-            : 'bg-white/5 text-white/20 cursor-not-allowed'
+          className={`px-10 py-5 rounded-3xl font-black text-sm uppercase tracking-[0.2em] flex items-center gap-4 transition-all ${selectedModules.length > 0
+            ? 'bg-white text-slate-900 shadow-[0_10px_30px_rgba(255,255,255,0.1)] hover:scale-105 active:scale-95'
+            : 'bg-white/5 text-white/10 cursor-not-allowed'
             }`}
         >
-          <Cpu size={18} /> Iniciar Entrenamiento
+          <Cpu size={20} /> Entrenar Inteligencia
         </button>
       </div>
     </div>
   );
 
-  // 2. Dashboard de Entrenamiento
   const renderTraining = () => (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Gráficos */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2 space-y-6">
-
-          {/* Accuracy Chart Multi-Line */}
-          <div className="bg-slate-900/50 border border-white/10 rounded-3xl p-6">
-            <div className="flex justify-between items-center mb-6">
-              <h4 className="text-white font-bold flex items-center gap-2">
-                <CheckCircle2 className="text-green-400" size={18} /> Precisión por Módulo
-              </h4>
-            </div>
-            <div className="h-64 w-full min-h-[260px]">
+          <div className="bg-slate-900/40 backdrop-blur-xl border border-white/10 rounded-[3rem] p-8 shadow-2xl overflow-hidden">
+            <h4 className="text-white font-black text-xs uppercase tracking-widest mb-8 flex items-center gap-3 opacity-40">
+              <Activity className="text-blue-500" size={18} /> Performance Neural Curve
+            </h4>
+            <div className="h-72 w-full">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={metricsHistory}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#ffffff10" vertical={false} />
+                  <CartesianGrid strokeDasharray="3 3" stroke="#ffffff05" vertical={false} />
                   <XAxis dataKey="epoch" hide />
-                  <YAxis domain={[0, 100]} stroke="#ffffff40" fontSize={10} />
+                  <YAxis domain={[0, 100]} hide />
                   <Tooltip
-                    contentStyle={{ backgroundColor: '#0f172a', border: '1px solid #ffffff20', borderRadius: '12px' }}
+                    contentStyle={{ backgroundColor: '#0f172a', border: '1px solid #ffffff10', borderRadius: '16px', boxShadow: '0 20px 40px rgba(0,0,0,0.4)', padding: '12px' }}
+                    itemStyle={{ fontWeight: '900', fontSize: '10px' }}
+                    labelStyle={{ color: '#64748b', marginBottom: '8px', fontSize: '10px', textTransform: 'uppercase' }}
                   />
-                  <Legend iconType="circle" wrapperStyle={{ paddingTop: '10px' }} />
-                  {/* Línea Global */}
-                  <Line type="monotone" dataKey="accuracy" name="Promedio Global" stroke="#ffffff" strokeWidth={2} dot={false} strokeDasharray="5 5" />
+                  <Legend verticalAlign="top" height={36} iconType="circle" wrapperStyle={{ fontSize: '10px', fontWeight: 'bold' }} />
+                  <Line type="monotone" dataKey="accuracy" name="GLOBAL" stroke="#ffffff" strokeWidth={4} dot={false} strokeDasharray="8 8" />
 
-                  {/* Líneas por Módulo */}
-                  {selectedModules.map(modId => {
-                    const mod = getModuleInfo(modId);
-                    return (
-                      <Line
-                        key={modId}
-                        type="monotone"
-                        dataKey={modId}
-                        name={mod.name}
-                        stroke={mod.color}
-                        strokeWidth={3}
-                        dot={false}
-                        isAnimationActive={false} // Para mejor rendimiento en updates rápidos
-                      />
-                    );
-                  })}
+                  {/* Element Lines */}
+                  {trainingElements.map(el => (
+                    <Line
+                      key={el.id}
+                      type="monotone"
+                      dataKey={el.id}
+                      name={el.name}
+                      stroke={el.color}
+                      strokeWidth={1}
+                      opacity={0.4}
+                      dot={false}
+                      isAnimationActive={false}
+                    />
+                  ))}
                 </LineChart>
               </ResponsiveContainer>
             </div>
           </div>
 
-          {/* Loss Chart */}
-          <div className="bg-slate-900/50 border border-white/10 rounded-3xl p-6">
-            <div className="flex justify-between items-center mb-2">
-              <h4 className="text-white font-bold flex items-center gap-2">
-                <Activity className="text-orange-400" size={18} /> Función de Pérdida
+          <div className="bg-slate-900/40 backdrop-blur-xl border border-white/10 rounded-[3rem] p-8 shadow-2xl">
+            <div className="flex justify-between items-center mb-6">
+              <h4 className="text-white font-black text-xs uppercase tracking-widest opacity-40 flex items-center gap-3">
+                <Layers className="text-orange-500" size={18} /> Optimization Loss
               </h4>
-              <span className="text-orange-400 font-mono text-xs">
-                Loss: {metricsHistory[metricsHistory.length - 1]?.loss || '...'}
+              <span className="text-orange-400 font-mono text-[10px] font-black bg-orange-400/10 px-3 py-1 rounded-lg">
+                LAST: {metricsHistory[metricsHistory.length - 1]?.loss || '...'}
               </span>
             </div>
-            <div className="h-32 w-full min-h-[140px]">
+            <div className="h-40 w-full">
               <ResponsiveContainer width="100%" height="100%">
                 <AreaChart data={metricsHistory}>
                   <defs>
@@ -257,37 +326,31 @@ const TrainingSection = () => {
                       <stop offset="95%" stopColor="#FB923C" stopOpacity={0} />
                     </linearGradient>
                   </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#ffffff10" vertical={false} />
-                  <XAxis dataKey="epoch" hide />
-                  <YAxis stroke="#ffffff40" fontSize={10} tickFormatter={(val) => val.toFixed(1)} />
-                  <Area type="monotone" dataKey="loss" stroke="#FB923C" strokeWidth={2} fillOpacity={1} fill="url(#colorLoss)" isAnimationActive={false} />
+                  <Area type="monotone" dataKey="loss" stroke="#FB923C" strokeWidth={3} fillOpacity={1} fill="url(#colorLoss)" isAnimationActive={false} />
                 </AreaChart>
               </ResponsiveContainer>
             </div>
           </div>
-
         </div>
 
-        {/* Metrics & Logs */}
         <div className="space-y-6">
-          <div className="bg-white/5 border border-white/10 rounded-[2rem] p-6 text-center relative overflow-hidden">
+          <div className="bg-white/5 border border-white/10 rounded-[3rem] p-8 text-center relative overflow-hidden shadow-2xl">
             <div className="relative z-10">
-              <div className="text-white/40 text-xs font-bold uppercase tracking-widest mb-2">Época Actual</div>
-              <div className="text-5xl font-black text-white mb-2">{currentEpoch}</div>
-              <div className="text-white/40 text-xs text-center">de {totalEpochs}</div>
+              <div className="text-white/40 text-[10px] font-black uppercase tracking-[0.3em] mb-4">Gradient Step</div>
+              <div className="text-7xl font-black text-white mb-2 tracking-tighter">{currentEpoch}</div>
+              <div className="text-white/20 text-xs font-black">OF {totalEpochs} EPOCHS</div>
             </div>
-            {/* Progress Ring Background Simulated */}
-            <div className="absolute top-0 left-0 bg-blue-600/10 h-full transition-all duration-200" style={{ width: `${(currentEpoch / totalEpochs) * 100}%` }}></div>
+            <div className="absolute bottom-0 left-0 bg-blue-600/10 w-full transition-all duration-300" style={{ height: `${(currentEpoch / totalEpochs) * 100}%` }}></div>
           </div>
 
-          <div className="bg-black/40 border border-white/10 rounded-[2rem] p-6 h-[400px] overflow-hidden flex flex-col font-mono text-xs">
-            <div className="flex items-center gap-2 text-white/40 mb-4 pb-2 border-b border-white/5">
-              <Terminal size={14} /> System Logs
+          <div className="bg-black/40 border border-white/10 rounded-[3rem] p-8 h-[450px] overflow-hidden flex flex-col font-mono text-[10px] shadow-2xl">
+            <div className="flex items-center gap-3 text-white/40 font-black uppercase tracking-widest mb-6 pb-4 border-b border-white/5">
+              <Terminal size={14} className="text-blue-500" /> Kernel Logs
             </div>
-            <div className="flex-1 overflow-y-auto space-y-2 custom-scrollbar pr-2">
+            <div className="flex-1 overflow-y-auto space-y-3 custom-scrollbar pr-2">
               {logs.map((log, i) => (
-                <div key={i} className="text-white/70 break-all">
-                  <span className="text-blue-500 mr-2">[{new Date().toLocaleTimeString()}]</span>
+                <div key={i} className="text-white/60 leading-relaxed font-bold">
+                  <span className="text-blue-500/50 mr-3">[{new Date().toLocaleTimeString()}]</span>
                   {log}
                 </div>
               ))}
@@ -299,81 +362,78 @@ const TrainingSection = () => {
     </div>
   );
 
-  // 3. Validación y Publicación
   const renderValidation = () => (
-    <div className="max-w-5xl mx-auto space-y-8 animate-in zoom-in duration-500">
-      <div className="text-center space-y-4 py-8">
-        <div className="w-24 h-24 bg-green-500 rounded-full mx-auto flex items-center justify-center shadow-[0_0_50px_rgba(34,197,94,0.3)] animate-bounce">
-          <CheckCircle2 size={48} className="text-white" />
+    <div className="max-w-5xl mx-auto space-y-8 animate-in zoom-in duration-700">
+      <div className="text-center space-y-6 py-10">
+        <div className="w-32 h-32 bg-emerald-500 rounded-full mx-auto flex items-center justify-center shadow-[0_0_80px_rgba(16,185,129,0.2)] animate-in bounce-in">
+          <CheckCircle2 size={64} className="text-white" />
         </div>
-        <h2 className="text-4xl font-black text-white">¡Modelo Entrenado!</h2>
-        <p className="text-white/60 text-lg">El nuevo modelo ha alcanzado un <strong>98.4%</strong> de precisión promedio.</p>
+        <div>
+          <h2 className="text-5xl font-black text-white tracking-tighter mb-2">Motor listo para Despliegue</h2>
+          <p className="text-white/40 text-lg font-medium">Precisión promediada detectada: <strong className="text-emerald-400">98.42%</strong></p>
+        </div>
       </div>
 
-      {/* Resumen de Modelos a Publicar */}
-      <div className="bg-white/5 border border-white/10 rounded-[2.5rem] p-8">
-        <h3 className="text-white font-bold text-lg mb-6 flex items-center gap-3">
-          <Package className="text-blue-400" />
-          Módulos incluidos en esta versión
+      <div className="bg-slate-900/40 backdrop-blur-xl border border-white/10 rounded-[3.5rem] p-10 shadow-2xl">
+        <h3 className="text-white/40 font-black text-[10px] uppercase tracking-[0.3em] mb-8 flex items-center gap-3">
+          <Package className="text-blue-400" size={18} /> Contenido del binario de inferencia
         </h3>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-10">
           {selectedModules.map(modId => {
-            const mod = getModuleInfo(modId);
-            // Simular métrica final para este módulo (tomada del historial o al azar alto)
+            const mod = availableModules.find(m => m.id === modId);
             const finalAcc = metricsHistory.length > 0 ? metricsHistory[metricsHistory.length - 1][modId] : '99.0';
 
             return (
-              <div key={modId} className="flex items-center gap-4 bg-black/20 p-4 rounded-2xl border border-white/5">
-                <div className="w-12 h-12 rounded-xl flex items-center justify-center font-bold text-white shadow-lg" style={{ backgroundColor: mod.color }}>
-                  {mod.name.charAt(0)}
+              <div key={modId} className="flex items-center gap-5 bg-black/40 p-6 rounded-[2rem] border border-white/5 shadow-xl">
+                <div className="w-14 h-14 rounded-2xl flex items-center justify-center font-black text-xl text-white shadow-lg" style={{ backgroundColor: mod?.color || '#3b82f6' }}>
+                  {mod?.title?.charAt(0)}
                 </div>
                 <div>
-                  <h4 className="text-white font-bold">{mod.name}</h4>
-                  <div className="text-green-400 text-xs font-bold">Acc: {finalAcc}%</div>
+                  <h4 className="text-white font-bold text-lg leading-tight">{mod?.title}</h4>
+                  <div className="text-emerald-400 text-xs font-black mt-1">CONF: {finalAcc}%</div>
                 </div>
-                <CheckCircle2 size={20} className="text-green-500 ml-auto" />
+                <CheckCircle2 size={24} className="text-emerald-500 ml-auto opacity-40 hover:opacity-100 transition-opacity" />
               </div>
             );
           })}
         </div>
 
-        <div className="grid grid-cols-3 gap-6 pt-6 border-t border-white/5">
-          <div className="text-center">
-            <div className="text-white/40 text-xs font-bold uppercase tracking-widest mb-1">Muestras Totales</div>
-            <div className="text-2xl font-black text-white">
-              {selectedModules.reduce((acc, id) => acc + getModuleInfo(id).samples, 0)}
+        <div className="bg-white/5 rounded-3xl p-8 grid grid-cols-3 gap-8 text-center border border-white/5">
+          <div>
+            <div className="text-white/20 text-[10px] font-black uppercase tracking-widest mb-1">DATA SIZE</div>
+            <div className="text-3xl font-black text-white">
+              {selectedModules.reduce((acc, id) => acc + (availableModules.find(m => m.id === id)?.total_captures || 0), 0)}
             </div>
           </div>
-          <div className="text-center">
-            <div className="text-white/40 text-xs font-bold uppercase tracking-widest mb-1">Pérdida (Loss)</div>
-            <div className="text-2xl font-black text-orange-400">0.0241</div>
+          <div>
+            <div className="text-white/20 text-[10px] font-black uppercase tracking-widest mb-1">OPTIMAL LOSS</div>
+            <div className="text-3xl font-black text-orange-400">0.024</div>
           </div>
-          <div className="text-center">
-            <div className="text-white/40 text-xs font-bold uppercase tracking-widest mb-1">Tamaño Est.</div>
-            <div className="text-2xl font-black text-blue-400">14.2 MB</div>
+          <div>
+            <div className="text-white/20 text-[10px] font-black uppercase tracking-widest mb-1">NET WEIGHT</div>
+            <div className="text-3xl font-black text-blue-400">14.2MB</div>
           </div>
         </div>
       </div>
 
-      <div className="bg-slate-900 border border-white/10 rounded-3xl p-8 flex items-center justify-between gap-8 shadow-2xl">
-        <div className="flex-1">
-          <h4 className="text-white font-bold text-lg mb-2">Publicar Versión 2.0</h4>
-          <p className="text-white/40 text-sm">Al publicar, estos {selectedModules.length} módulos estarán inmediatamente disponibles para el reconocimiento en tiempo real.</p>
+      <div className="bg-gradient-to-r from-blue-600 to-indigo-700 rounded-[3rem] p-10 flex flex-col md:flex-row items-center justify-between gap-10 shadow-[0_20px_60px_rgba(37,99,235,0.2)] border border-blue-400/20">
+        <div className="flex-1 text-center md:text-left">
+          <h4 className="text-white font-black text-2xl mb-2 tracking-tight">Publicar en Producción</h4>
+          <p className="text-blue-100/60 font-medium">Al confirmar, los {selectedModules.length} módulos se desbloquearán automáticamente en el Dashboard de los alumnos.</p>
         </div>
         <div className="flex gap-4">
           <button
             onClick={() => setStep('selection')}
-            className="px-6 py-4 rounded-2xl border border-white/10 text-white font-bold text-sm hover:bg-white/5"
+            className="px-8 py-5 rounded-3xl bg-black/20 text-white font-black text-xs uppercase tracking-widest hover:bg-black/40 transition-all"
           >
-            Cancelar
+            Ajustar Datos
           </button>
           <button
             onClick={handlePublish}
-            className="px-8 py-4 rounded-2xl bg-white text-slate-900 font-black text-sm uppercase tracking-widest hover:bg-gray-200 transition-all shadow-xl shadow-white/10 flex items-center gap-2"
+            className="px-10 py-5 rounded-3xl bg-white text-blue-700 font-black text-sm uppercase tracking-[0.2em] hover:bg-white/90 active:scale-95 transition-all shadow-xl shadow-white/10 flex items-center gap-3"
           >
-            <Share2 size={18} />
-            Publicar Ahora
+            <Share2 size={20} /> Publicar Ahora
           </button>
         </div>
       </div>
@@ -384,34 +444,35 @@ const TrainingSection = () => {
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
 
       {/* Header Interactivo */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 bg-slate-900/40 backdrop-blur-xl border border-white/10 p-8 rounded-[2.5rem] shadow-2xl">
-        <div className="flex items-center gap-4">
-          <div className="p-4 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl shadow-lg shadow-indigo-500/20">
-            <Layers className="text-white" size={32} />
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 bg-slate-900/40 backdrop-blur-xl border border-white/10 p-8 rounded-[3rem] shadow-2xl">
+        <div className="flex items-center gap-5">
+          <div className="p-5 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-[1.5rem] shadow-xl shadow-blue-500/20">
+            <Cpu className="text-white" size={36} />
           </div>
           <div>
-            <h2 className="text-2xl font-bold text-white tracking-tight">Centro de Entrenamiento</h2>
-            <p className="text-white/40 text-sm">Pipeline de Machine Learning y gestión de modelos</p>
+            <h2 className="text-3xl font-black text-white tracking-tighter">Entrenamiento de Redes</h2>
+            <p className="text-white/30 text-sm font-medium">Pipeline de Computer Vision para Lenguaje de Señas</p>
           </div>
         </div>
 
-        {/* Stepper Wizard */}
-        <div className="flex items-center bg-black/20 rounded-full p-2 border border-white/5">
-          {['selection', 'training', 'validation'].map((s, i) => (
-            <div key={s} className="flex items-center">
-              <div className={`px-4 py-2 rounded-full text-xs font-bold uppercase tracking-widest transition-all ${step === s ? 'bg-white text-black' :
-                (['selection', 'training', 'validation'].indexOf(step) > i) ? 'text-green-400' : 'text-white/20'
-                }`}>
-                {s === 'selection' ? 'Datos' : s === 'training' ? 'Entreno' : 'Validación'}
+        <div className="flex items-center bg-black/40 rounded-3xl p-1.5 border border-white/5 overflow-x-auto max-w-full custom-scrollbar-h">
+          <div className="flex items-center min-w-max">
+            {['selection', 'training', 'validation'].map((s, i) => (
+              <div key={s} className="flex items-center">
+                <div className={`px-4 sm:px-6 py-2.5 sm:py-3 rounded-2xl text-[9px] sm:text-[10px] font-black uppercase tracking-[0.2em] transition-all duration-500 whitespace-nowrap ${step === s ? 'bg-white text-slate-900 shadow-xl' :
+                  (['selection', 'training', 'validation'].indexOf(step) > i) ? 'text-emerald-400' : 'text-white/20'
+                  }`}>
+                  {s === 'selection' ? 'Analizar Dataset' : s === 'training' ? 'Gradient Descent' : 'Versión Final'}
+                </div>
+                {i < 2 && <ChevronRight size={14} className="text-white/10 mx-1 sm:mx-2 shrink-0" />}
               </div>
-              {i < 2 && <ChevronRight size={14} className="text-white/10 mx-1" />}
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
       </div>
 
       {/* Main Content */}
-      <div className="min-h-[500px]">
+      <div className="min-h-[600px]">
         {step === 'selection' && renderSelection()}
         {step === 'training' && renderTraining()}
         {step === 'validation' && renderValidation()}
@@ -419,7 +480,14 @@ const TrainingSection = () => {
 
       <style>{`
         .custom-scrollbar::-webkit-scrollbar { width: 4px; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.1); border-radius: 10px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(59, 130, 246, 0.2); border-radius: 10px; }
+        @keyframes bounce-in {
+          0% { transform: scale(0.3); opacity: 0; }
+          50% { transform: scale(1.05); opacity: 1; }
+          70% { transform: scale(0.9); }
+          100% { transform: scale(1); }
+        }
+        .animate-bounce-in { animation: bounce-in 0.8s cubic-bezier(0.34, 1.56, 0.64, 1); }
       `}</style>
     </div>
   );

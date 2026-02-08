@@ -9,83 +9,99 @@ import {
     Users, BookOpen, Database, TrendingUp,
     Award, Camera, Cpu, Activity,
     CheckCircle2, AlertCircle, Timer, X, Search,
-    Trophy
+    Trophy, MousePointer2, Zap, Clock, ChevronRight, Server, HardDrive, LayoutGrid, CalendarDays
 } from 'lucide-react';
 
+import { adminService } from '../../api/adminService';
+import { moduleService } from '../../api/moduleService';
+
 const DashboardHome = () => {
-    const [isProgressModalOpen, setIsProgressModalOpen] = useState(false);
+    const [isLoading, setIsLoading] = useState(true);
+    const [stats, setStats] = useState([]);
+    const [moduleDistribution, setModuleDistribution] = useState([]);
 
-    // Datos simulados basados en el contexto del instituto
-    const moduleStatusData = [
-        { name: 'Activos', value: 12, color: '#10b981' },
-        { name: 'Desactivados', value: 3, color: '#64748b' },
-    ];
+    // Nuevas métricas funcionales reales
+    const [topStudents, setTopStudents] = useState([]);
+    const [weeklyProgress, setWeeklyProgress] = useState([]);
 
-    const trainingProgressData = [
-        { name: 'Vocales', capturado: 210, objetivo: 250 }, // 5 elementos * 50
-        { name: 'Números', capturado: 420, objetivo: 500 }, // 10 elementos * 50
-        { name: 'Abecedario', capturado: 1150, objetivo: 1350 }, // 27 elementos * 50
-        { name: 'Saludos', capturado: 180, objetivo: 400 }, // 8 elementos * 50
-        { name: 'Colores', capturado: 120, objetivo: 350 }, // 7 elementos * 50
-    ];
+    useEffect(() => {
+        const fetchDashboardData = async () => {
+            try {
+                setIsLoading(true);
 
-    const modelAccuracyData = [
-        { epoca: 'E1', precision: 65 },
-        { epoca: 'E2', precision: 72 },
-        { epoca: 'E3', precision: 78 },
-        { epoca: 'E4', precision: 85 },
-        { epoca: 'E5', precision: 89 },
-        { epoca: 'E6', precision: 92 },
-        { epoca: 'E7', precision: 94.8 },
-    ];
+                // 1. Obtener distribución de capturas por MÓDULO
+                const moduleDist = await adminService.getModuleDistribution();
+                setModuleDistribution(moduleDist.map(d => ({
+                    name: d.label,
+                    capturado: d.value,
+                    objetivo: 250
+                })));
 
-    const stats = [
-        {
-            label: 'Imágenes Totales',
-            value: '18,450',
-            subValue: 'Meta: 50 por seña',
-            icon: Camera,
-            color: 'blue',
-            trend: '+2.4k esta semana'
-        },
-        {
-            label: 'Módulos Publicados',
-            value: '12 / 15',
-            subValue: '3 en borrador',
-            icon: BookOpen,
-            color: 'green',
-            trend: '82% Activos'
-        },
-        {
-            label: 'Usuarios Registrados',
-            value: '842',
-            subValue: 'Estudiantes activos',
-            icon: Users,
-            color: 'purple',
-            trend: '+12 hoy'
-        },
-        {
-            label: 'Precisión Promedio',
-            value: '94.8%',
-            subValue: 'Modelo v2.4',
-            icon: Cpu,
-            color: 'yellow',
-            trend: 'Optimizado'
-        }
-    ];
+                // 2. Obtener Top Estudiantes (Nuevo)
+                try {
+                    const topUsers = await adminService.getTopStudents();
+                    setTopStudents(topUsers);
+                } catch (e) {
+                    console.error("Error fetching top students", e);
+                    setTopStudents([]);
+                }
 
-    // Datos de logros / completados
-    const completedActivities = [
-        { id: 1, name: 'Ana García', module: 'Vocales', time: 'Hace 5 min', date: '24/12/2023' },
-        { id: 2, name: 'María López', module: 'Números', time: 'Hace 25 min', date: '24/12/2023' },
-        { id: 3, name: 'Jorge Castro', module: 'Vocales', time: 'Hace 2 horas', date: '24/12/2023' },
-        { id: 4, name: 'Elena Méndez', module: 'Abecedario', time: 'Hace 4 horas', date: '24/12/2023' },
-        { id: 5, name: 'Ricardo S.', module: 'Saludos', time: 'Hace 6 horas', date: '23/12/2023' },
-        { id: 6, name: 'Sofía V.', module: 'Colores', time: 'Hace 8 horas', date: '23/12/2023' },
-        { id: 7, name: 'Daniel P.', module: 'Vocales', time: 'Hace 1 día', date: '23/12/2023' },
-        { id: 8, name: 'Marisol T.', module: 'Números', time: 'Hace 1 día', date: '23/12/2023' },
-        { id: 9, name: 'Kevin B.', module: 'Abecedario', time: 'Hace 2 días', date: '22/12/2023' },
-    ];
+                // 3. Obtener Progreso Semanal (Nuevo)
+                try {
+                    const weekly = await adminService.getWeeklyProgress();
+                    setWeeklyProgress(weekly);
+                } catch (e) {
+                    console.error("Error fetching weekly progress", e);
+                    setWeeklyProgress([]);
+                }
+
+                // 4. Obtener estadísticas generales reales
+                const genStats = await adminService.getGeneralStats();
+
+                setStats([
+                    {
+                        label: 'Imágenes Totales',
+                        value: genStats.total_captures.toLocaleString(),
+                        subValue: `${genStats.captures_today || 0} capturadas hoy`,
+                        icon: Camera,
+                        color: 'blue',
+                        trend: 'Dataset Real'
+                    },
+                    {
+                        label: 'Módulos Publicados',
+                        value: `${genStats.published_modules} / ${genStats.total_modules}`,
+                        subValue: `${genStats.total_modules - genStats.published_modules} módulos en borrador`,
+                        icon: BookOpen,
+                        color: 'green',
+                        trend: 'En Vivo'
+                    },
+                    {
+                        label: 'Usuarios Activos',
+                        value: genStats.total_users,
+                        subValue: 'Estudiantes en plataforma',
+                        icon: Users,
+                        color: 'purple',
+                        trend: 'Crecimiento'
+                    },
+                    {
+                        label: 'Precisión Motor IA',
+                        value: `${genStats.avg_accuracy}%`,
+                        subValue: 'Promedio global histórico',
+                        icon: Cpu,
+                        color: 'yellow',
+                        trend: 'Optimizado'
+                    }
+                ]);
+
+            } catch (error) {
+                console.error("Error cargando dashboard admin:", error);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        fetchDashboardData();
+    }, []);
 
     const getColorClasses = (color) => {
         const colors = {
@@ -97,257 +113,202 @@ const DashboardHome = () => {
         return colors[color];
     };
 
+    if (isLoading) {
+        return (
+            <div className="flex flex-col items-center justify-center min-h-[400px] gap-4">
+                <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                <p className="text-white/40 animate-pulse font-medium tracking-tight">Sincronizando métricas de red neuronal...</p>
+            </div>
+        );
+    }
+
     return (
-        <div className="space-y-8 animate-in fade-in duration-700 pb-10">
+        <div className="space-y-6 sm:space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-1000 pb-12">
 
-            {/* Modal de Progreso Completo */}
-            {isProgressModalOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-                    <div
-                        className="absolute inset-0 bg-slate-950/60 backdrop-blur-sm"
-                        onClick={() => setIsProgressModalOpen(false)}
-                    ></div>
-                    <div className="bg-slate-900 border border-white/10 w-full max-w-2xl max-h-[80vh] rounded-[2.5rem] relative z-10 overflow-hidden flex flex-col animate-in zoom-in duration-300 shadow-2xl">
-                        <div className="p-8 border-b border-white/5 flex items-center justify-between bg-gradient-to-r from-blue-600/10 to-transparent">
-                            <div>
-                                <h3 className="text-2xl font-bold text-white flex items-center gap-3">
-                                    <Trophy className="text-yellow-400" />
-                                    Historial de Módulos Completados
-                                </h3>
-                                <p className="text-white/40 text-sm mt-1">Registro histórico de todos los estudiantes aprobados.</p>
-                            </div>
-                            <button
-                                onClick={() => setIsProgressModalOpen(false)}
-                                className="p-2 hover:bg-white/10 rounded-xl text-white/40 hover:text-white transition-all"
-                            >
-                                <X />
-                            </button>
-                        </div>
-
-                        <div className="p-4 flex gap-4 bg-white/5">
-                            <div className="flex-1 relative">
-                                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-white/20" size={18} />
-                                <input
-                                    type="text"
-                                    placeholder="Buscar estudiante o módulo..."
-                                    className="w-full bg-slate-950/50 border border-white/10 rounded-2xl pl-12 pr-4 py-3 text-white placeholder-white/20 focus:outline-none focus:border-blue-500/40 transition-all text-sm"
-                                />
-                            </div>
-                        </div>
-
-                        <div className="flex-1 overflow-y-auto p-8 space-y-4 custom-scrollbar">
-                            {completedActivities.map((user) => (
-                                <div key={user.id} className="flex items-center justify-between p-4 rounded-2xl bg-white/5 border border-white/5 hover:bg-white/10 transition-all">
-                                    <div className="flex items-center gap-4">
-                                        <div className="w-10 h-10 rounded-xl bg-blue-500/20 border border-blue-500/20 flex items-center justify-center text-blue-400 font-bold">
-                                            {user.name.charAt(0)}
-                                        </div>
-                                        <div>
-                                            <div className="text-white font-bold">{user.name}</div>
-                                            <div className="text-white/40 text-xs">Aprobó el módulo de <span className="text-blue-400 font-bold">{user.module}</span></div>
-                                        </div>
-                                    </div>
-                                    <div className="text-right">
-                                        <div className="text-green-400 text-[10px] font-black uppercase tracking-widest bg-green-400/10 px-2 py-0.5 rounded-lg mb-1 inline-block">Éxito</div>
-                                        <div className="text-white/20 text-[10px] font-mono">{user.date} • {user.time}</div>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-
-                        <div className="p-6 border-t border-white/5 bg-slate-950/50 text-center">
-                            <p className="text-white/20 text-[10px] uppercase tracking-widest font-bold">Mostrando {completedActivities.length} registros recientes</p>
+            {/* Header de Bienvenida */}
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 bg-slate-900/40 backdrop-blur-xl border border-white/10 p-8 rounded-[2.5rem] shadow-2xl">
+                <div className="flex items-center gap-6">
+                    <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-3xl flex items-center justify-center shadow-lg shadow-blue-500/20 rotate-3">
+                        <Activity className="text-white" size={32} />
+                    </div>
+                    <div>
+                        <h2 className="text-3xl font-black text-white tracking-tight leading-none mb-2">Panel Maestro IA</h2>
+                        <div className="flex items-center gap-2">
+                            <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse shadow-[0_0_10px_rgba(34,197,94,0.5)]"></div>
+                            <p className="text-white/40 text-sm font-bold uppercase tracking-widest">Sincronizado • Tiempo Real</p>
                         </div>
                     </div>
                 </div>
-            )}
 
-            {/* Sección de Bienvenida */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <div>
-                    <h2 className="text-3xl font-bold text-white tracking-tight">Panorama Académico</h2>
-                    <p className="text-white/40 mt-1">Control de captura, entrenamiento y progreso de estudiantes.</p>
-                </div>
-                <div className="flex items-center gap-3 bg-white/5 border border-white/10 px-4 py-2 rounded-2xl">
-                    <div className="w-2 h-2 bg-green-500 rounded-full animate-blink"></div>
-                    <span className="text-white/80 text-sm font-medium uppercase tracking-wider">GPU Training Active</span>
+                <div className="grid grid-cols-2 gap-3 sm:flex sm:items-center">
+                    <div className="bg-white/5 border border-white/10 px-6 py-4 rounded-2xl text-center">
+                        <span className="block text-2xl font-black text-white leading-none mb-1">94%</span>
+                        <span className="text-[10px] text-white/30 uppercase font-black tracking-widest">Salud Sistema</span>
+                    </div>
+                    <div className="bg-blue-500 px-6 py-4 rounded-2xl text-center shadow-lg shadow-blue-500/20">
+                        <span className="block text-2xl font-black text-white leading-none mb-1">∞</span>
+                        <span className="text-[10px] text-white/80 uppercase font-black tracking-widest">Uptime IA</span>
+                    </div>
                 </div>
             </div>
 
-            {/* Grid de Estadísticas Principales */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {/* Grid de Estadísticas */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                 {stats.map((stat, i) => (
-                    <div key={i} className="bg-slate-900/40 backdrop-blur-xl border border-white/10 p-6 rounded-[2rem] hover:border-white/20 transition-all group cursor-default">
-                        <div className="flex justify-between items-start mb-4">
-                            <div className={`p-3 rounded-2xl border ${getColorClasses(stat.color)} group-hover:scale-110 transition-transform`}>
-                                <stat.icon size={24} />
+                    <div key={i} className="bg-slate-900/40 backdrop-blur-xl border border-white/10 p-8 rounded-[2.5rem] hover:border-white/20 hover:bg-slate-900/60 transition-all duration-300 group relative overflow-hidden">
+                        <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-white/5 to-transparent rounded-full -mr-16 -mt-16 group-hover:scale-150 transition-transform duration-700"></div>
+
+                        <div className="relative z-10">
+                            <div className="flex justify-between items-start mb-6">
+                                <div className={`p-4 rounded-2xl border ${getColorClasses(stat.color)} group-hover:scale-105 transition-transform shadow-inner`}>
+                                    <stat.icon size={24} />
+                                </div>
+                                <Activity size={16} className={`${stat.color === 'green' ? 'text-green-400' : 'text-blue-400'} opacity-30`} />
                             </div>
-                            <span className="text-[10px] font-bold text-white/30 uppercase tracking-widest bg-white/5 px-2 py-1 rounded-lg">
-                                Live
-                            </span>
-                        </div>
-                        <div className="space-y-1">
-                            <h3 className="text-3xl font-black text-white">{stat.value}</h3>
-                            <p className="text-white/80 font-bold text-sm tracking-tight">{stat.label}</p>
-                            <div className="flex items-center justify-between mt-2 pt-2 border-t border-white/5">
-                                <span className="text-white/40 text-[11px]">{stat.subValue}</span>
-                                <span className="text-blue-400 text-[10px] font-bold uppercase tracking-tighter">{stat.trend}</span>
+
+                            <div className="space-y-1">
+                                <h3 className="text-3xl font-black text-white tracking-tighter">{stat.value}</h3>
+                                <p className="text-white/80 font-bold text-sm tracking-tight">{stat.label}</p>
+                                <div className="flex items-center justify-between mt-4 pt-4 border-t border-white/5">
+                                    <span className="text-white/40 text-[10px] uppercase font-black tracking-widest">{stat.subValue}</span>
+                                    <div className="flex items-center gap-1">
+                                        <TrendingUp size={10} className="text-blue-400" />
+                                        <span className="text-blue-400 text-[10px] font-black uppercase">{stat.trend}</span>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
                 ))}
             </div>
 
-            {/* Gráficas Principales */}
-            <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
-                <div className="xl:col-span-2 bg-slate-900/40 backdrop-blur-xl rounded-[2.5rem] p-8 border border-white/10 shadow-2xl">
-                    <div className="flex items-center justify-between mb-8">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                {/* 1. CHART DE BARRAS: Dataset por Módulo (Mantiene) */}
+                <div className="lg:col-span-8 bg-slate-900/40 backdrop-blur-xl rounded-[3rem] p-8 sm:p-10 border border-white/10 shadow-2xl overflow-hidden relative group">
+                    <div className="flex items-center justify-between mb-10">
                         <div>
-                            <h3 className="text-xl font-bold text-white">Estado de Captura de Datos</h3>
-                            <p className="text-white/40 text-sm italic">Progreso hacia el objetivo de 50 imágenes por seña</p>
+                            <h3 className="text-2xl font-black text-white tracking-tight">Densidad del Dataset por Módulo</h3>
+                            <p className="text-white/40 text-sm font-medium mt-1">Muestras acumuladas para el entrenamiento neuronal</p>
                         </div>
-                        <Activity className="text-blue-400 opacity-20" size={40} />
+                        <div className="p-4 bg-blue-500/10 rounded-2xl border border-blue-500/20">
+                            <Cpu className="text-blue-400" size={24} />
+                        </div>
                     </div>
-                    <div className="h-80 w-full">
-                        <ResponsiveContainer width="100%" height="100%">
-                            <BarChart data={trainingProgressData} margin={{ left: -20 }}>
-                                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
-                                <XAxis dataKey="name" stroke="rgba(255,255,255,0.3)" fontSize={12} axisLine={false} tickLine={false} />
-                                <YAxis stroke="rgba(255,255,255,0.3)" fontSize={12} axisLine={false} tickLine={false} />
-                                <Tooltip
-                                    cursor={{ fill: 'rgba(255,255,255,0.05)' }}
-                                    contentStyle={{ backgroundColor: '#0f172a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '16px' }}
-                                />
-                                <Bar dataKey="capturado" fill="#3b82f6" radius={[6, 6, 0, 0]} />
-                                <Bar dataKey="objetivo" fill="rgba(255,255,255,0.05)" radius={[6, 6, 0, 0]} />
-                            </BarChart>
-                        </ResponsiveContainer>
-                    </div>
+
+                    {!isLoading && moduleDistribution.length > 0 && (
+                        <div className="h-[350px] w-full" style={{ minHeight: '350px' }}>
+                            <ResponsiveContainer width="100%" height="100%">
+                                <BarChart data={moduleDistribution} margin={{ left: -10, right: 10 }}>
+                                    <defs>
+                                        <linearGradient id="barGradient" x1="0" y1="0" x2="0" y2="1">
+                                            <stop offset="0%" stopColor="#3b82f6" stopOpacity={1} />
+                                            <stop offset="100%" stopColor="#8b5cf6" stopOpacity={0.8} />
+                                        </linearGradient>
+                                    </defs>
+                                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.03)" vertical={false} />
+                                    <XAxis
+                                        dataKey="name"
+                                        stroke="rgba(255,255,255,0.2)"
+                                        fontSize={10}
+                                        axisLine={false}
+                                        tickLine={false}
+                                        tick={{ fill: 'rgba(255,255,255,0.5)', fontWeight: 700 }}
+                                    />
+                                    <YAxis
+                                        stroke="rgba(255,255,255,0.2)"
+                                        fontSize={10}
+                                        axisLine={false}
+                                        tickLine={false}
+                                        tick={{ fill: 'rgba(255,255,255,0.5)' }}
+                                    />
+                                    <Tooltip
+                                        cursor={{ fill: 'rgba(255,255,255,0.03)' }}
+                                        contentStyle={{ backgroundColor: '#0f172a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '16px' }}
+                                        itemStyle={{ color: '#fff', fontWeight: 800 }}
+                                    />
+                                    <Bar dataKey="capturado" fill="url(#barGradient)" radius={[10, 10, 4, 4]} barSize={40} />
+                                </BarChart>
+                            </ResponsiveContainer>
+                        </div>
+                    )}
                 </div>
 
-                <div className="bg-slate-900/40 backdrop-blur-xl rounded-[2.5rem] p-8 border border-white/10 shadow-2xl flex flex-col">
-                    <h3 className="text-xl font-bold text-white mb-2 text-center">Gestión de Cursos</h3>
-                    <p className="text-white/40 text-xs text-center mb-8 uppercase tracking-widest">Estado de Disponibilidad</p>
-                    <div className="flex-1 flex flex-col items-center justify-center">
-                        <div className="h-64 w-full relative">
-                            <ResponsiveContainer width="100%" height="100%">
-                                <PieChart>
-                                    <Pie
-                                        data={moduleStatusData}
-                                        innerRadius={70}
-                                        outerRadius={90}
-                                        paddingAngle={10}
-                                        dataKey="value"
-                                    >
-                                        {moduleStatusData.map((entry, index) => (
-                                            <Cell key={`cell-${index}`} fill={entry.color} />
-                                        ))}
-                                    </Pie>
-                                    <Tooltip />
-                                </PieChart>
-                            </ResponsiveContainer>
-                            <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                                <span className="text-3xl font-black text-white">15</span>
-                                <span className="text-[10px] text-white/40 uppercase font-bold">Módulos</span>
-                            </div>
+                {/* 2. TOP ESTUDIANTES (Nuevo Requerimiento - Reemplaza Radar) */}
+                <div className="lg:col-span-4 bg-slate-900/40 backdrop-blur-xl rounded-[3rem] p-8 border border-white/10 shadow-2xl flex flex-col h-full relative overflow-hidden">
+                    <div className="absolute top-0 right-0 w-40 h-40 bg-purple-500/10 rounded-full blur-3xl -mr-10 -mt-10 pointer-events-none"></div>
+
+                    <div className="flex items-center justify-between mb-6">
+                        <h3 className="text-xl font-black text-white tracking-tight">Líderes de Aprendizaje</h3>
+                        <div className="w-10 h-10 bg-purple-500/10 rounded-xl flex items-center justify-center border border-purple-500/20">
+                            <Trophy className="text-purple-400" size={20} />
                         </div>
-                        <div className="w-full space-y-3 mt-6 text-white/80">
-                            {moduleStatusData.map((item, i) => (
-                                <div key={i} className="flex items-center justify-between p-3 rounded-xl bg-white/5 border border-white/5">
-                                    <div className="flex items-center gap-3">
-                                        <div className="w-3 h-3 rounded-full" style={{ backgroundColor: item.color }}></div>
-                                        <span className="text-sm font-medium">{item.name}</span>
-                                    </div>
-                                    <span className="font-bold">{item.value}</span>
+                    </div>
+
+                    <div className="flex-1 space-y-4">
+                        {topStudents.length > 0 ? topStudents.map((user, i) => (
+                            <div key={i} className="flex items-center gap-4 p-3 bg-white/5 rounded-2xl border border-white/5 hover:bg-white/10 transition-colors">
+                                <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-white ${i === 0 ? 'bg-yellow-500' : i === 1 ? 'bg-gray-400' : 'bg-orange-600'} shadow-lg`}>
+                                    {user.avatar || user.name.substring(0, 2).toUpperCase()}
                                 </div>
-                            ))}
-                        </div>
+                                <div className="flex-1">
+                                    <p className="text-white font-bold text-sm truncate">{user.name}</p>
+                                    <p className="text-white/40 text-[10px] font-bold uppercase">Nivel {user.level}</p>
+                                </div>
+                                <div className="text-purple-400 font-black text-sm">{user.xp} XP</div>
+                            </div>
+                        )) : (
+                            <div className="text-center text-white/40 text-sm py-10">Esperando datos de estudiantes...</div>
+                        )}
                     </div>
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                {/* Entrenamiento IA */}
-                <div className="bg-slate-900/40 backdrop-blur-xl rounded-[2.5rem] p-8 border border-white/10 shadow-2xl">
-                    <div className="flex items-center justify-between mb-8">
-                        <div>
-                            <h3 className="text-xl font-bold text-white">Curva de Precisión</h3>
-                            <p className="text-white/40 text-sm">Éxito predictivo del modelo v2.4</p>
+            {/* 3. CHART DE PROGRESO SEMANAL (Nuevo Requerimiento - Reemplaza Infraestructura) */}
+            <div className="bg-slate-900/40 backdrop-blur-xl border border-white/10 rounded-[2.5rem] p-10 shadow-2xl overflow-hidden relative">
+                <div className="absolute inset-0 bg-grid-white/[0.02] bg-[length:20px_20px]"></div>
+
+                <div className="relative z-10 flex flex-col md:flex-row gap-8 items-start justify-between mb-8">
+                    <div>
+                        <div className="flex items-center gap-4 mb-3">
+                            <div className="p-3 bg-emerald-500/10 rounded-xl border border-emerald-500/20">
+                                <CalendarDays className="text-emerald-400" size={24} />
+                            </div>
+                            <h3 className="text-2xl font-black text-white tracking-tight">Actividad de Práctica Semanal</h3>
                         </div>
-                        <div className="text-yellow-400 bg-yellow-400/10 px-3 py-1 rounded-lg text-xs font-bold border border-yellow-400/20 flex items-center gap-2">
-                            <TrendingUp size={14} />
-                            +2.1% Delta
-                        </div>
+                        <p className="text-white/40 text-sm font-medium">Volumen de sesiones de práctica realizadas en los últimos 7 días</p>
                     </div>
-                    <div className="h-64 w-full">
-                        <ResponsiveContainer width="100%" height="100%">
-                            <AreaChart data={modelAccuracyData}>
-                                <defs>
-                                    <linearGradient id="colorPrec" x1="0" y1="0" x2="0" y2="1">
-                                        <stop offset="5%" stopColor="#fbbf24" stopOpacity={0.3} />
-                                        <stop offset="95%" stopColor="#fbbf24" stopOpacity={0} />
-                                    </linearGradient>
-                                </defs>
-                                <XAxis dataKey="epoca" stroke="rgba(255,255,255,0.2)" fontSize={10} axisLine={false} tickLine={false} />
-                                <Tooltip
-                                    contentStyle={{ backgroundColor: '#0f172a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px' }}
-                                />
-                                <Area type="monotone" dataKey="precision" stroke="#fbbf24" strokeWidth={3} fillOpacity={1} fill="url(#colorPrec)" />
-                            </AreaChart>
-                        </ResponsiveContainer>
+                    <div className="bg-emerald-500/10 px-4 py-2 rounded-xl border border-emerald-500/20">
+                        <span className="text-emerald-400 text-xs font-black uppercase tracking-widest">+ Live Data</span>
                     </div>
                 </div>
 
-                {/* Actividad de Estudiantes - Logros */}
-                <div className="bg-slate-900/40 backdrop-blur-xl rounded-[2.5rem] p-8 border border-white/10 shadow-2xl">
-                    <div className="flex items-center justify-between mb-6">
-                        <div>
-                            <h3 className="text-xl font-bold text-white">Últimos Logros</h3>
-                            <p className="text-white/40 text-xs mt-1 italic">Estudiantes que completaron módulos hoy</p>
-                        </div>
-                        <div className="p-2 bg-yellow-500/10 rounded-xl">
-                            <Trophy className="text-yellow-400" size={24} />
-                        </div>
+                {!isLoading && weeklyProgress.length > 0 && (
+                    <div className="h-[250px] w-full" style={{ minHeight: '250px' }}>
+                        <ResponsiveContainer width="100%" height="100%">
+                            <AreaChart data={weeklyProgress} margin={{ top: 10, right: 0, left: -20, bottom: 0 }}>
+                                <defs>
+                                    <linearGradient id="colorSessions" x1="0" y1="0" x2="0" y2="1">
+                                        <stop offset="5%" stopColor="#10b981" stopOpacity={0.3} />
+                                        <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
+                                    </linearGradient>
+                                </defs>
+                                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
+                                <XAxis dataKey="day" stroke="rgba(255,255,255,0.3)" fontSize={12} tickLine={false} axisLine={false} />
+                                <YAxis stroke="rgba(255,255,255,0.3)" fontSize={12} tickLine={false} axisLine={false} />
+                                <Tooltip
+                                    contentStyle={{ backgroundColor: '#064e3b', border: 'none', borderRadius: '8px', color: '#fff' }}
+                                    labelStyle={{ color: '#a7f3d0' }}
+                                />
+                                <Area type="monotone" dataKey="sessions" stroke="#10b981" strokeWidth={3} fillOpacity={1} fill="url(#colorSessions)" />
+                            </AreaChart>
+                        </ResponsiveContainer>
                     </div>
-                    <div className="space-y-4">
-                        {completedActivities.slice(0, 4).map((user) => (
-                            <div key={user.id} className="flex items-center justify-between p-4 rounded-[1.5rem] bg-white/5 border border-white/5 hover:bg-white/10 transition-colors cursor-default group">
-                                <div className="flex items-center gap-4">
-                                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold text-xs shadow-lg">
-                                        {user.name.charAt(0)}
-                                    </div>
-                                    <div>
-                                        <h4 className="text-white font-bold text-sm tracking-tight">{user.name}</h4>
-                                        <p className="text-white/40 text-[11px]">
-                                            <span className="text-green-400 font-bold">Completó</span> el módulo de <span className="text-blue-400 font-bold">{user.module}</span>
-                                        </p>
-                                    </div>
-                                </div>
-                                <div className="text-right">
-                                    <div className="text-white/20 text-[10px] flex items-center justify-end gap-1 font-medium">
-                                        <Timer size={10} />
-                                        {user.time}
-                                    </div>
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                    <button
-                        onClick={() => setIsProgressModalOpen(true)}
-                        className="w-full mt-6 py-4 rounded-2xl bg-white/5 border border-white/10 text-white font-bold text-xs hover:bg-white/10 transition-all uppercase tracking-[0.2em] shadow-lg flex items-center justify-center gap-3 active:scale-95"
-                    >
-                        Ver registro histórico de logros
-                    </button>
-                </div>
+                )}
             </div>
 
             <style>{`
                 @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
                 .animate-blink { animation: blink 2s ease-in-out infinite; }
-                .custom-scrollbar::-webkit-scrollbar { width: 6px; }
-                .custom-scrollbar::-webkit-scrollbar-track { background: rgba(255, 255, 255, 0.02); border-radius: 10px; }
-                .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.1); border-radius: 10px; }
-                .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.2); }
             `}</style>
         </div>
     );

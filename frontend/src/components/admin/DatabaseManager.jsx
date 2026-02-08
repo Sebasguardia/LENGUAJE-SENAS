@@ -1,270 +1,449 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     Database, HardDrive, Server, Activity, Save,
     RotateCcw, Trash2, ShieldCheck, Download, Upload,
-    RefreshCw, Clock, AlertCircle, CheckCircle2, FileJson
+    RefreshCw, Clock, AlertCircle, CheckCircle2, FileJson,
+    HelpCircle, BookOpen
 } from 'lucide-react';
+import { adminService } from '../../api/adminService';
+import apiClient from '../../api/apiClient'; // Import needed for blob download
 
 const DatabaseManager = () => {
     const [isBackupModalOpen, setIsBackupModalOpen] = useState(false);
     const [backupProgress, setBackupProgress] = useState(0);
     const [backupStatus, setBackupStatus] = useState('idle'); // idle, processing, completed
+    const [loading, setLoading] = useState(true);
+    const [isRefreshing, setIsRefreshing] = useState(false);
 
-    const [tables] = useState([
-        { name: 'users', records: 1250, size: '4.2 MB', health: 'Healthy', lastMod: 'Hace 2 min' },
-        { name: 'learning_modules', records: 8, size: '1.5 MB', health: 'Healthy', lastMod: 'Hace 5 horas' },
-        { name: 'ai_datasets', records: 45000, size: '850 MB', health: 'Optimized', lastMod: 'Ayer' },
-        { name: 'user_progress', records: 3400, size: '12 MB', health: 'Healthy', lastMod: 'Hace 10 min' },
-        { name: 'system_logs', records: 15600, size: '28 MB', health: 'Warning', lastMod: 'Ahora' },
-    ]);
+    const [dbStats, setDbStats] = useState({
+        tables: [],
+        total_size_mb: 0,
+        connection_status: 'Checking...'
+    });
 
-    const [backups] = useState([
-        { id: 1, name: 'full_backup_v2.0.sql', date: '24/01/2024 03:00 AM', size: '895 MB', type: 'Automático' },
-        { id: 2, name: 'pre_update_backup.sql', date: '20/01/2024 14:15 PM', size: '882 MB', type: 'Manual' },
-        { id: 3, name: 'weekly_backup.sql', date: '17/01/2024 03:00 AM', size: '850 MB', type: 'Automático' },
-    ]);
+    const [backups, setBackups] = useState([]);
 
-    const handleCreateBackup = () => {
+    const fetchData = async () => {
+        try {
+            setIsRefreshing(true);
+            const stats = await adminService.getDatabaseStats();
+            setDbStats(stats);
+            const backupList = await adminService.listBackups();
+            setBackups(backupList);
+        } catch (error) {
+            console.error("Error fetching database info:", error);
+        } finally {
+            setLoading(false);
+            setIsRefreshing(false);
+        }
+    };
+
+    useEffect(() => {
+        fetchData();
+    }, []);
+
+    const handleCreateBackup = async () => {
         setBackupStatus('processing');
         setBackupProgress(0);
 
-        // Simular proceso
+        // Progress simulation for UX
         const interval = setInterval(() => {
             setBackupProgress(prev => {
-                if (prev >= 100) {
-                    clearInterval(interval);
-                    setBackupStatus('completed');
-                    return 100;
-                }
-                return prev + 5;
+                if (prev >= 95) return 95;
+                return prev + (Math.random() * 15);
             });
-        }, 100);
+        }, 300);
+
+        try {
+            await adminService.createBackup();
+            setBackupProgress(100);
+            setBackupStatus('completed');
+            await fetchData(); // Refresh list
+        } catch (error) {
+            console.error("Backup failed", error);
+            setBackupStatus('idle');
+            alert("Error al crear el respaldo");
+        } finally {
+            clearInterval(interval);
+        }
     };
 
-    const handleDownload = (fileName) => {
-        alert(`Descargando copia de seguridad: ${fileName}`);
+    const handleDownload = async (fileName) => {
+        try {
+            const response = await apiClient.get(`/admin-tools/database/download/${fileName}`, {
+                responseType: 'blob'
+            });
+
+            const url = window.URL.createObjectURL(new Blob([response.data]));
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('download', fileName);
+            document.body.appendChild(link);
+            link.click();
+            link.parentNode.removeChild(link);
+        } catch (error) {
+            console.error("Download failed", error);
+            alert("No se pudo descargar el archivo.");
+        }
     };
+
+    if (loading) {
+        return (
+            <div className="flex flex-col items-center justify-center min-h-[500px] gap-6">
+                <div className="relative">
+                    <div className="w-16 h-16 border-4 border-emerald-500/20 rounded-full"></div>
+                    <div className="w-16 h-16 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin absolute top-0 left-0"></div>
+                </div>
+                <p className="text-emerald-400 font-black text-xs uppercase tracking-[0.3em] animate-pulse">Inyectando Protocolos de Datos...</p>
+            </div>
+        );
+    }
+
+    const totalRecords = dbStats.tables.reduce((acc, t) => acc + (t.records || 0), 0);
 
     return (
-        <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
+        <div className="space-y-6 lg:space-y-10 animate-in fade-in slide-in-from-bottom-6 duration-1000 pb-20 font-sans">
 
-            {/* Header */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 bg-slate-900/40 backdrop-blur-xl border border-white/10 p-8 rounded-[2.5rem] shadow-2xl">
-                <div className="flex items-center gap-4">
-                    <div className="p-4 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-2xl shadow-lg shadow-emerald-500/20">
-                        <Database className="text-white" size={32} />
-                    </div>
-                    <div>
-                        <h2 className="text-2xl font-bold text-white tracking-tight">Centro de Datos</h2>
-                        <p className="text-white/40 text-sm">Administración y Mantenimiento de la Base de Datos</p>
-                    </div>
-                </div>
+            {/* Header: Orbital Center */}
+            <div className="relative overflow-hidden group">
+                <div className="absolute top-0 right-0 w-1/2 h-full bg-gradient-to-l from-emerald-600/10 to-transparent pointer-events-none" />
+                <div className="absolute -bottom-10 -left-10 w-40 h-40 bg-blue-600/10 rounded-full blur-[80px] pointer-events-none" />
 
-                <div className="flex items-center gap-4 bg-black/20 p-2 pr-6 rounded-2xl border border-white/5">
-                    <div className="w-10 h-10 rounded-xl bg-green-500/20 flex items-center justify-center animate-pulse">
-                        <Activity className="text-green-400" size={20} />
+                <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-8 bg-slate-900/40 backdrop-blur-3xl border border-white/10 p-8 lg:p-12 rounded-[3rem] lg:rounded-[4rem] shadow-[0_0_80px_-20px_rgba(0,0,0,0.5)] relative z-10">
+                    <div className="flex items-center gap-6 lg:gap-10">
+                        <div className="relative">
+                            <div className="p-6 lg:p-8 bg-gradient-to-br from-emerald-400 to-teal-700 rounded-[2rem] lg:rounded-[2.5rem] shadow-[0_10px_40px_rgba(16,185,129,0.3)] transform transition-transform group-hover:rotate-6 duration-500">
+                                <Database className="text-white" size={48} />
+                            </div>
+                            <div className="absolute -bottom-2 -right-2 w-8 h-8 lg:w-10 lg:h-10 bg-slate-900 border-2 border-emerald-500 rounded-2xl flex items-center justify-center shadow-xl">
+                                <ShieldCheck className="text-emerald-500" size={16} />
+                            </div>
+                        </div>
+                        <div>
+                            <div className="flex items-center gap-3 mb-2">
+                                <h2 className="text-3xl lg:text-5xl font-black text-white tracking-tighter">Bunker de Datos</h2>
+                                <span className="px-3 py-1 bg-emerald-500/10 border border-emerald-500/20 rounded-full text-emerald-400 text-[8px] font-black uppercase tracking-widest hidden sm:block">Cluster 01</span>
+                            </div>
+                            <p className="text-white/30 text-sm lg:text-lg font-medium max-w-md">Panel de operaciones críticas y redundancia estructural del sistema.</p>
+                        </div>
                     </div>
-                    <div>
-                        <div className="text-[10px] font-bold text-white/40 uppercase tracking-widest">Estado del Sistema</div>
-                        <div className="text-white font-bold text-sm">Operacional • 12ms Latencia</div>
+
+                    <div className="flex flex-row items-center gap-6">
+                        <div className="hidden md:block text-right">
+                            <div className="text-[10px] font-black text-white/20 uppercase tracking-[0.3em] mb-1">LATENCIA NODO</div>
+                            <div className="text-white font-mono font-bold">12ms <span className="text-emerald-500">STABLE</span></div>
+                        </div>
+                        <button
+                            onClick={fetchData}
+                            disabled={isRefreshing}
+                            className={`p-5 rounded-[1.5rem] lg:rounded-3xl border border-white/10 transition-all hover:bg-white/5 active:scale-90 ${isRefreshing ? 'opacity-50' : ''}`}
+                        >
+                            <RefreshCw size={24} className={`text-white/40 ${isRefreshing ? 'animate-spin text-emerald-400' : ''}`} />
+                        </button>
                     </div>
                 </div>
             </div>
 
-            {/* Stats Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                {/* Storage Usage */}
-                <div className="bg-slate-900/40 backdrop-blur-xl border border-white/10 rounded-[2rem] p-6 relative overflow-hidden group">
-                    <div className="absolute right-0 top-0 p-3 opacity-10 group-hover:scale-110 transition-transform">
-                        <HardDrive size={100} />
+            {/* Orbital Dashboard: Key Metrics */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <div className="bg-slate-900/40 backdrop-blur-xl border border-white/10 rounded-[2.5rem] p-8 group hover:border-blue-500/30 transition-all duration-500 relative overflow-hidden">
+                    <div className="absolute -right-2 -bottom-2 opacity-5 group-hover:scale-110 group-hover:rotate-12 transition-all duration-700">
+                        <HardDrive size={120} />
                     </div>
                     <div className="relative z-10">
-                        <div className="flex items-center gap-2 text-white/60 mb-2">
-                            <HardDrive size={18} className="text-blue-400" />
-                            <span className="text-sm font-bold">Almacenamiento Total</span>
+                        <div className="flex items-center gap-3 text-blue-400 mb-4">
+                            <div className="p-2 bg-blue-400/10 rounded-xl"><HardDrive size={20} /></div>
+                            <span className="text-xs font-black uppercase tracking-widest leading-none">Carga Física</span>
                         </div>
-                        <div className="text-3xl font-black text-white mb-4">
-                            895 MB <span className="text-lg text-white/40 font-normal">/ 5 GB</span>
-                        </div>
-                        <div className="w-full bg-white/10 rounded-full h-2">
-                            <div className="bg-gradient-to-r from-blue-500 to-indigo-500 h-2 rounded-full w-[18%]"></div>
+                        <div className="text-4xl lg:text-5xl font-black text-white mb-2 tracking-tighter">{dbStats.total_size_mb} <span className="text-lg opacity-20">MB</span></div>
+                        <div className="flex justify-between items-end">
+                            <div className="text-[10px] font-bold text-white/20 uppercase">SQLITE OPTIMIZED</div>
+                            <div className="text-blue-400 font-mono text-[10px] font-black">{(dbStats.total_size_mb / 20 * 100).toFixed(1)}%</div>
                         </div>
                     </div>
                 </div>
 
-                {/* Connections */}
-                <div className="bg-slate-900/40 backdrop-blur-xl border border-white/10 rounded-[2rem] p-6">
-                    <div className="flex items-center gap-2 text-white/60 mb-2">
-                        <Server size={18} className="text-purple-400" />
-                        <span className="text-sm font-bold">Conexiones Activas</span>
+                <div className="bg-slate-900/40 backdrop-blur-xl border border-white/10 rounded-[2.5rem] p-8 group hover:border-purple-500/30 transition-all duration-500 relative overflow-hidden">
+                    <div className="absolute -right-2 -bottom-2 opacity-5 group-hover:scale-110 group-hover:rotate-12 transition-all duration-700">
+                        <Server size={120} />
                     </div>
-                    <div className="text-3xl font-black text-white mb-2">
-                        128
+                    <div className="relative z-10">
+                        <div className="flex items-center gap-3 text-purple-400 mb-4">
+                            <div className="p-2 bg-purple-400/10 rounded-xl"><Server size={20} /></div>
+                            <span className="text-xs font-black uppercase tracking-widest leading-none">Registros</span>
+                        </div>
+                        <div className="text-4xl lg:text-5xl font-black text-white mb-2 tracking-tighter">{totalRecords > 1000 ? (totalRecords / 1000).toFixed(1) + 'k' : totalRecords}</div>
+                        <div className="text-[10px] font-bold text-white/20 uppercase tracking-widest">FLUJO PERSISTENTE</div>
                     </div>
-                    <p className="text-white/40 text-xs">Pico más alto: 450 (Hace 2h)</p>
                 </div>
 
-                {/* Last Backup */}
-                <div className="bg-slate-900/40 backdrop-blur-xl border border-white/10 rounded-[2rem] p-6">
-                    <div className="flex items-center gap-2 text-white/60 mb-2">
-                        <ShieldCheck size={18} className="text-green-400" />
-                        <span className="text-sm font-bold">Seguridad</span>
+                <div className="bg-slate-900/40 backdrop-blur-xl border border-white/10 rounded-[2.5rem] p-8 group hover:border-emerald-500/30 transition-all duration-500 relative overflow-hidden">
+                    <div className="absolute -right-2 -bottom-2 opacity-5 group-hover:scale-110 group-hover:rotate-12 transition-all duration-700">
+                        <Activity size={120} />
                     </div>
-                    <div className="text-3xl font-black text-white mb-2">
-                        Protegido
+                    <div className="relative z-10">
+                        <div className="flex items-center gap-3 text-emerald-400 mb-4">
+                            <div className="p-2 bg-emerald-400/10 rounded-xl"><Activity size={20} /></div>
+                            <span className="text-xs font-black uppercase tracking-widest leading-none">Salud Dataset</span>
+                        </div>
+                        <div className="text-4xl lg:text-5xl font-black text-white mb-2 tracking-tighter">99.8<span className="text-lg opacity-20">%</span></div>
+                        <div className="flex items-center gap-2">
+                            <div className="flex gap-0.5">
+                                {[1, 2, 3, 4, 5].map(i => <div key={i} className={`w-2 h-2 rounded-full ${i < 5 ? 'bg-emerald-500' : 'bg-emerald-500/20 shadow-[0_0_10px_rgba(16,185,129,0.5)] animate-pulse'}`} />)}
+                            </div>
+                            <span className="text-[10px] font-bold text-white/20 uppercase tracking-widest">NORMAL</span>
+                        </div>
                     </div>
-                    <p className="text-white/40 text-xs flex items-center gap-1">
-                        <CheckCircle2 size={12} className="text-green-500" />
-                        Último respaldo hace 5h
-                    </p>
+                </div>
+
+                <div className="bg-slate-900/40 backdrop-blur-xl border border-white/10 rounded-[2.5rem] p-8 group hover:border-amber-500/30 transition-all duration-500 relative overflow-hidden">
+                    <div className="absolute -right-2 -bottom-2 opacity-5 group-hover:scale-110 group-hover:rotate-12 transition-all duration-700">
+                        <ShieldCheck size={120} />
+                    </div>
+                    <div className="relative z-10">
+                        <div className="flex items-center gap-3 text-amber-500 mb-4">
+                            <div className="p-2 bg-amber-500/10 rounded-xl"><ShieldCheck size={20} /></div>
+                            <span className="text-xs font-black uppercase tracking-widest leading-none">Respaldo</span>
+                        </div>
+                        <div className="text-xl lg:text-2xl font-black text-white mb-2 truncate group-hover:text-amber-400 transition-colors">
+                            {backups.length > 0 ? backups[0].date.split(' ')[0] : 'NINGUNO'}
+                        </div>
+                        <div className="text-[10px] font-bold text-white/20 uppercase tracking-widest">{backups.length} PUNTOS DE RESTAURACIÓN</div>
+                    </div>
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12">
 
-                {/* Main Content: Tables Status */}
-                <div className="lg:col-span-2 space-y-6">
-                    <div className="bg-slate-900/40 backdrop-blur-xl border border-white/10 rounded-[2.5rem] p-8">
-                        <h3 className="text-white font-bold text-lg mb-6 flex items-center gap-2">
-                            <Database className="text-emerald-400" size={20} />
-                            Estructura y Estado de Tablas
-                        </h3>
+                {/* Structural Analysis */}
+                <div className="lg:col-span-8 space-y-8 lg:space-y-12">
+                    <div className="bg-slate-900/40 backdrop-blur-xl border border-white/10 rounded-[3rem] lg:rounded-[4rem] p-8 lg:p-12 shadow-2xl overflow-hidden relative">
+                        <div className="flex items-center justify-between mb-10">
+                            <div>
+                                <h3 className="text-white font-black text-xl lg:text-3xl tracking-tight mb-2">
+                                    Exploración Visual de Tablas
+                                </h3>
+                                <p className="text-white/30 text-sm font-medium uppercase tracking-[0.2em]">Sincronización de bajo nivel detectada</p>
+                            </div>
+                            <div className="p-4 bg-white/5 rounded-2xl border border-white/5 text-white/20 hidden sm:block">
+                                <HelpCircle size={24} />
+                            </div>
+                        </div>
 
-                        <div className="space-y-3">
-                            {tables.map((table, i) => (
-                                <div key={i} className="bg-white/5 border border-white/5 rounded-2xl p-4 flex items-center justify-between hover:bg-white/10 transition-colors group">
-                                    <div className="flex items-center gap-4">
-                                        <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center text-blue-400">
-                                            <FileJson size={20} />
-                                        </div>
-                                        <div>
-                                            <h4 className="text-white font-bold font-mono text-sm">{table.name}</h4>
-                                            <div className="flex items-center gap-3 text-xs text-white/40 mt-1">
-                                                <span>{table.records.toLocaleString()} registros</span>
-                                                <span>•</span>
-                                                <span>{table.size}</span>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 lg:gap-6">
+                            {dbStats.tables.map((table, i) => (
+                                <div key={i} className="group bg-slate-950/60 p-6 rounded-[2rem] border border-white/5 hover:border-emerald-500/30 transition-all duration-500 flex flex-col relative overflow-hidden">
+                                    <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-bl from-emerald-500/10 to-transparent pointer-events-none" />
+
+                                    <div className="flex items-center justify-between mb-6 relative z-10">
+                                        <div className="flex items-center gap-4">
+                                            <div className="w-12 h-12 rounded-2xl bg-blue-500/10 border border-blue-500/10 flex items-center justify-center text-blue-400 group-hover:scale-110 group-hover:bg-blue-600 group-hover:text-white transition-all duration-500">
+                                                <FileJson size={22} />
+                                            </div>
+                                            <div>
+                                                <h4 className="text-white font-black text-lg tracking-tight capitalize leading-none mb-1">{table.name.replace('_', ' ')}</h4>
+                                                <div className="text-[10px] font-black text-white/20 uppercase tracking-widest">{table.name} Schema</div>
                                             </div>
                                         </div>
-                                    </div>
-                                    <div className="text-right">
-                                        <div className={`text-xs font-bold px-2 py-1 rounded-lg inline-block mb-1 ${table.health === 'Healthy' ? 'bg-green-500/10 text-green-400' :
-                                                table.health === 'Optimized' ? 'bg-blue-500/10 text-blue-400' :
-                                                    'bg-yellow-500/10 text-yellow-400'
-                                            }`}>
+                                        <div className={`text-[9px] font-black px-3 py-1.5 rounded-xl border ${table.health === 'Healthy' || table.health === 'Optimized' ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' : 'bg-blue-500/10 border-blue-500/20 text-blue-400'}`}>
                                             {table.health}
                                         </div>
-                                        <div className="text-[10px] text-white/30">Mod: {table.lastMod}</div>
+                                    </div>
+
+                                    <div className="space-y-4 relative z-10">
+                                        <div className="flex justify-between items-end">
+                                            <div className="text-[10px] font-black text-white/30 uppercase tracking-widest">Dataset Load</div>
+                                            <div className="text-2xl font-black text-white tracking-tighter">{table.records?.toLocaleString() || 0} <span className="text-[10px] opacity-20">Rowsets</span></div>
+                                        </div>
+                                        <div className="h-2 bg-black/40 rounded-full overflow-hidden p-0.5 border border-white/5">
+                                            <div
+                                                className={`h-full rounded-full transition-all duration-1000 ${i % 2 === 0 ? 'bg-gradient-to-r from-blue-600 to-indigo-500' : 'bg-gradient-to-r from-emerald-600 to-teal-500'}`}
+                                                style={{ width: `${Math.min(100, (table.records || 0) / 1000 * 100)}%` }}
+                                            />
+                                        </div>
                                     </div>
                                 </div>
                             ))}
                         </div>
-
-                        <div className="mt-8 pt-6 border-t border-white/5 flex gap-4">
-                            <button className="flex-1 py-3 bg-white/5 hover:bg-white/10 text-white rounded-xl text-sm font-bold transition-all flex items-center justify-center gap-2">
-                                <RefreshCw size={16} /> Reindexar
-                            </button>
-                            <button className="flex-1 py-3 bg-white/5 hover:bg-white/10 text-white rounded-xl text-sm font-bold transition-all flex items-center justify-center gap-2">
-                                <Trash2 size={16} /> Limpiar Cache
-                            </button>
-                        </div>
                     </div>
-                </div>
 
-                {/* Sidebar: Backups */}
-                <div className="space-y-6">
-                    <div className="bg-slate-900/40 backdrop-blur-xl border border-white/10 rounded-[2.5rem] p-6 relative overflow-hidden">
-                        <div className="absolute top-0 right-0 p-6 opacity-20">
-                            <Save size={120} className="text-white" />
-                        </div>
-
-                        <div className="relative z-10">
-                            <h3 className="text-white font-bold text-lg mb-2">Copias de Seguridad</h3>
-                            <p className="text-white/40 text-sm mb-6">Gestiona los puntos de restauración</p>
-
-                            <button
-                                onClick={() => setIsBackupModalOpen(true)}
-                                className="w-full py-4 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-2xl text-white font-bold text-sm uppercase tracking-widest shadow-lg shadow-blue-500/20 hover:scale-[1.02] transition-all flex items-center justify-center gap-2 mb-8"
-                            >
-                                <Save size={18} /> Crear Respaldo Ahora
-                            </button>
-
-                            <div className="space-y-4">
-                                <h4 className="text-white/40 text-xs font-bold uppercase tracking-widest">Historial Reciente</h4>
-                                {backups.map(backup => (
-                                    <div key={backup.id} className="bg-black/20 rounded-2xl p-4 border border-white/5 hover:border-white/10 transition-colors">
-                                        <div className="flex justify-between items-start mb-2">
-                                            <div className="bg-white/10 p-2 rounded-lg text-white/60">
-                                                <Database size={16} />
-                                            </div>
-                                            <button onClick={() => handleDownload(backup.name)} className="text-blue-400 hover:text-white transition-colors">
-                                                <Download size={16} />
-                                            </button>
-                                        </div>
-                                        <div className="text-white font-bold text-xs truncate mb-1">{backup.name}</div>
-                                        <div className="flex justify-between text-[10px] text-white/40">
-                                            <span>{backup.size}</span>
-                                            <span>{backup.type}</span>
-                                        </div>
-                                    </div>
-                                ))}
+                    <div className="bg-gradient-to-r from-blue-600/10 to-indigo-600/10 border border-blue-500/20 p-10 lg:p-14 rounded-[4rem] group hover:to-indigo-600/20 transition-all duration-700">
+                        <div className="flex flex-col md:flex-row items-center gap-10">
+                            <div className="shrink-0 relative">
+                                <div className="p-8 bg-blue-500/20 rounded-[2.5rem] border border-blue-500/30 text-blue-400 group-hover:scale-110 transition-transform duration-500">
+                                    <BookOpen size={48} />
+                                </div>
+                                <div className="absolute -top-3 -right-3 text-yellow-500 animate-pulse">
+                                    <ShieldCheck size={32} />
+                                </div>
+                            </div>
+                            <div className="space-y-4 text-center md:text-left">
+                                <h4 className="text-white font-black text-2xl tracking-tight leading-none">Security Protocol & Maintenance</h4>
+                                <p className="text-blue-200/50 text-base leading-relaxed font-medium">
+                                    La arquitectura utiliza un nodo SQLite persistente con redundancia por software. Se recomienda realizar una descarga física del archivo <b>app.db</b> cada vez que el cluster de entrenamiento supere los 10,000 registros.
+                                </p>
                             </div>
                         </div>
                     </div>
                 </div>
 
+                {/* Sidebar Vault: Backups Management */}
+                <div className="lg:col-span-4 space-y-8">
+                    <div className="bg-slate-900/40 backdrop-blur-xl border border-white/10 rounded-[3rem] lg:rounded-[4rem] p-8 lg:p-10 relative overflow-hidden flex flex-col h-full shadow-2xl">
+                        <div className="absolute top-0 right-0 p-12 opacity-[0.03]">
+                            <Save size={300} className="text-white" />
+                        </div>
+
+                        <div className="relative z-10 flex flex-col h-full">
+                            <div className="mb-10">
+                                <h3 className="text-white font-black text-2xl lg:text-3xl tracking-tight mb-2">Respaldo Vault</h3>
+                                <p className="text-white/30 text-[10px] lg:text-xs font-black uppercase tracking-[0.3em] flex items-center gap-2">
+                                    <Clock size={12} /> Redundancia Offline
+                                </p>
+                            </div>
+
+                            <button
+                                onClick={() => setIsBackupModalOpen(true)}
+                                className="w-full py-6 bg-white text-slate-950 rounded-[2rem] font-black text-sm uppercase tracking-[0.2em] shadow-[0_20px_40px_rgba(255,255,255,0.1)] hover:scale-[1.03] active:scale-95 transition-all flex items-center justify-center gap-4 mb-10 group"
+                            >
+                                <Save size={20} className="group-hover:rotate-12 transition-transform" />
+                                <span>Generar Snapshot</span>
+                            </button>
+
+                            <div className="flex-1 space-y-4 overflow-y-auto pr-2 custom-scrollbar min-h-[400px]">
+                                <h4 className="text-white font-black text-[10px] uppercase tracking-[0.4em] mb-6 border-b border-white/5 pb-4 sticky top-0 bg-slate-900/80 backdrop-blur-md z-20 py-2">
+                                    HISTORIAL DISPONIBLE ({backups.length})
+                                </h4>
+
+                                {backups.map((backup, idx) => (
+                                    <div key={idx} className="bg-slate-950/40 rounded-[2rem] p-6 border border-white/5 hover:border-blue-500/30 transition-all duration-500 group relative overflow-hidden">
+                                        <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-bl from-blue-500/10 to-transparent pointer-events-none" />
+
+                                        <div className="flex justify-between items-start mb-4">
+                                            <div className="w-12 h-12 bg-white/5 rounded-2xl flex items-center justify-center text-white/40 group-hover:bg-blue-600 group-hover:text-white transition-all duration-500">
+                                                <Database size={20} />
+                                            </div>
+                                            <button
+                                                onClick={() => handleDownload(backup.name)}
+                                                className="w-10 h-10 rounded-xl bg-blue-500/10 text-blue-400 hover:bg-blue-600 hover:text-white transition-all flex items-center justify-center"
+                                            >
+                                                <Download size={18} />
+                                            </button>
+                                        </div>
+
+                                        <div className="min-w-0">
+                                            <div className="text-white font-black text-sm truncate mb-2" title={backup.name}>{backup.name}</div>
+                                            <div className="flex items-center justify-between">
+                                                <div className="flex items-center gap-2 text-[10px] font-black text-white/30 truncate">
+                                                    <Clock size={12} className="shrink-0" />
+                                                    {backup.date}
+                                                </div>
+                                                <span className="text-[10px] font-black text-emerald-400 bg-emerald-400/10 px-2.5 py-1 rounded-lg">{backup.size}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+
+                                {backups.length === 0 && (
+                                    <div className="py-20 flex flex-col items-center justify-center border-2 border-dashed border-white/5 rounded-[3rem] opacity-20 text-center">
+                                        <Database size={40} className="mb-4" />
+                                        <p className="text-[10px] font-black uppercase tracking-widest">Vault Vacío</p>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
 
-            {/* Modal de Proceso de Respaldo */}
+            {/* Futuristic Modal: Backup Engine */}
             {isBackupModalOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-                    <div className="absolute inset-0 bg-slate-950/80 backdrop-blur-md" onClick={() => backupStatus !== 'processing' && setIsBackupModalOpen(false)}></div>
-                    <div className="bg-slate-900 border border-white/10 w-full max-w-md rounded-[2.5rem] relative z-10 p-8 text-center shadow-2xl animate-in zoom-in duration-300">
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+                    <div className="absolute inset-0 bg-slate-950/90 backdrop-blur-2xl" onClick={() => backupStatus !== 'processing' && setIsBackupModalOpen(false)}></div>
+                    <div className="bg-slate-900 border border-white/10 w-full max-w-xl rounded-[3rem] lg:rounded-[4rem] relative z-10 p-10 lg:p-14 text-center shadow-2xl animate-in zoom-in duration-500">
 
                         {backupStatus === 'idle' && (
-                            <>
-                                <div className="w-16 h-16 bg-blue-500/10 rounded-full flex items-center justify-center mx-auto mb-6 border border-blue-500/20">
-                                    <Save size={32} className="text-blue-500" />
+                            <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+                                <div className="w-24 h-24 bg-blue-500/10 rounded-[2rem] flex items-center justify-center mx-auto mb-8 border border-blue-500/20 relative group">
+                                    <Save size={40} className="text-blue-500" />
+                                    <div className="absolute -inset-4 bg-blue-500/5 rounded-full animate-ping pointer-events-none" />
                                 </div>
-                                <h3 className="text-xl font-black text-white mb-2">Nuevo Respaldo</h3>
-                                <p className="text-white/60 text-sm mb-8">
-                                    Se generará una copia completa de la base de datos (SQL). Esto puede tomar unos minutos.
+                                <h3 className="text-3xl lg:text-4xl font-black text-white mb-4 tracking-tighter">Inyectar Punto de Control</h3>
+                                <p className="text-white/40 text-sm lg:text-lg mb-12 font-medium leading-relaxed max-w-sm mx-auto">
+                                    Se generará un binario cifrado del cluster persistente (app.db). El sistema entrará en modo <strong>ReadOnly</strong> temporalmente.
                                 </p>
-                                <div className="flex gap-3">
-                                    <button onClick={() => setIsBackupModalOpen(false)} className="flex-1 py-3 rounded-xl border border-white/10 text-white font-bold hover:bg-white/5 text-xs uppercase tracking-widest">Cancelar</button>
-                                    <button onClick={handleCreateBackup} className="flex-1 py-3 rounded-xl bg-blue-500 text-white font-bold hover:bg-blue-600 shadow-lg shadow-blue-500/20 text-xs uppercase tracking-widest">Iniciar</button>
+                                <div className="flex flex-col sm:flex-row gap-4">
+                                    <button
+                                        onClick={() => setIsBackupModalOpen(false)}
+                                        className="flex-1 py-5 rounded-2xl lg:rounded-3xl border border-white/10 text-white font-black text-xs uppercase tracking-[0.2em] hover:bg-white/5 transition-all order-2 sm:order-1"
+                                    >
+                                        Abortar Acción
+                                    </button>
+                                    <button
+                                        onClick={handleCreateBackup}
+                                        className="flex-[2] py-5 rounded-2xl lg:rounded-3xl bg-blue-600 text-white font-black text-xs uppercase tracking-[0.2em] shadow-xl shadow-blue-500/20 active:scale-95 transition-all order-1 sm:order-2"
+                                    >
+                                        Sincronizar Vault
+                                    </button>
                                 </div>
-                            </>
+                            </div>
                         )}
 
                         {backupStatus === 'processing' && (
-                            <>
-                                <div className="w-16 h-16 bg-blue-500/10 rounded-full flex items-center justify-center mx-auto mb-6 border border-blue-500/20 animate-pulse">
-                                    <RefreshCw size={32} className="text-blue-500 animate-spin" />
+                            <div className="space-y-10 animate-in fade-in duration-500">
+                                <div className="relative w-32 h-32 lg:w-40 lg:h-40 mx-auto">
+                                    <div className="absolute inset-0 border-[6px] border-blue-500/10 rounded-full" />
+                                    <svg className="w-full h-full transform -rotate-90">
+                                        <circle
+                                            cx="50%"
+                                            cy="50%"
+                                            r="45%"
+                                            fill="none"
+                                            stroke="currentColor"
+                                            strokeWidth="8"
+                                            className="text-blue-500 transition-all duration-300"
+                                            strokeDasharray="282.6"
+                                            strokeDashoffset={282.6 - (282.6 * backupProgress) / 100}
+                                            strokeLinecap="round"
+                                        />
+                                    </svg>
+                                    <div className="absolute inset-0 flex flex-col items-center justify-center">
+                                        <div className="text-3xl lg:text-4xl font-black text-white leading-none">{Math.round(backupProgress)}%</div>
+                                        <div className="text-[10px] font-black text-blue-400 uppercase tracking-widest mt-1">BUS RAW</div>
+                                    </div>
                                 </div>
-                                <h3 className="text-xl font-black text-white mb-4">Procesando...</h3>
-                                <div className="w-full bg-white/10 rounded-full h-2 mb-2 overflow-hidden">
-                                    <div className="bg-blue-500 h-full transition-all duration-300 ease-out" style={{ width: `${backupProgress}%` }}></div>
-                                </div>
-                                <p className="text-white/40 text-xs font-mono">{backupProgress}% Completado</p>
-                            </>
+                                <h3 className="text-xl lg:text-2xl font-black text-white tracking-tight animate-pulse">Comprimiendo Clúster...</h3>
+                            </div>
                         )}
 
                         {backupStatus === 'completed' && (
-                            <>
-                                <div className="w-16 h-16 bg-green-500/10 rounded-full flex items-center justify-center mx-auto mb-6 border border-green-500/20">
-                                    <CheckCircle2 size={32} className="text-green-500" />
+                            <div className="animate-in zoom-in duration-500">
+                                <div className="w-24 h-24 bg-emerald-500/10 rounded-full flex items-center justify-center mx-auto mb-8 border border-emerald-500/20">
+                                    <CheckCircle2 size={48} className="text-emerald-500" />
                                 </div>
-                                <h3 className="text-xl font-black text-white mb-2">¡Respaldo Exitoso!</h3>
-                                <p className="text-white/60 text-sm mb-8">
-                                    El archivo <strong>backup_now.sql</strong> se ha guardado correctamente en el servidor.
+                                <h3 className="text-3xl lg:text-4xl font-black text-white mb-4 tracking-tighter">Snaphot Sincronizado</h3>
+                                <p className="text-white/40 text-sm lg:text-lg mb-12 font-medium leading-relaxed max-w-sm mx-auto">
+                                    El punto de control se ha inyectado en el Vault correctamente.
                                 </p>
-                                <button onClick={() => { setIsBackupModalOpen(false); setBackupStatus('idle'); }} className="w-full py-3 rounded-xl bg-white/10 text-white font-bold hover:bg-white/20 text-xs uppercase tracking-widest">Cerrar</button>
-                            </>
+                                <button
+                                    onClick={() => { setIsBackupModalOpen(false); setBackupStatus('idle'); }}
+                                    className="w-full py-5 rounded-[2rem] bg-white text-slate-950 font-black text-xs uppercase tracking-[0.2em] shadow-xl active:scale-95 transition-all"
+                                >
+                                    Reactivar Operaciones
+                                </button>
+                            </div>
                         )}
                     </div>
                 </div>
             )}
 
+            <style>{`
+                .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+                .custom-scrollbar::-webkit-scrollbar-thumb { 
+                    background: rgba(59, 130, 246, 0.2); 
+                    border-radius: 10px; 
+                }
+            `}</style>
         </div>
     );
 };

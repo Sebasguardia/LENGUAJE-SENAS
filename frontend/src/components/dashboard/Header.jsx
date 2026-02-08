@@ -1,133 +1,288 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { 
-  User, LogOut, Settings, Bell, HelpCircle, 
-  GraduationCap, MessageCircle, Sparkles 
+import {
+  User, LogOut, Settings, Bell, HelpCircle,
+  MessageCircle, Sparkles, Search,
+  ChevronDown, GraduationCap, Volume2, VolumeX, Trophy
 } from 'lucide-react';
+import { getUserStats } from '../../data/userProgress';
+import AchievementsModal from './AchievementsModal';
+import { getGlobalRank } from '../../data/achievements';
 
-const Header = () => {
+import { authService } from '../../api/authService';
+import { notificationService } from '../../api/notificationService';
+
+const Header = ({ user, isMuted, setIsMuted }) => {
   const navigate = useNavigate();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const [notifications, setNotifications] = useState(3);
-  const [currentTime, setCurrentTime] = useState('');
+  const [isNotifOpen, setIsNotifOpen] = useState(false);
+  const [notifications, setNotifications] = useState([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [isLoadingNotifs, setIsLoadingNotifs] = useState(false);
+  const [isScrolled, setIsScrolled] = useState(false);
+  const [isAchievementsOpen, setIsAchievementsOpen] = useState(false);
+
+  const fetchNotifications = async () => {
+    try {
+      setIsLoadingNotifs(true);
+      const data = await notificationService.getNotifications();
+      setNotifications(data);
+      setUnreadCount(data.filter(n => !n.read).length);
+    } catch (err) {
+      console.error("Error fetching notifications:", err);
+    } finally {
+      setIsLoadingNotifs(false);
+    }
+  };
 
   useEffect(() => {
-    const updateTime = () => {
-      const now = new Date();
-      setCurrentTime(now.toLocaleTimeString('es-ES', { 
-        hour: '2-digit', 
-        minute: '2-digit' 
-      }));
-    };
-    
-    updateTime();
-    const interval = setInterval(updateTime, 60000);
+    fetchNotifications();
+    // Poll notifications every 2 minutes
+    const interval = setInterval(fetchNotifications, 120000);
     return () => clearInterval(interval);
   }, []);
 
-  const userData = {
-    name: "Ana García",
-    role: "Estudiante",
-    avatar: "👩‍🎓",
-    level: "Intermedio"
+  useEffect(() => {
+    const handleScroll = () => setIsScrolled(window.scrollY > 20);
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  const handleMarkAllRead = async () => {
+    try {
+      await notificationService.markAllAsRead();
+      setNotifications(notifications.map(n => ({ ...n, read: true })));
+      setUnreadCount(0);
+    } catch (err) {
+      console.error("Error marking all as read:", err);
+    }
   };
 
+  const handleMarkRead = async (id) => {
+    try {
+      await notificationService.markAsRead(id);
+      setNotifications(notifications.map(n => n.id === id ? { ...n, read: true } : n));
+      setUnreadCount(prev => Math.max(0, prev - 1));
+    } catch (err) {
+      console.error("Error marking notification as read:", err);
+    }
+  };
+
+  const userName = user?.name || 'Estudiante';
+  const userAvatar = user?.avatar || userName.charAt(0).toUpperCase();
+
   const handleLogout = () => {
-    // Lógica de logout
+    authService.logout();
     navigate('/login');
   };
 
+  // Obtener stats para el modal de logros
+  const userStats = getUserStats(user?.id || 'demo-user');
+
+  // Calcular rango dinámico basado en XP
+  const globalRank = getGlobalRank(user?.xp || userStats.totalXP || 0);
+  const userLevel = globalRank.tier;
+
   return (
-    <header className="bg-white/80 backdrop-blur-xl rounded-3xl border border-white/20 shadow-2xl p-6 mb-8">
-      <div className="flex items-center justify-between">
-        {/* Logo y título */}
-        <div className="flex items-center gap-4">
-          <div className="relative">
-            <div className="absolute inset-0 bg-gradient-to-r from-blue-500 to-purple-500 rounded-2xl blur-lg opacity-75"></div>
-            <div className="bg-gradient-to-r from-blue-600 to-purple-600 p-3 rounded-2xl relative z-10">
-              <GraduationCap className="text-white" size={32} />
+    <header className={`sticky top-4 sm:top-6 z-50 transition-all duration-500 ${isScrolled ? 'px-2' : 'px-0'}`}>
+      <div className={`mx-auto flex items-center justify-between px-3 sm:px-8 py-2 sm:py-4 rounded-[1.5rem] sm:rounded-[2rem] border transition-all duration-500 ${isScrolled
+        ? 'bg-slate-900/80 backdrop-blur-2xl border-white/10 shadow-[0_20px_50px_rgba(0,0,0,0.3)]'
+        : 'bg-white/5 backdrop-blur-md border-white/5'
+        }`}>
+
+        {/* Brand & Search */}
+        <div className="flex items-center gap-2 sm:gap-8">
+          <div className="flex items-center gap-2 group cursor-pointer" onClick={() => navigate('/dashboard')}>
+            <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg sm:rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/20 group-hover:scale-110 transition-transform">
+              <GraduationCap className="text-white" size={window.innerWidth < 640 ? 16 : 20} />
+            </div>
+            <div className="flex flex-col">
+              <span className="text-white font-black tracking-tighter text-xs sm:text-lg leading-none">SeñasIA</span>
+              <p className="text-[7px] sm:text-[8px] text-blue-400 font-black uppercase tracking-widest leading-none mt-0.5 sm:mt-1">Portal</p>
             </div>
           </div>
-          <div>
-            <h1 className="text-2xl font-bold bg-gradient-to-r from-gray-900 to-blue-600 bg-clip-text text-transparent">
-              Instituto de Lengua de Señas IA
-            </h1>
-            <p className="text-gray-600 text-sm">Plataforma de aprendizaje inteligente</p>
+
+          <div className="relative group hidden lg:block">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-white/20 group-focus-within:text-blue-400 transition-colors" size={16} />
+            <input
+              type="text"
+              placeholder="¿Qué quieres aprender hoy?"
+              className="bg-white/5 border border-white/5 rounded-xl pl-12 pr-4 py-2 text-sm text-white placeholder-white/20 focus:outline-none focus:border-blue-500/40 focus:bg-white/10 transition-all w-64"
+            />
           </div>
         </div>
 
-        {/* Información del usuario y controles */}
-        <div className="flex items-center gap-6">
-          {/* Hora actual */}
-          <div className="text-right hidden md:block">
-            <div className="text-2xl font-bold text-gray-900">{currentTime}</div>
-            <div className="text-sm text-gray-600">Hoy es {new Date().toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' })}</div>
+        {/* Actions & Profile */}
+        <div className="flex items-center gap-1 sm:gap-4">
+          <div className="hidden md:flex items-center gap-2 px-4 border-r border-white/10 mr-2">
+            <div className="text-right">
+              <p className="text-[10px] text-white/30 font-black uppercase tracking-widest leading-none mb-1">Tu Racha</p>
+              <div className="flex items-center gap-1.5 text-orange-400 font-bold text-sm">
+                <Sparkles size={14} />
+                <span>{user?.current_streak || 0} Días</span>
+              </div>
+            </div>
           </div>
 
-          {/* Notificaciones */}
-          <button className="relative p-3 bg-white/50 rounded-xl border border-white/20 hover:bg-white/80 transition-all group">
-            <Bell size={20} className="text-gray-700 group-hover:text-blue-600" />
-            {notifications > 0 && (
-              <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-                {notifications}
-              </span>
-            )}
-          </button>
-
-          {/* Ayuda */}
-          <button className="p-3 bg-white/50 rounded-xl border border-white/20 hover:bg-white/80 transition-all group">
-            <HelpCircle size={20} className="text-gray-700 group-hover:text-purple-600" />
-          </button>
-
-          {/* Perfil del usuario */}
-          <div className="relative">
-            <button 
-              className="flex items-center gap-3 p-2 rounded-2xl hover:bg-white/50 transition-all group"
-              onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+          <div className="flex items-center gap-0.5 sm:gap-1">
+            {/* Mute/Unmute Button */}
+            <button
+              onClick={() => setIsMuted(!isMuted)}
+              className={`p-2 sm:p-2.5 rounded-lg sm:rounded-xl transition-all ${isMuted
+                ? 'text-red-400 bg-red-500/10 hover:bg-red-500/20'
+                : 'text-blue-400 bg-blue-500/10 hover:bg-blue-500/20'
+                }`}
+              title={isMuted ? 'Activar voz del bot' : 'Silenciar voz del bot'}
             >
-              <div className="text-2xl">{userData.avatar}</div>
-              <div className="text-left hidden lg:block">
-                <div className="font-semibold text-gray-900">{userData.name}</div>
-                <div className="text-sm text-gray-600 flex items-center gap-1">
-                  <Sparkles size={12} className="text-yellow-500" />
-                  Nivel {userData.level}
-                </div>
+              {isMuted ? <VolumeX size={18} className="sm:w-[20px] sm:h-[20px]" /> : <Volume2 size={18} className="sm:w-[20px] sm:h-[20px]" />}
+            </button>
+            <button
+              onClick={() => setIsAchievementsOpen(true)}
+              className="p-2 sm:p-2.5 rounded-lg sm:rounded-xl text-yellow-500/60 hover:text-yellow-500 hover:bg-yellow-500/10 transition-all group relative"
+              title="Sala de Trofeos"
+            >
+              <Trophy size={18} className="sm:w-[20px] sm:h-[20px]" />
+              <span className="absolute top-1.5 right-1.5 sm:top-2 sm:right-2 w-1.5 h-1.5 bg-yellow-400 rounded-full animate-pulse shadow-[0_0_8px_rgba(250,204,21,0.6)]" />
+            </button>
+            <div className="relative">
+              <button
+                onClick={() => {
+                  setIsNotifOpen(!isNotifOpen);
+                  setIsDropdownOpen(false);
+                }}
+                className={`relative p-2 sm:p-2.5 rounded-lg sm:rounded-xl transition-all group ${isNotifOpen ? 'text-blue-400 bg-blue-500/10' : 'text-white/40 hover:text-white hover:bg-white/5'}`}
+              >
+                <Bell size={18} className="sm:w-[20px] sm:h-[20px]" />
+                {unreadCount > 0 && (
+                  <span className="absolute top-2 sm:top-2.5 right-2 sm:right-2.5 w-1.5 h-1.5 sm:w-2 sm:h-2 bg-blue-500 rounded-full border border-slate-900 group-hover:animate-ping" />
+                )}
+              </button>
+
+              {/* Notifications Dropdown */}
+              {isNotifOpen && (
+                <>
+                  <div className="fixed inset-0 z-40" onClick={() => setIsNotifOpen(false)} />
+                  <div className="fixed sm:absolute left-4 right-4 sm:left-auto sm:right-0 top-24 sm:top-auto sm:mt-4 sm:w-96 bg-slate-900/95 backdrop-blur-2xl border border-white/10 rounded-[2rem] shadow-2xl z-50 animate-in fade-in zoom-in-95 duration-200 overflow-hidden">
+                    <div className="px-5 py-4 border-b border-white/5 flex items-center justify-between bg-white/[0.02] gap-2">
+                      <h3 className="text-white font-bold text-xs sm:text-sm truncate">Notificaciones</h3>
+                      {unreadCount > 0 && (
+                        <button
+                          onClick={handleMarkAllRead}
+                          className="text-[9px] sm:text-[10px] font-black text-blue-400 hover:text-blue-300 uppercase tracking-widest transition-colors whitespace-nowrap"
+                        >
+                          Marcar todo
+                        </button>
+                      )}
+                    </div>
+
+                    <div className="max-h-[400px] overflow-y-auto custom-scrollbar">
+                      {notifications.length === 0 ? (
+                        <div className="px-6 py-12 text-center">
+                          <div className="w-12 h-12 bg-white/5 rounded-2xl flex items-center justify-center mx-auto mb-3 text-white/20">
+                            <Bell size={24} />
+                          </div>
+                          <p className="text-white/40 text-xs font-bold italic">No tienes notificaciones aún</p>
+                        </div>
+                      ) : (
+                        notifications.map((notif) => (
+                          <div
+                            key={notif.id}
+                            onClick={() => !notif.read && handleMarkRead(notif.id)}
+                            className={`px-6 py-4 border-b border-white/5 transition-colors cursor-pointer relative group ${notif.read ? 'bg-transparent opacity-60' : 'bg-blue-500/5 hover:bg-blue-500/10'}`}
+                          >
+                            {!notif.read && (
+                              <div className="absolute left-2 top-1/2 -translate-y-1/2 w-1.5 h-1.5 bg-blue-500 rounded-full" />
+                            )}
+                            <div className="flex items-start gap-3">
+                              {notif.type === 'success' && (
+                                <div className="mt-0.5 p-1 rounded-md bg-yellow-500/10 text-yellow-500">
+                                  <Trophy size={12} />
+                                </div>
+                              )}
+                              <div className="flex-1">
+                                <p className={`text-xs leading-relaxed ${notif.read ? 'text-white/60' : 'text-white font-medium'}`}>
+                                  {notif.message}
+                                </p>
+                                <span className="text-[9px] text-white/20 font-bold whitespace-nowrap mt-1 block">
+                                  {new Date(notif.created_at).toLocaleString()}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        ))
+                      )}
+                    </div>
+
+                    <div className="px-6 py-3 bg-white/[0.02] text-center">
+                      <p className="text-[9px] text-white/20 font-black uppercase tracking-[0.2em]">Centro de Alertas v1.0</p>
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
+            <button className="p-2.5 rounded-xl text-white/40 hover:text-white hover:bg-white/5 transition-all">
+              <HelpCircle size={20} />
+            </button>
+          </div>
+
+          <div className="relative ml-2">
+            <button
+              onClick={() => {
+                setIsDropdownOpen(!isDropdownOpen);
+                setIsNotifOpen(false);
+              }}
+              className={`flex items-center gap-3 px-2 py-1 rounded-full transition-all duration-300 border ${isDropdownOpen ? 'bg-white/10 border-white/20' : 'bg-white/5 border-transparent hover:bg-white/10'
+                }`}
+            >
+              <div className="w-9 h-9 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white font-black text-sm shadow-md">
+                {userAvatar}
               </div>
-              <Settings size={16} className="text-gray-400 group-hover:text-gray-600" />
+              <div className="hidden md:block text-left pr-2">
+                <p className="text-white font-bold text-sm leading-none">{userName}</p>
+                <p className="text-white/40 text-[10px] font-bold uppercase tracking-widest mt-0.5">Nivel {userLevel}</p>
+              </div>
+              <ChevronDown size={14} className={`text-white/20 transition-transform duration-300 ${isDropdownOpen ? 'rotate-180' : ''}`} />
             </button>
 
             {/* Dropdown menu */}
             {isDropdownOpen && (
-              <div className="absolute right-0 top-full mt-2 w-64 bg-white/95 backdrop-blur-xl rounded-2xl border border-white/20 shadow-2xl py-2 z-50">
-                <div className="px-4 py-3 border-b border-white/10">
-                  <div className="font-semibold text-gray-900">{userData.name}</div>
-                  <div className="text-sm text-gray-600">{userData.role}</div>
+              <>
+                <div className="fixed inset-0 z-40" onClick={() => setIsDropdownOpen(false)} />
+                <div className="absolute right-0 mt-4 w-60 bg-slate-900/95 backdrop-blur-2xl border border-white/10 rounded-[2rem] shadow-2xl py-4 z-50 animate-in fade-in zoom-in-95 duration-200">
+                  <div className="px-6 py-4 border-b border-white/5 mb-2">
+                    <p className="text-white font-bold text-sm">{userName}</p>
+                    <p className="text-white/30 text-[10px] uppercase font-black tracking-widest mt-1">Nivel {userLevel}</p>
+                  </div>
+
+                  <button
+                    onClick={() => navigate('/profile')}
+                    className="w-full flex items-center gap-3 px-6 py-3 text-white/60 hover:text-white hover:bg-white/5 transition-colors text-xs font-bold uppercase tracking-widest"
+                  >
+                    <User size={16} className="text-blue-500" />
+                    Mi Perfil
+                  </button>
+
+
+                  <div className="h-px bg-white/5 my-3 mx-6" />
+
+                  <button
+                    onClick={handleLogout}
+                    className="w-full flex items-center gap-3 px-6 py-3 text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-colors text-xs font-black uppercase tracking-widest"
+                  >
+                    <LogOut size={16} />
+                    Salir
+                  </button>
                 </div>
-                
-                <button className="w-full px-4 py-3 text-left hover:bg-blue-50/50 transition-colors flex items-center gap-3">
-                  <User size={18} className="text-gray-600" />
-                  Mi perfil
-                </button>
-                
-                <button className="w-full px-4 py-3 text-left hover:bg-blue-50/50 transition-colors flex items-center gap-3">
-                  <MessageCircle size={18} className="text-gray-600" />
-                  Configuración de voz
-                </button>
-                
-                <div className="border-t border-white/10 my-2"></div>
-                
-                <button 
-                  onClick={handleLogout}
-                  className="w-full px-4 py-3 text-left hover:bg-red-50/50 transition-colors flex items-center gap-3 text-red-600"
-                >
-                  <LogOut size={18} />
-                  Cerrar sesión
-                </button>
-              </div>
+              </>
             )}
           </div>
         </div>
       </div>
+
+      <AchievementsModal
+        isOpen={isAchievementsOpen}
+        onClose={() => setIsAchievementsOpen(false)}
+      />
     </header>
   );
 };

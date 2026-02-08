@@ -5,6 +5,7 @@ import {
     Eye, EyeOff, Mail, Key, Sparkles, BrainCircuit, Zap, ArrowLeft,
     UserPlus, CheckCircle2, Phone, CreditCard
 } from 'lucide-react';
+import { authService } from '../api/authService';
 
 const Register = () => {
     const navigate = useNavigate();
@@ -23,7 +24,17 @@ const Register = () => {
     const [isLoading, setIsLoading] = useState(false);
     const [particles, setParticles] = useState([]);
 
+    const [isRegistrationOpen, setIsRegistrationOpen] = useState(true);
+
     useEffect(() => {
+        // Check registration status from storage (synced by App.jsx) or default open
+        try {
+            const config = JSON.parse(localStorage.getItem('public_config'));
+            if (config && config.public_registration === 'false') {
+                setIsRegistrationOpen(false);
+            }
+        } catch (e) { }
+
         // Crear partículas para el fondo
         const newParticles = Array.from({ length: 15 }, (_, i) => ({
             id: i,
@@ -75,70 +86,49 @@ const Register = () => {
         }
 
         try {
-            // Simular delay de API
-            await new Promise(resolve => setTimeout(resolve, 1500));
-
-            // Guardar en LocalStorage
-            const users = JSON.parse(localStorage.getItem('users') || '[]');
-
-            if (users.find(u => u.email === email)) {
-                setError('Este correo electrónico ya está registrado.');
-                setIsLoading(false);
-                return;
-            }
-
-            const newUser = {
-                id: Date.now(),
-                fullName,
-                dni,
-                phone,
-                email,
-                password, // En un caso real, esto iría hasheado
-                role: 'usuario',
-                createdAt: new Date().toISOString()
-            };
-
-            users.push(newUser);
-            localStorage.setItem('users', JSON.stringify(users));
+            // Llamada real al backend
+            await authService.register({
+                email: email,
+                password: password,
+                full_name: fullName,
+                dni: dni,
+                phone: phone
+            });
 
             setSuccess(true);
             setTimeout(() => navigate('/login'), 2000);
         } catch (err) {
-            setError('Ocurrió un error inesperado. Inténtalo de nuevo.');
+            console.error('Registration error:', err);
+            const detail = err.response?.data?.detail;
+            setError(detail || 'Ocurrió un error inesperado. Inténtalo de nuevo.');
         } finally {
             setIsLoading(false);
         }
     };
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-purple-900 flex flex-col justify-center items-center relative overflow-hidden">
-            {/* Fondo animado con partículas */}
-            <div className="absolute inset-0 z-0">
-                <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-blue-900/50 to-purple-900/50 animate-gradient-x"></div>
+        <div className="min-h-screen bg-slate-950 flex flex-col justify-center items-center relative overflow-hidden font-sans selection:bg-blue-500/30 text-white">
+            {/* Background Ambient Glow */}
+            <div className="absolute inset-0 z-0 pointer-events-none">
+                <div className="absolute top-[-20%] left-[-10%] w-[70%] h-[70%] bg-blue-600/10 rounded-full blur-[160px] animate-pulse"></div>
+                <div className="absolute bottom-[-10%] right-[-10%] w-[60%] h-[60%] bg-purple-600/10 rounded-full blur-[160px] animate-pulse duration-[5s]"></div>
+                <div className="absolute inset-0 opacity-[0.03]" style={{ backgroundImage: 'radial-gradient(#ffffff 1px, transparent 1px)', backgroundSize: '35px 35px' }}></div>
+            </div>
+
+            {/* Partículas flotantes sutiles */}
+            <div className="absolute inset-0 z-0 pointer-events-none">
                 {particles.map(particle => (
                     <div
                         key={particle.id}
-                        className="absolute w-2 h-2 bg-blue-400 rounded-full opacity-30 animate-float"
+                        className="absolute w-1.5 h-1.5 bg-blue-400/30 rounded-full animate-float blur-[1px]"
                         style={{
-                            left: `${particle.x}% `,
-                            top: `${particle.y}% `,
-                            animationDuration: `${particle.duration} s`,
-                            animationDelay: `${particle.id * 0.5} s`
+                            left: `${particle.x}%`,
+                            top: `${particle.y}%`,
+                            animationDuration: `${particle.duration}s`,
+                            animationDelay: `${particle.id * 0.5}s`
                         }}
                     />
                 ))}
-                <div className="absolute top-1/4 -left-10 w-72 h-72 bg-blue-500/10 rounded-full blur-3xl animate-pulse"></div>
-                <div className="absolute bottom-1/4 -right-10 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl animate-pulse animation-delay-2000"></div>
-                <div
-                    className="absolute inset-0 opacity-10"
-                    style={{
-                        backgroundImage: `
-linear - gradient(rgba(255, 255, 255, 0.1) 1px, transparent 1px),
-    linear - gradient(90deg, rgba(255, 255, 255, 0.1) 1px, transparent 1px)
-        `,
-                        backgroundSize: '50px 50px'
-                    }}
-                />
             </div>
 
             {/* Card de registro */}
@@ -178,6 +168,17 @@ linear - gradient(rgba(255, 255, 255, 0.1) 1px, transparent 1px),
                                 </div>
                                 <h3 className="text-2xl font-bold text-white mb-2">¡Registro Exitoso!</h3>
                                 <p className="text-white/60">Redirigiéndote al inicio de sesión...</p>
+                            </div>
+                        ) : !isRegistrationOpen ? (
+                            <div className="flex flex-col items-center justify-center py-10 text-center animate-in fade-in zoom-in duration-500">
+                                <div className="w-20 h-20 bg-yellow-500/20 rounded-full flex items-center justify-center mb-6">
+                                    <Lock size={48} className="text-yellow-400" />
+                                </div>
+                                <h3 className="text-2xl font-bold text-white mb-2">Registro Cerrado</h3>
+                                <p className="text-white/60 max-w-xs mx-auto">El registro de nuevos usuarios está temporalmente deshabilitado por el administrador.</p>
+                                <button onClick={() => navigate('/login')} className="mt-8 px-6 py-3 bg-white/10 hover:bg-white/20 rounded-xl font-bold text-white transition-colors">
+                                    Volver al Inicio
+                                </button>
                             </div>
                         ) : (
                             <form className="space-y-4" onSubmit={handleRegister}>
