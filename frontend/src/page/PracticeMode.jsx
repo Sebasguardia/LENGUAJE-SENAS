@@ -436,7 +436,7 @@ const PracticeMode = () => {
                                     <div className="aspect-square bg-black/40 rounded-2xl border border-white/5 overflow-hidden relative shadow-inner">
                                         {ctrl.image_url ? (
                                             <img
-                                                src={ctrl.image_url.startsWith('http') ? ctrl.image_url : `http://localhost:8000${ctrl.image_url}`}
+                                                src={ctrl.image_url.startsWith('http') ? ctrl.image_url : `https://lenguaje-senas-ia-j0a3.onrender.com${ctrl.image_url}`}
                                                 alt={ctrl.name}
                                                 className="w-full h-full object-cover group-hover/item:scale-110 transition-transform duration-500"
                                             />
