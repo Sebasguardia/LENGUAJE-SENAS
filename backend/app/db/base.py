@@ -5,3 +5,4 @@ from app.models.progress import UserProgress, PracticeSession, UserModuleProgres
 from app.models.gamification import Achievement, UserAchievement
 from app.models.settings import SystemSetting
 from app.models.notification import Notification
+from app.models.dataset import HandCapture

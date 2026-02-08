@@ -2,8 +2,16 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from app.core.config import settings
 
-# Crear motor de base de datos
-engine = create_engine(settings.DATABASE_URL)
+# Configuración de motor inteligente (Soporta SQLite y Postgres)
+connect_args = {}
+if settings.DATABASE_URL.startswith("sqlite"):
+    connect_args = {"check_same_thread": False}
+
+engine = create_engine(
+    settings.DATABASE_URL, 
+    connect_args=connect_args,
+    pool_pre_ping=True # Recomendado para bases de datos en la nube como Supabase
+)
 
 # Crear clase SessionLocal
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
