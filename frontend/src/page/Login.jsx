@@ -102,6 +102,9 @@ const Login = () => {
       localStorage.setItem('token', tempToken);
       localStorage.setItem('userData', JSON.stringify(userData));
 
+      // Notificar a la App para disparar Prefetch de datos pesados inmediatamente
+      window.dispatchEvent(new Event('login-success'));
+
       // Redirección inteligente: 
       // Si eligió admin y lo es -> /admin
       // Si eligió usuario (siendo admin o no) -> /dashboard

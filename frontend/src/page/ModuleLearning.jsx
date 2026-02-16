@@ -19,8 +19,20 @@ const ModuleLearning = () => {
     const { moduleId } = useParams();
 
     // --- ESTADOS ---
-    const [moduleInfo, setModuleInfo] = useState(null);
-    const [elements, setElements] = useState([]);
+    const [moduleInfo, setModuleInfo] = useState(() => {
+        try {
+            const cached = localStorage.getItem(`api_cache_/modules/${moduleId}`);
+            return cached ? JSON.parse(cached).data : null;
+        } catch (e) { return null; }
+    });
+
+    const [elements, setElements] = useState(() => {
+        try {
+            const cached = localStorage.getItem(`api_cache_/modules/${moduleId}`);
+            return cached ? (JSON.parse(cached).data?.elements || []) : [];
+        } catch (e) { return []; }
+    });
+
     const [currentElementIndex, setCurrentElementIndex] = useState(0);
     const [accuracy, setAccuracy] = useState(0);
     const [accuracyHistory, setAccuracyHistory] = useState(new Array(40).fill(5));
@@ -30,7 +42,10 @@ const ModuleLearning = () => {
     const [isCompleting, setIsCompleting] = useState(false);
     const [sessionScore, setSessionScore] = useState(0);
     const [sessionTime, setSessionTime] = useState(0);
-    const [isLoading, setIsLoading] = useState(true);
+
+    // Si ya tenemos info del cache, no mostramos loading
+    const [isLoading, setIsLoading] = useState(!moduleInfo);
+
     const [practiceTimer, setPracticeTimer] = useState(10);
     const [correctStreak, setCorrectStreak] = useState(0);
     const [isMuted, setIsMuted] = useState(() => localStorage.getItem('app_muted') === 'true');
@@ -68,8 +83,12 @@ const ModuleLearning = () => {
     useEffect(() => {
         const fetchModule = async () => {
             try {
-                setIsLoading(true);
+                // Solo mostrar loader si no tenemos datos previos
+                if (!moduleInfo) setIsLoading(true);
+
                 const data = await moduleService.getModuleBySlug(moduleId);
+
+                // Actualizar estado solo si cambió algo importante (opcional, React maneja diffs)
                 setModuleInfo(data);
                 const moduleElements = data.elements || [];
                 setElements(moduleElements);
@@ -105,6 +124,19 @@ const ModuleLearning = () => {
         fetchModule();
     }, [moduleId]);
 
+    // Listener para actualizaciones de cache en background
+    useEffect(() => {
+        const handleCacheUpdate = (event) => {
+            if (event.detail.key.includes(`/modules/${moduleId}`)) {
+                const newData = event.detail.data;
+                setModuleInfo(newData);
+                setElements(newData.elements || []);
+            }
+        };
+        window.addEventListener('api-cache-updated', handleCacheUpdate);
+        return () => window.removeEventListener('api-cache-updated', handleCacheUpdate);
+    }, [moduleId]);
+
     // SEO: Actualizar título de la página
     useEffect(() => {
         if (moduleInfo) {
@@ -121,7 +153,7 @@ const ModuleLearning = () => {
 
             handsRef.current.setOptions({
                 maxNumHands: 1,
-                modelComplexity: 1,
+                modelComplexity: 0,
                 minDetectionConfidence: 0.5,
                 minTrackingConfidence: 0.5
             });
@@ -137,27 +169,52 @@ const ModuleLearning = () => {
 
 
     const onResults = async (results) => {
-        // Dibujar en ambos canvas si existen
+        // OPTIMIZACIÓN DE DIBUJO: Función reutilizable de alto rendimiento
+        const drawHand = (ctx, lm, width, height) => {
+            // Estilo Neón Premium
+            ctx.shadowColor = '#00d2ff';
+            ctx.shadowBlur = 15;
+            ctx.strokeStyle = '#00ffff';
+            ctx.lineWidth = 4;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+
+            ctx.beginPath();
+            for (const [start, end] of HAND_CONNECTIONS) {
+                const p1 = lm[start];
+                const p2 = lm[end];
+                ctx.moveTo(p1.x * width, p1.y * height);
+                ctx.lineTo(p2.x * width, p2.y * height);
+            }
+            ctx.stroke();
+
+            // Puntos Blancos Brillantes
+            ctx.shadowColor = '#ffffff';
+            ctx.shadowBlur = 5;
+            ctx.fillStyle = '#ffffff';
+
+            for (const point of lm) {
+                ctx.beginPath();
+                ctx.arc(point.x * width, point.y * height, 4, 0, 2 * Math.PI);
+                ctx.fill();
+            }
+        };
+
+        // Dibujar en ambos canvas si existen (Desktop y Mobile)
         [canvasRef, canvasMobileRef].forEach(ref => {
             if (ref.current) {
                 const canvasCtx = ref.current.getContext('2d');
-                canvasCtx.save();
-                canvasCtx.clearRect(0, 0, ref.current.width, ref.current.height);
-                canvasCtx.drawImage(results.image, 0, 0, ref.current.width, ref.current.height);
+                const w = ref.current.width;
+                const h = ref.current.height;
 
-                // Dibujar puntos y líneas de la mano con estilo premium
+                canvasCtx.save();
+                canvasCtx.clearRect(0, 0, w, h);
+
                 if (results.multiHandLandmarks) {
                     for (const landmarks of results.multiHandLandmarks) {
-                        drawConnectors(canvasCtx, landmarks, HAND_CONNECTIONS,
-                            { color: '#00d2ff', lineWidth: 3 });
-                        drawLandmarks(canvasCtx, landmarks, {
-                            color: '#ffffff',
-                            lineWidth: 1,
-                            radius: 3
-                        });
+                        drawHand(canvasCtx, landmarks, w, h);
                     }
                 }
-
                 canvasCtx.restore();
             }
         });
@@ -240,7 +297,7 @@ const ModuleLearning = () => {
     let themeColor = 'blue-500';
     let glowColor = 'rgba(59, 130, 246, 0.5)';
     const glowShadowStyle = {
-    boxShadow: `0 0 10px ${glowColor}`
+        boxShadow: `0 0 10px ${glowColor}`
     };
     if (moduleInfo && moduleInfo.color && typeof moduleInfo.color === 'string') {
         const parts = moduleInfo.color.split(' ');
@@ -641,8 +698,8 @@ const ModuleLearning = () => {
 
                         {/* Video Container */}
                         <div className="w-full h-full bg-black rounded-xl relative overflow-hidden shadow-2xl flex flex-col">
-                            <video ref={videoMobileRef} className="hidden" />
-                            <canvas ref={canvasMobileRef} className="w-full h-full object-cover mirror absolute inset-0" width="640" height="480" />
+                            <video ref={videoMobileRef} className="absolute inset-0 w-full h-full object-cover mirror" playsInline muted />
+                            <canvas ref={canvasMobileRef} className="w-full h-full object-cover mirror absolute inset-0 z-10" width="640" height="480" />
                             <div className="absolute inset-0 opacity-15 pointer-events-none" style={{ backgroundImage: 'linear-gradient(rgba(255,255,255,0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.05) 1px, transparent 1px)', backgroundSize: '40px 40px' }}></div>
 
                             {/* Status Badge */}
@@ -733,8 +790,8 @@ const ModuleLearning = () => {
                         <div className="h-1.5 w-full bg-slate-800 rounded-full overflow-hidden relative">
                             <div className="absolute inset-0 bg-white/10" style={{ width: `${recordProgress}%` }}></div>
                             <div
-                            className={`absolute h-full bg-${themeColor} transition-all duration-300`}
-                            style={{ boxShadow: `0 0 8px ${glowColor}` }}
+                                className={`absolute h-full bg-${themeColor} transition-all duration-300`}
+                                style={{ boxShadow: `0 0 8px ${glowColor}` }}
                             ></div>
                         </div>
                     </div>
@@ -868,7 +925,7 @@ const ModuleLearning = () => {
                                     {isCurrent && <div
                                         className={`absolute right-3 w-1.5 h-1.5 rounded-full bg-${themeColor}`}
                                         style={{ boxShadow: `0 0 8px ${glowColor}` }}
-                                        ></div>
+                                    ></div>
                                     }
                                 </button>
                             );
@@ -896,8 +953,8 @@ const ModuleLearning = () => {
 
                         {/* Contenedor de Video */}
                         <div className="w-full h-full bg-black rounded-xl lg:rounded-[1.5rem] relative overflow-hidden shadow-2xl flex flex-col transition-all duration-300">
-                            <video ref={videoRef} className="hidden" />
-                            <canvas ref={canvasRef} className="w-full h-full object-cover mirror absolute inset-0" width="640" height="480" />
+                            <video ref={videoRef} className="absolute inset-0 w-full h-full object-cover mirror" playsInline muted />
+                            <canvas ref={canvasRef} className="w-full h-full object-cover mirror absolute inset-0 z-10" width="640" height="480" />
                             {/* Grid BG Pattern */}
                             <div className="absolute inset-0 opacity-15 pointer-events-none" style={{ backgroundImage: 'linear-gradient(rgba(255,255,255,0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.05) 1px, transparent 1px)', backgroundSize: '50px 50px' }}></div>
 

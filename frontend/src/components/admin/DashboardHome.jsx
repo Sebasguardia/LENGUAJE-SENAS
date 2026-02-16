@@ -24,85 +24,95 @@ const DashboardHome = () => {
     const [topStudents, setTopStudents] = useState([]);
     const [weeklyProgress, setWeeklyProgress] = useState([]);
 
-    useEffect(() => {
-        const fetchDashboardData = async () => {
-            try {
-                setIsLoading(true);
+    const fetchDashboardData = async () => {
+        const hasCache = localStorage.getItem('api_cache_/admin/stats/general');
+        if (hasCache) {
+            setIsLoading(false);
+        }
 
-                // OPTIMIZACIÓN: Lanzar todas las peticiones al mismo tiempo
-                const results = await Promise.allSettled([
-                    adminService.getModuleDistribution(),
-                    adminService.getTopStudents(),
-                    adminService.getWeeklyProgress(),
-                    adminService.getGeneralStats()
+        try {
+            // OPTIMIZACIÓN: Lanzar todas las peticiones al mismo tiempo
+            const fetchDist = adminService.getModuleDistribution();
+            const fetchTop = adminService.getTopStudents();
+            const fetchWeekly = adminService.getWeeklyProgress();
+            const fetchGen = adminService.getGeneralStats();
+
+            // 1. Distribución
+            fetchDist.then(val => {
+                setModuleDistribution(val.map(d => ({
+                    name: d.label,
+                    capturado: d.value,
+                    objetivo: 250
+                })));
+            }).catch(() => { });
+
+            // 2. Top Estudiantes
+            fetchTop.then(val => setTopStudents(val)).catch(() => { });
+
+            // 3. Progreso Semanal
+            fetchWeekly.then(val => setWeeklyProgress(val)).catch(() => { });
+
+            // 4. Estadísticas Generales
+            fetchGen.then(genStats => {
+                setStats([
+                    {
+                        label: 'Imágenes Totales',
+                        value: genStats.total_captures.toLocaleString(),
+                        subValue: `${genStats.captures_today || 0} capturadas hoy`,
+                        icon: Camera,
+                        color: 'blue',
+                        trend: 'Dataset Real'
+                    },
+                    {
+                        label: 'Módulos Publicados',
+                        value: `${genStats.published_modules} / ${genStats.total_modules}`,
+                        subValue: `${genStats.total_modules - genStats.published_modules} módulos en borrador`,
+                        icon: BookOpen,
+                        color: 'green',
+                        trend: 'En Vivo'
+                    },
+                    {
+                        label: 'Usuarios Activos',
+                        value: genStats.total_users,
+                        subValue: 'Estudiantes en plataforma',
+                        icon: Users,
+                        color: 'purple',
+                        trend: 'Crecimiento'
+                    },
+                    {
+                        label: 'Precisión Motor IA',
+                        value: `${genStats.avg_accuracy}%`,
+                        subValue: 'Promedio global histórico',
+                        icon: Cpu,
+                        color: 'yellow',
+                        trend: 'Optimizado'
+                    }
                 ]);
+            }).catch(() => { });
 
-                // 1. Distribución (results[0])
-                if (results[0].status === 'fulfilled') {
-                    setModuleDistribution(results[0].value.map(d => ({
-                        name: d.label,
-                        capturado: d.value,
-                        objetivo: 250
-                    })));
-                }
+            // Si no hay cache, esperamos a las críticas para quitar el loader
+            if (!hasCache) {
+                setIsLoading(true);
+                await Promise.allSettled([fetchGen, fetchDist]);
+            }
 
-                // 2. Top Estudiantes (results[1])
-                if (results[1].status === 'fulfilled') {
-                    setTopStudents(results[1].value);
-                }
+        } catch (error) {
+            console.error("Error cargando dashboard admin:", error);
+        } finally {
+            setIsLoading(false);
+        }
+    };
 
-                // 3. Progreso Semanal (results[2])
-                if (results[2].status === 'fulfilled') {
-                    setWeeklyProgress(results[2].value);
-                }
+    useEffect(() => {
+        fetchDashboardData();
 
-                // 4. Estadísticas Generales (results[3])
-                if (results[3].status === 'fulfilled') {
-                    const genStats = results[3].value;
-                    setStats([
-                        {
-                            label: 'Imágenes Totales',
-                            value: genStats.total_captures.toLocaleString(),
-                            subValue: `${genStats.captures_today || 0} capturadas hoy`,
-                            icon: Camera,
-                            color: 'blue',
-                            trend: 'Dataset Real'
-                        },
-                        {
-                            label: 'Módulos Publicados',
-                            value: `${genStats.published_modules} / ${genStats.total_modules}`,
-                            subValue: `${genStats.total_modules - genStats.published_modules} módulos en borrador`,
-                            icon: BookOpen,
-                            color: 'green',
-                            trend: 'En Vivo'
-                        },
-                        {
-                            label: 'Usuarios Activos',
-                            value: genStats.total_users,
-                            subValue: 'Estudiantes en plataforma',
-                            icon: Users,
-                            color: 'purple',
-                            trend: 'Crecimiento'
-                        },
-                        {
-                            label: 'Precisión Motor IA',
-                            value: `${genStats.avg_accuracy}%`,
-                            subValue: 'Promedio global histórico',
-                            icon: Cpu,
-                            color: 'yellow',
-                            trend: 'Optimizado'
-                        }
-                    ]);
-                }
-
-            } catch (error) {
-                console.error("Error cargando dashboard admin:", error);
-            } finally {
-                setIsLoading(false);
+        const handleCacheUpdate = (e) => {
+            if (e.detail.url.includes('/admin/')) {
+                fetchDashboardData();
             }
         };
-
-        fetchDashboardData();
+        window.addEventListener('api-cache-updated', handleCacheUpdate);
+        return () => window.removeEventListener('api-cache-updated', handleCacheUpdate);
     }, []);
 
     const getColorClasses = (color) => {
@@ -317,3 +327,4 @@ const DashboardHome = () => {
 };
 
 export default DashboardHome;
+

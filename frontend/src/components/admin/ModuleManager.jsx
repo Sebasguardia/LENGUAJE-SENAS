@@ -9,9 +9,36 @@ import {
 import { moduleService } from '../../api/moduleService';
 import { adminService } from '../../api/adminService';
 
+// Helper para mapeo constante
+const mapModuleData = (data) => {
+  if (!Array.isArray(data)) return [];
+  return data.map(m => ({
+    id: m.id,
+    name: m.title,
+    type: 'Aprendizaje',
+    difficulty: m.difficulty || 'Básico',
+    duration: m.duration || '0h',
+    tags: m.tags ? m.tags.split(',').filter(t => t.trim() !== '') : [],
+    elementsCount: m.elements_count || 0,
+    elements: m.elements ? m.elements.map(e => e.name) : [],
+    slug: m.slug,
+    description: m.description,
+    orderIndex: m.order_index || 0,
+    status: m.is_active ? 'active' : 'inactive',
+    lastUpdate: new Date().toISOString().split('T')[0]
+  }));
+};
+
 const ModuleManager = () => {
-  const [modules, setModules] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
+  // Inicialización optimista
+  const [modules, setModules] = useState(() => {
+    try {
+      const cached = localStorage.getItem('api_cache_/modules/');
+      return cached ? mapModuleData(JSON.parse(cached).data) : [];
+    } catch (e) { return []; }
+  });
+
+  const [isLoading, setIsLoading] = useState(modules.length === 0);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
@@ -38,25 +65,9 @@ const ModuleManager = () => {
   // --- Cargar Datos Reales ---
   const loadModules = async () => {
     try {
-      setIsLoading(true);
+      if (modules.length === 0) setIsLoading(true);
       const data = await moduleService.getModules();
-      // Mapear datos del backend al formato esperado por el frontend (style legacy)
-      const mapped = data.map(m => ({
-        id: m.id,
-        name: m.title,
-        type: 'Aprendizaje',
-        difficulty: m.difficulty || 'Básico',
-        duration: m.duration || '0h',
-        tags: m.tags ? m.tags.split(',').filter(t => t.trim() !== '') : [],
-        elementsCount: m.elements_count || 0,
-        elements: m.elements ? m.elements.map(e => e.name) : [],
-        slug: m.slug,
-        description: m.description,
-        orderIndex: m.order_index || 0,
-        status: m.is_active ? 'active' : 'inactive',
-        lastUpdate: new Date().toISOString().split('T')[0]
-      }));
-      setModules(mapped);
+      setModules(mapModuleData(data));
     } catch (err) {
       console.error("Error loading modules:", err);
     } finally {
@@ -66,6 +77,17 @@ const ModuleManager = () => {
 
   useEffect(() => {
     loadModules();
+  }, []);
+
+  // Listener Background Sync
+  useEffect(() => {
+    const handleCacheUpdate = (event) => {
+      if (event.detail.key.includes('/modules/')) {
+        setModules(mapModuleData(event.detail.data));
+      }
+    };
+    window.addEventListener('api-cache-updated', handleCacheUpdate);
+    return () => window.removeEventListener('api-cache-updated', handleCacheUpdate);
   }, []);
 
   // --- Handlers para CRUD ---

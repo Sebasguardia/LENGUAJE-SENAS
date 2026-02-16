@@ -87,7 +87,7 @@ const Register = () => {
 
         try {
             // Llamada real al backend
-            await authService.register({
+            const response = await authService.register({
                 email: email,
                 password: password,
                 full_name: fullName,
@@ -95,8 +95,20 @@ const Register = () => {
                 phone: phone
             });
 
-            setSuccess(true);
-            setTimeout(() => navigate('/login'), 2000);
+            // OPTIMIZACIÓN: Auto-login para evitar fricción
+            if (response.access_token) {
+                localStorage.setItem('token', response.access_token);
+                // Podríamos llamar a getMe o usar los datos que ya tenemos para ahorrar una petición
+                const userData = { email, full_name: fullName, role: 'usuario' };
+                localStorage.setItem('userData', JSON.stringify(userData));
+
+                setSuccess(true);
+                window.dispatchEvent(new Event('login-success')); // Disparar prefetch
+                setTimeout(() => navigate('/dashboard'), 1500);
+            } else {
+                setSuccess(true);
+                setTimeout(() => navigate('/login'), 2000);
+            }
         } catch (err) {
             console.error('Registration error:', err);
             const detail = err.response?.data?.detail;

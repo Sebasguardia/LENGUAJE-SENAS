@@ -44,68 +44,69 @@ const Dashboard = () => {
   const [filter, setFilter] = useState('all');
 
   const fetchDashboardData = async () => {
+    // Si tenemos datos en localStorage de la sesión anterior, los usamos como "placeholder" inmediato
+    // El motor de cache de apiClient se encargará de devolver los datos frescos si están en memoria.
+    const hasCache = localStorage.getItem('api_cache_/progress/stats');
+    if (hasCache) {
+      setIsLoading(false); // Desactivamos el spinner global si hay cache
+    }
+
     try {
-      setIsLoading(true);
+      // Lanzamos las peticiones. Gracias al interceptor SWR en apiClient.js, 
+      // las que tengan cache devolverán una promesa resuelta CASI AL INSTANTE.
+      const fetchME = authService.getMe();
+      const fetchRank = progressService.getRanking(5);
+      const fetchStats = progressService.getDashboardStats();
+      const fetchHist = progressService.getHistory(50);
+      const fetchMods = moduleService.getModules();
 
-      // OPTIMIZACIÓN: Realizar todas las peticiones en paralelo para evitar latencia acumulada
-      const results = await Promise.allSettled([
-        authService.getMe(),
-        progressService.getRanking(5),
-        progressService.getDashboardStats(),
-        progressService.getHistory(50),
-        moduleService.getModules()
-      ]);
+      // Procesamos cada una según llegue para máxima velocidad de renderizado
+      fetchME.then(val => setCurrentUser(val)).catch(() => { });
 
-      // 1. Procesar Usuario
-      if (results[0].status === 'fulfilled') {
-        setCurrentUser(results[0].value);
-      }
-
-      // 2. Procesar Ranking
-      if (results[1].status === 'fulfilled') {
-        const ranking = results[1].value;
+      fetchRank.then(ranking => {
         setTopRanking(ranking.map((u, idx) => ({
           ...u,
           name: u.full_name,
           avatar: u.avatar_initials || u.full_name.charAt(0).toUpperCase(),
           color: idx === 0 ? 'bg-yellow-500' : idx === 1 ? 'bg-slate-300' : idx === 2 ? 'bg-orange-500' : 'bg-blue-500/20'
         })));
-      }
+      }).catch(() => { });
 
-      // 3. Procesar Estadísticas
-      let stats = null;
-      if (results[2].status === 'fulfilled') {
-        stats = results[2].value;
-        setDashboardStats(stats);
-      }
+      fetchStats.then(stats => setDashboardStats(stats)).catch(() => { });
+      fetchHist.then(history => setUserHistory(history)).catch(() => { });
 
-      // 4. Procesar Historial
-      if (results[3].status === 'fulfilled') {
-        setUserHistory(results[3].value);
-      }
+      // Los módulos dependen un poco de los stats para el progreso visual, 
+      // pero si stats ya está cacheado, se servirá casi al mismo tiempo.
+      Promise.allSettled([fetchStats, fetchMods]).then(([sRes, mRes]) => {
+        if (mRes.status === 'fulfilled') {
+          const modsData = mRes.value;
+          const stats = sRes.status === 'fulfilled' ? sRes.value : null;
+          const moduleProgress = stats?.module_progress || [];
 
-      // 5. Procesar Módulos (Depende de stats para el progreso)
-      if (results[4].status === 'fulfilled') {
-        const modsData = results[4].value;
-        const moduleProgress = stats?.module_progress || [];
+          setModules(modsData.sort((a, b) => a.order_index - b.order_index).map(m => {
+            const modProgress = moduleProgress.find(p => p.module_id == m.id);
+            return {
+              id: m.id,
+              slug: m.slug,
+              title: m.title,
+              description: m.description,
+              difficulty: m.difficulty,
+              elementsCount: m.elements_count,
+              duration: m.duration,
+              tags: m.tags ? m.tags.split(',') : [],
+              progress: modProgress ? Number(modProgress.progress) : 0,
+              precision: modProgress ? Number(modProgress.precision) : 0,
+              is_locked: m.is_locked,
+              icon: iconMap[m.icon_name] || BookText
+            };
+          }));
+        }
+      });
 
-        setModules(modsData.sort((a, b) => a.order_index - b.order_index).map(m => {
-          const modProgress = moduleProgress.find(p => p.module_id == m.id);
-          return {
-            id: m.id,
-            slug: m.slug,
-            title: m.title,
-            description: m.description,
-            difficulty: m.difficulty,
-            elementsCount: m.elements_count,
-            duration: m.duration,
-            tags: m.tags ? m.tags.split(',') : [],
-            progress: modProgress ? Number(modProgress.progress) : 0,
-            precision: modProgress ? Number(modProgress.precision) : 0,
-            is_locked: m.is_locked,
-            icon: iconMap[m.icon_name] || BookText
-          };
-        }));
+      // Solo esperamos a que las más críticas terminen para quitar el esqueleto si no había cache
+      if (!hasCache) {
+        setIsLoading(true);
+        await Promise.allSettled([fetchME, fetchStats, fetchMods]);
       }
 
     } catch (err) {
@@ -117,6 +118,16 @@ const Dashboard = () => {
 
   useEffect(() => {
     fetchDashboardData();
+
+    // Suscribirse a actualizaciones de cache SWR para refrescar la UI en background
+    const handleCacheUpdate = (e) => {
+      console.log(`[Dashboard] Actualizando datos desde cache revalidado: ${e.detail.url}`);
+      // Solo refrescamos los datos, no activamos el loading global
+      fetchDashboardData();
+    };
+
+    window.addEventListener('api-cache-updated', handleCacheUpdate);
+    return () => window.removeEventListener('api-cache-updated', handleCacheUpdate);
   }, []);
 
   useEffect(() => {

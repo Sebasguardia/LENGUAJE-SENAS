@@ -3,14 +3,37 @@ import {
   Users, Search, Filter, Mail, UserCheck, UserX,
   Edit, Trash2, Shield, Award,
   X, AlertCircle, Sparkles, GraduationCap,
-  Clock, Eye, BookOpen, Phone, CreditCard, Calendar
+  Clock, Eye, BookOpen, Phone, CreditCard, Calendar,
+  Activity, Zap
 } from 'lucide-react';
 
 import { adminService } from '../../api/adminService';
 
+// Helper para mapeo consistente de datos
+const mapUserData = (data) => {
+  if (!Array.isArray(data)) return [];
+  return data
+    .filter(u => u.role === 'user')
+    .map(u => ({
+      ...u,
+      name: u.full_name || 'Sin nombre',
+      progress: 0, // Se llenará con stats detallados on-demand
+      courses: [],
+      lastLoginFormatted: u.last_login ? new Date(u.last_login).toLocaleString() : 'N/A',
+      joinDateFormatted: u.created_at ? new Date(u.created_at).toLocaleDateString() : 'N/A'
+    }));
+};
+
 const UserManagement = () => {
-  const [users, setUsers] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
+  // Inicialización optimista desde Cache
+  const [users, setUsers] = useState(() => {
+    try {
+      const cached = localStorage.getItem('api_cache_/users/');
+      return cached ? mapUserData(JSON.parse(cached).data) : [];
+    } catch (e) { return []; }
+  });
+
+  const [isLoading, setIsLoading] = useState(users.length === 0);
   const [searchTerm, setSearchTerm] = useState('');
   const [filter, setFilter] = useState('all');
 
@@ -32,20 +55,9 @@ const UserManagement = () => {
 
   const loadUsers = async () => {
     try {
-      setIsLoading(true);
+      if (users.length === 0) setIsLoading(true);
       const data = await adminService.getUsers();
-      // Filtrar solo usuarios con rol 'user' (estudiantes)
-      const mapped = data
-        .filter(u => u.role === 'user')
-        .map(u => ({
-          ...u,
-          name: u.full_name || 'Sin nombre',
-          progress: 0,
-          courses: [],
-          lastLoginFormatted: u.last_login ? new Date(u.last_login).toLocaleString() : 'N/A',
-          joinDateFormatted: u.created_at ? new Date(u.created_at).toLocaleDateString() : 'N/A'
-        }));
-      setUsers(mapped);
+      setUsers(mapUserData(data));
     } catch (err) {
       console.error("Error loading users:", err);
     } finally {
@@ -55,6 +67,17 @@ const UserManagement = () => {
 
   useEffect(() => {
     loadUsers();
+  }, []);
+
+  // Listener para actualizaciones en background (SWR)
+  useEffect(() => {
+    const handleCacheUpdate = (event) => {
+      if (event.detail.key.includes('/users/')) {
+        setUsers(mapUserData(event.detail.data));
+      }
+    };
+    window.addEventListener('api-cache-updated', handleCacheUpdate);
+    return () => window.removeEventListener('api-cache-updated', handleCacheUpdate);
   }, []);
 
   // --- Handlers ---

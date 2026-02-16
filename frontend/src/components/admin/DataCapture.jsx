@@ -83,7 +83,7 @@ const DataCapture = () => {
 
     hands.setOptions({
       maxNumHands: 1,
-      modelComplexity: 1,
+      modelComplexity: 0,
       minDetectionConfidence: 0.5,
       minTrackingConfidence: 0.5
     });
@@ -99,18 +99,32 @@ const DataCapture = () => {
       if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
         const landmarks = results.multiHandLandmarks[0];
 
-        // Dibujar Conexiones
-        drawConnectors(canvasCtx, landmarks, HAND_CONNECTIONS, {
-          color: '#3b82f6',
-          lineWidth: 4
-        });
+        // OPTIMIZACIÓN DE DIBUJO: Custom Canvas
+        // 1. Conexiones
+        canvasCtx.shadowColor = '#3b82f6';
+        canvasCtx.shadowBlur = 10;
+        canvasCtx.strokeStyle = '#3b82f6';
+        canvasCtx.lineWidth = 4;
+        canvasCtx.lineCap = 'round';
+        canvasCtx.lineJoin = 'round';
 
-        // Dibujar Puntos
-        drawLandmarks(canvasCtx, landmarks, {
-          color: '#ffffff',
-          lineWidth: 1,
-          radius: 3
-        });
+        canvasCtx.beginPath();
+        for (const [start, end] of HAND_CONNECTIONS) {
+          const p1 = landmarks[start];
+          const p2 = landmarks[end];
+          canvasCtx.moveTo(p1.x * canvasRef.current.width, p1.y * canvasRef.current.height);
+          canvasCtx.lineTo(p2.x * canvasRef.current.width, p2.y * canvasRef.current.height);
+        }
+        canvasCtx.stroke();
+
+        // 2. Puntos
+        canvasCtx.shadowBlur = 0;
+        canvasCtx.fillStyle = '#ffffff';
+        for (const point of landmarks) {
+          canvasCtx.beginPath();
+          canvasCtx.arc(point.x * canvasRef.current.width, point.y * canvasRef.current.height, 3, 0, 2 * Math.PI);
+          canvasCtx.fill();
+        }
 
         // Capturar si el estado es 'capturing'
         if (isCapturingRef.current) {
@@ -142,8 +156,8 @@ const DataCapture = () => {
           }
         }
       },
-      width: 1280,
-      height: 720
+      width: 640,
+      height: 480
     });
 
     camera.start();
@@ -431,8 +445,8 @@ const DataCapture = () => {
                 />
                 <canvas
                   ref={canvasRef}
-                  width={1280}
-                  height={720}
+                  width={640}
+                  height={480}
                   className="absolute inset-0 z-20 w-full h-full object-cover scale-x-[-1]"
                 />
                 {/* Overlay de grabación */}

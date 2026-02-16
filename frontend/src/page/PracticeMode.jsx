@@ -63,7 +63,7 @@ const PracticeMode = () => {
 
         handsRef.current.setOptions({
             maxNumHands: 2, // Soporte para dos manos
-            modelComplexity: 1,
+            modelComplexity: 0,
             minDetectionConfidence: 0.6,
             minTrackingConfidence: 0.6
         });
@@ -99,25 +99,49 @@ const PracticeMode = () => {
         const canvasCtx = canvasRef.current.getContext('2d');
         canvasCtx.save();
         canvasCtx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
-        canvasCtx.drawImage(results.image, 0, 0, canvasRef.current.width, canvasRef.current.height);
+
+        // OPTIMIZACIÓN DE DIBUJO: Función reutilizable
+        const drawHand = (lm) => {
+            canvasCtx.shadowColor = '#00d2ff';
+            canvasCtx.shadowBlur = 15;
+            canvasCtx.strokeStyle = '#00f0ff';
+            canvasCtx.lineWidth = 4;
+            canvasCtx.lineCap = 'round';
+            canvasCtx.lineJoin = 'round';
+
+            canvasCtx.beginPath();
+            for (const [start, end] of HAND_CONNECTIONS) {
+                const p1 = lm[start];
+                const p2 = lm[end];
+                canvasCtx.moveTo(p1.x * canvasRef.current.width, p1.y * canvasRef.current.height);
+                canvasCtx.lineTo(p2.x * canvasRef.current.width, p2.y * canvasRef.current.height);
+            }
+            canvasCtx.stroke();
+
+            canvasCtx.shadowColor = '#ffffff';
+            canvasCtx.shadowBlur = 5;
+            canvasCtx.fillStyle = '#ffffff';
+
+            for (const point of lm) {
+                canvasCtx.beginPath();
+                canvasCtx.arc(point.x * canvasRef.current.width, point.y * canvasRef.current.height, 4, 0, 2 * Math.PI);
+                canvasCtx.fill();
+            }
+        };
 
         if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
-            let triggerHand = null; // Pantalla Izquierda (Mano Der real)
-            let signerHand = null;  // Pantalla Derecha (Mano Izq real)
+            let foundSigner = null;
+            let foundTrigger = null;
 
             results.multiHandLandmarks.forEach((landmarks, index) => {
                 const handedness = results.multiHandedness[index];
-                // El usuario quiere otra vez: DERECHA = Signante, IZQUIERDA = Gatillo
-                if (handedness.label === 'Right') signerHand = landmarks;
-                else triggerHand = landmarks;
-
-                drawConnectors(canvasCtx, landmarks, HAND_CONNECTIONS, { color: '#00d2ff', lineWidth: 2 });
-                drawLandmarks(canvasCtx, landmarks, { color: '#ffffff', lineWidth: 1, radius: 3 });
+                if (handedness.label === 'Right') foundSigner = landmarks;
+                else foundTrigger = landmarks;
+                drawHand(landmarks);
             });
 
-            // GATILLO: MANO IZQUIERDA (Captura)
-            if (triggerHand) {
-                const closed = isHandClosed(triggerHand);
+            if (foundTrigger) {
+                const closed = isHandClosed(foundTrigger);
                 const now = Date.now();
                 if (closed && !isTriggerHandClosedRef.current) {
                     isTriggerHandClosedRef.current = true;
@@ -134,23 +158,19 @@ const PracticeMode = () => {
                 }
             }
 
-            // TRADUCTOR: MANO DERECHA (Predicción)
-            if (signerHand) {
+            if (foundSigner) {
                 if (!isProcessing) {
                     setIsProcessing(true);
-                    try {
-                        const res = await recognitionService.predict(signerHand, null);
+                    recognitionService.predict(foundSigner, null).then(res => {
                         if (res.top_3) {
                             const newPred = { name: res.prediction, confidence: res.confidence };
                             setPrediction(newPred);
                             setTopPredictions(res.top_3);
                             currentPredictionRef.current = newPred;
                         }
-                    } catch (error) {
-                        console.error("Error en predicción:", error);
-                    } finally {
-                        setTimeout(() => setIsProcessing(false), 500);
-                    }
+                    }).catch(err => console.error(err)).finally(() => {
+                        setTimeout(() => setIsProcessing(false), 150);
+                    });
                 }
             } else {
                 setPrediction({ name: 'Esperando...', confidence: 0 });
@@ -281,8 +301,8 @@ const PracticeMode = () => {
                     <div className="relative aspect-[3/4] xs:aspect-[4/3] sm:aspect-video bg-black rounded-[2rem] sm:rounded-3xl border border-white/10 shadow-2xl overflow-hidden group">
 
                         {/* Feed Real */}
-                        <video ref={videoRef} className="hidden" />
-                        <canvas ref={canvasRef} className="w-full h-full object-cover mirror" width="640" height="480" />
+                        <video ref={videoRef} className="absolute inset-0 w-full h-full object-cover mirror" playsInline muted />
+                        <canvas ref={canvasRef} className="absolute inset-0 w-full h-full object-cover mirror z-10" width="640" height="480" />
 
                         {!isCameraActive && (
                             <div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-900/80 backdrop-blur-sm z-10">
