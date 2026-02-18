@@ -127,10 +127,13 @@ const ModuleLearning = () => {
     // Listener para actualizaciones de cache en background
     useEffect(() => {
         const handleCacheUpdate = (event) => {
-            if (event.detail.key.includes(`/modules/${moduleId}`)) {
+            if (event.detail && event.detail.url && event.detail.url.includes(`/modules/${moduleId}`)) {
                 const newData = event.detail.data;
-                setModuleInfo(newData);
-                setElements(newData.elements || []);
+                // Verificar que los datos sean válidos antes de actualizar el estado
+                if (newData) {
+                    setModuleInfo(newData);
+                    setElements(newData.elements || []);
+                }
             }
         };
         window.addEventListener('api-cache-updated', handleCacheUpdate);

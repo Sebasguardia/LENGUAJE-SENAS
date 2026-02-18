@@ -93,7 +93,7 @@ def get_user_achievements(
         module_progress = db.query(models.UserModuleProgress).filter(
             models.UserModuleProgress.user_id == current_user.id
         ).all()
-        completed_modules = sum(1 for mp in module_progress if mp.progress >= 95.0)
+        completed_modules = sum(1 for mp in module_progress if (mp.progress or 0) >= 95.0)
         total_modules = db.query(models.Module).filter(models.Module.is_active == True).count()
         
         total_sessions = db.query(models.PracticeSession).filter(
@@ -167,7 +167,7 @@ def get_user_achievements(
         module_progress = db.query(models.UserModuleProgress).filter(
             models.UserModuleProgress.user_id == current_user.id
         ).all()
-        completed_modules = sum(1 for mp in module_progress if mp.progress >= 95.0)
+        completed_modules = sum(1 for mp in module_progress if (mp.progress or 0) >= 95.0)
         total_modules = db.query(models.Module).filter(models.Module.is_active == True).count()
         streak = getattr(current_user, 'current_streak', 0) or 0
         

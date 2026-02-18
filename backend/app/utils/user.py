@@ -32,6 +32,6 @@ def update_user_streak(db: Session, user: User) -> User:
             user.last_active_at = now
             
     db.add(user)
-    db.commit()
+    db.flush()
     db.refresh(user)
     return user

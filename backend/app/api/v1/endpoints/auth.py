@@ -10,6 +10,7 @@ from app.core import security
 from app.core.config import settings
 from app.models.user import User
 from app.utils.user import update_user_streak
+from app.utils.notifications import notify_all_admins
 
 router = APIRouter()
 
@@ -64,6 +65,7 @@ def login_access_token(
 
     # 4. Actualizar racha al loguear
     update_user_streak(db, user)
+    db.commit()
 
     # 5. Generar token
     access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
@@ -145,7 +147,6 @@ def register_new_user(
 
     # 3. Notificación administrativa (Opcional, no bloquea el registro)
     try:
-        from app.utils.notifications import notify_all_admins
         notify_all_admins(
             db,
             title="NUEVO USUARIO",
@@ -153,6 +154,7 @@ def register_new_user(
             type="success",
             category="user"
         )
+        db.commit() # Confirmar las notificaciones enviadas
     except Exception:
         # Si falla la notificación interna (ej. por secuencias), el usuario no debería enterarse
         # ya que su registro fue exitoso.
@@ -169,4 +171,5 @@ def read_users_me(
     Get current user and update streak.
     """
     update_user_streak(db, current_user)
+    db.commit()
     return current_user

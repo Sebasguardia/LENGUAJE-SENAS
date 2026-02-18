@@ -38,7 +38,7 @@ def create_notification(
         category=category
     )
     db.add(new_notif)
-    db.commit()
+    db.flush()
     db.refresh(new_notif)
     return new_notif
 

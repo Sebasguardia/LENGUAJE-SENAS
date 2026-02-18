@@ -45,7 +45,7 @@ class AchievementService:
         module_progress = db.query(models.UserModuleProgress).filter(
             models.UserModuleProgress.user_id == user.id
         ).all()
-        completed_modules = sum(1 for mp in module_progress if mp.progress >= 95.0)
+        completed_modules = sum(1 for mp in module_progress if (mp.progress or 0.0) >= 95.0)
         total_modules = db.query(models.Module).filter(models.Module.is_active == True).count()
         
         streak = user.current_streak or 0
@@ -64,7 +64,9 @@ class AchievementService:
         is_early_bird = False
         is_night_owl = False
         if last_sessions:
-            last_hour = last_sessions[0].created_at.hour
+            # Usar la hora de creación o la hora actual si no se ha refrescado el campo
+            session_time = last_sessions[0].created_at or datetime.now()
+            last_hour = session_time.hour
             is_early_bird = 5 <= last_hour <= 9
             is_night_owl = 22 <= last_hour or last_hour <= 2
 
@@ -122,7 +124,7 @@ class AchievementService:
                     new_unlocks.append(ach_def.title)
         
         if new_unlocks:
-            db.commit()
+            db.flush() # Guardar cambios pero no cerrar transacción todavía
             
         return new_unlocks
 
