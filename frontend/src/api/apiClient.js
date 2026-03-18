@@ -1,8 +1,8 @@
 import axios from 'axios';
 import { authStorage } from '../utils/authStorage';
 
-const API_BASE_URL = 'https://lenguaje-senas-ia-j0a3.onrender.com/api/v1';
-// const API_BASE_URL = '/api/v1';
+// const API_BASE_URL = 'https://lenguaje-senas-ia-j0a3.onrender.com/api/v1';
+const API_BASE_URL = 'http://localhost:8000/api/v1';
 
 const apiClient = axios.create({
     baseURL: API_BASE_URL,

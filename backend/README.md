@@ -513,6 +513,8 @@ Ocurre cuando los archivos `__init__.py` de `schemas/` o `models/` no exportan t
 
 ### `ImportError: cannot import name 'X' from 'app.models.Y'`
 El nombre exportado no existe en el archivo fuente. Revisa el archivo de modelos/schemas correspondiente y ajusta las importaciones en el `__init__.py`.
+- [x] Corregir errores de importación en el Editor (__init__.py)
+- [ ] Corregir contraste en el modal de detalles de usuario (`UserManagement.jsx`)
 
 ### El servidor se reinicia en bucle sin levantar
 Uvicorn detecta cambios en los `__init__.py` y recarga, pero si hay un error de importación, el proceso hijo crashea y el reloader lo vuelve a intentar. El output del error aparece en el terminal. Léelo con atención: siempre indica el archivo y línea exacta del problema.

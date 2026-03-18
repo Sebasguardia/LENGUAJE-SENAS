@@ -38,6 +38,12 @@ const Login = () => {
 
     try {
       const loginData = await authService.login(email, password, rememberMe);
+      
+      if (loginData.welcome_back) {
+        sessionStorage.setItem('show_welcome_back', 'true');
+        sessionStorage.setItem('days_inactive', loginData.days_inactive || 0);
+      }
+
       const user = authStorage.getUser();
       const config = JSON.parse(localStorage.getItem('public_config') || '{}');
       const isMaint = String(config.maintenance_mode).toLowerCase() === 'true';
@@ -65,7 +71,13 @@ const Login = () => {
     setIsLoading(true);
     try {
       // useGoogleLogin provides an access_token by default (Implicit Flow)
-      await authService.googleLogin(tokenResponse.access_token, rememberMe);
+      const loginData = await authService.googleLogin(tokenResponse.access_token, rememberMe);
+      
+      if (loginData.welcome_back) {
+        sessionStorage.setItem('show_welcome_back', 'true');
+        sessionStorage.setItem('days_inactive', loginData.days_inactive || 0);
+      }
+
       const user = authStorage.getUser();
       window.dispatchEvent(new Event('login-success'));
       navigate(isAdmin(user) ? '/admin' : '/dashboard');

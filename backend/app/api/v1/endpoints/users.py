@@ -41,11 +41,11 @@ def read_users(
             "current_streak": getattr(u, 'current_streak', 0),
             "longest_streak": getattr(u, 'longest_streak', 0),
             "permissions": {},
-            # Summary for Lists
             "progress_summary": {
                 "global_progress": u.global_progress or 0.0,
                 "global_precision": u.global_precision or 0.0
-            }
+            },
+            "last_active_at": u.last_active_at
         }
         
         # Parse permissions JSON string

@@ -150,6 +150,17 @@ const Dashboard = () => {
   const [userHistory, setUserHistory] = useState([]);
   const [isMuted, setIsMuted] = useState(() => localStorage.getItem('app_muted') === 'true');
   const [isBotSpeaking, setIsBotSpeaking] = useState(false);
+  const [showWelcomeBack, setShowWelcomeBack] = useState(false);
+  const [daysInactive, setDaysInactive] = useState(0);
+
+  useEffect(() => {
+    if (sessionStorage.getItem('show_welcome_back') === 'true') {
+      setShowWelcomeBack(true);
+      setDaysInactive(sessionStorage.getItem('days_inactive') || 15);
+      sessionStorage.removeItem('show_welcome_back');
+      sessionStorage.removeItem('days_inactive');
+    }
+  }, []);
 
   // Modal States
   const [isRankingOpen, setIsRankingOpen] = useState(false);
@@ -703,6 +714,32 @@ const Dashboard = () => {
       </div>
 
       {/* MODALS */}
+      {showWelcomeBack && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-300" onClick={() => setShowWelcomeBack(false)}></div>
+          <div className="bg-white dark:bg-[#0a0c10] border border-slate-200 dark:border-white/10 p-8 pt-12 rounded-[2.5rem] max-w-sm w-full relative z-10 shadow-2xl animate-in zoom-in-95 duration-500 overflow-hidden text-center group">
+            
+            <div className="absolute top-0 left-0 w-full h-32 bg-gradient-to-b from-blue-500/10 to-transparent pointer-events-none" />
+            
+            <div className="w-24 h-24 mx-auto rounded-3xl bg-gradient-to-br from-blue-500 to-indigo-600 shadow-xl shadow-blue-500/20 flex items-center justify-center text-white mb-6 group-hover:scale-110 transition-transform duration-500 rotate-12 group-hover:rotate-0">
+              <Sparkles size={40} className="animate-pulse" />
+            </div>
+            
+            <h2 className="text-3xl font-black text-slate-900 dark:text-white mb-2 tracking-tighter uppercase leading-none">¡Bienvenido<br/>de Vuelta!</h2>
+            <p className="text-slate-500 dark:text-white/40 mb-8 font-medium text-sm">
+              El panel principal te estaba esperando. Has estado ausente por <strong className="text-blue-500 font-bold">{daysInactive} días</strong>. ¿Listo para retomar tu racha de aprendizaje?
+            </p>
+            
+            <button 
+              onClick={() => setShowWelcomeBack(false)}
+              className="w-full py-4 rounded-2xl bg-blue-600 text-white font-black text-xs uppercase tracking-[0.2em] shadow-lg shadow-blue-500/30 hover:bg-blue-500 hover:shadow-blue-500/50 hover:-translate-y-1 transition-all active:scale-95"
+            >
+              ¡Cargar Panel!
+            </button>
+          </div>
+        </div>
+      )}
+
       <RankingModal
         isOpen={isRankingOpen}
         onClose={() => setIsRankingOpen(false)}

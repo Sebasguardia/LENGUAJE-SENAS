@@ -140,7 +140,7 @@ const UserProfile = () => {
     };
 
     if (isLoading) return (
-        <div className="min-h-screen bg-[#05070a] flex items-center justify-center">
+        <div className="min-h-screen dark:bg-[#05070a] bg-slate-50 flex items-center justify-center">
             <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
         </div>
     );
@@ -163,12 +163,13 @@ const UserProfile = () => {
     };
 
     return (
-        <div className="min-h-screen bg-[#05070a] text-white selection:bg-blue-500/30 overflow-x-hidden">
+        <div className="min-h-screen dark:bg-[#05070a] bg-[#f8fafc] dark:text-white text-slate-900 selection:bg-blue-500/30 overflow-x-hidden transition-colors duration-500">
             {/* Background Ambient Effects */}
             <div className="fixed inset-0 z-0 pointer-events-none">
-                <div className="absolute top-[-20%] left-[-10%] w-[800px] h-[800px] bg-blue-600/10 rounded-full blur-[120px] animate-pulse"></div>
-                <div className="absolute bottom-[-10%] right-[-10%] w-[600px] h-[600px] bg-purple-600/10 rounded-full blur-[120px] animate-pulse duration-[5s]"></div>
-                <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 brightness-100 contrast-150 mix-blend-overlay"></div>
+                <div className="absolute top-[-20%] left-[-10%] w-[800px] h-[800px] dark:bg-blue-600/10 bg-blue-500/5 rounded-full blur-[120px] animate-pulse"></div>
+                <div className="absolute bottom-[-10%] right-[-10%] w-[600px] h-[600px] dark:bg-purple-600/10 bg-purple-500/5 rounded-full blur-[120px] animate-pulse duration-[5s]"></div>
+                <div className="absolute inset-0 dark:opacity-[0.02] opacity-[0.03]"
+                    style={{ backgroundImage: 'radial-gradient(rgba(100,116,139,0.8) 1px, transparent 1px)', backgroundSize: '40px 40px' }} />
             </div>
 
             {/* Content Container */}
@@ -193,17 +194,17 @@ const UserProfile = () => {
                 </div>
 
                 {/* 2. SYMMETRICAL HERO SECTION */}
-                <section className="relative rounded-[3.5rem] bg-[#0a0c10]/80 backdrop-blur-3xl border border-white/5 p-12 lg:p-16 overflow-hidden shadow-[0_40px_80px_rgba(0,0,0,0.5)] cursor-default transition-all duration-500 hover:border-blue-500/20">
+                <section className="relative rounded-[3.5rem] dark:bg-[#0a0c10]/80 bg-white backdrop-blur-3xl border dark:border-white/5 border-slate-200 p-12 lg:p-16 overflow-hidden shadow-[0_40px_80px_rgba(0,0,0,0.5)] dark:shadow-none cursor-default transition-all duration-500 hover:dark:border-blue-500/20 hover:border-blue-500/30 group/hero">
                     <div className="flex flex-col lg:flex-row items-center justify-between gap-12 relative z-10">
 
                         {/* LEFT: Avatar Wrapper */}
                         <div className="flex flex-col items-center gap-4">
                             <div className="relative group">
                                 <div className="absolute inset-x-0 inset-y-0 rounded-full blur-3xl opacity-20" style={{ backgroundColor: globalRank.color }}></div>
-                                <div className="w-40 h-40 lg:w-48 lg:h-48 rounded-full bg-[#05070a] border-[10px] border-[#0a0c10] flex items-center justify-center relative z-10 shadow-2xl overflow-hidden group-hover:scale-105 transition-transform duration-500">
-                                    <span className="text-6xl lg:text-7xl font-black text-white drop-shadow-xl">{userAvatar}</span>
+                                <div className="w-40 h-40 lg:w-48 lg:h-48 rounded-full dark:bg-[#05070a] bg-slate-50 border-[10px] dark:border-[#0a0c10] border-slate-100 flex items-center justify-center relative z-10 shadow-2xl overflow-hidden group-hover:scale-105 transition-transform duration-500">
+                                    <span className="text-6xl lg:text-7xl font-black dark:text-white text-slate-800 drop-shadow-xl">{userAvatar}</span>
                                 </div>
-                                <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 px-5 py-1.5 rounded-full bg-white text-[#05070a] font-black text-[9px] uppercase tracking-[0.3em] shadow-[0_10px_20px_rgba(0,0,0,0.5)] z-20 border-2 border-[#0a0c10] leading-none">
+                                <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 px-5 py-1.5 rounded-full bg-white text-[#05070a] font-black text-[9px] uppercase tracking-[0.3em] shadow-[0_10px_20px_rgba(0,0,0,0.5)] z-20 border-2 dark:border-[#0a0c10] border-slate-200 leading-none">
                                     NIVEL {userStats?.level || 1}
                                 </div>
                             </div>
@@ -212,7 +213,7 @@ const UserProfile = () => {
                         {/* MIDDLE: Info & Progress Card */}
                         <div className="flex-1 flex flex-col items-center lg:items-start space-y-6">
                             <div className="text-center lg:text-left">
-                                <h1 className="text-4xl lg:text-6xl font-black text-white tracking-tighter leading-none mb-4 lowercase">
+                                <h1 className="text-4xl lg:text-6xl font-black dark:text-white text-slate-900 tracking-tighter leading-none mb-4 lowercase">
                                     {userName}
                                 </h1>
                                 <div className="flex flex-wrap items-center justify-center lg:justify-start gap-4">
@@ -220,14 +221,14 @@ const UserProfile = () => {
                                         <globalRank.icon size={12} style={{ color: globalRank.color }} />
                                         <span className="text-[9px] font-black uppercase tracking-[0.2em]" style={{ color: globalRank.color }}>{globalRank.tier}</span>
                                     </div>
-                                    <span className="text-white/30 font-bold uppercase tracking-widest text-[10px]">{userData.email}</span>
+                                    <span className="dark:text-white/30 text-slate-400 font-bold uppercase tracking-widest text-[10px]">{userData.email}</span>
                                 </div>
                             </div>
 
                             <div className="w-full max-w-lg space-y-3">
                                 <div className="flex justify-between items-end px-1">
                                     <span className="text-[9px] font-black text-blue-500 uppercase tracking-[0.2em]">{globalRank.name}</span>
-                                    <span className="text-lg font-black text-white">{userData.xp || 0} <span className="text-[10px] text-white/30 uppercase ml-1">xp</span></span>
+                                    <span className="text-lg font-black dark:text-white text-slate-900">{userData.xp || 0} <span className="text-[10px] dark:text-white/30 text-slate-400 uppercase ml-1">xp</span></span>
                                 </div>
                                 <div className="h-2 w-full bg-slate-950/50 rounded-full border border-white/5 overflow-hidden shadow-inner">
                                     <div
@@ -239,15 +240,15 @@ const UserProfile = () => {
                         </div>
 
                         {/* RIGHT: Global Rank Metric */}
-                        <div className="flex flex-col items-center lg:items-end justify-center px-10 border-white/5 lg:border-l min-w-[220px]">
+                        <div className="flex flex-col items-center lg:items-end justify-center px-10 dark:border-white/5 border-slate-200 lg:border-l min-w-[220px]">
                             <div className="flex flex-col items-center lg:items-end">
                                 <div className="flex items-center gap-3 mb-2">
-                                    <span className="text-5xl font-black text-white leading-none">#{userStats?.global_rank || '1'}</span>
+                                    <span className="text-5xl font-black dark:text-white text-slate-900 leading-none">#{userStats?.global_rank || '1'}</span>
                                     <div className="w-10 h-10 bg-yellow-500/10 rounded-xl flex items-center justify-center text-yellow-500">
                                         <Crown size={24} />
                                     </div>
                                 </div>
-                                <p className="text-[9px] font-black text-white/20 uppercase tracking-[0.3em]">Global Rank</p>
+                                <p className="text-[9px] font-black dark:text-white/20 text-slate-400 uppercase tracking-[0.3em]">Global Rank</p>
                             </div>
                         </div>
                     </div>
@@ -258,19 +259,19 @@ const UserProfile = () => {
 
                     {/* LEFT AREA: Salón de la Fama */}
                     <div className="lg:col-span-8">
-                        <section className="h-full bg-[#0a0c10]/60 backdrop-blur-3xl border border-white/5 rounded-[3.5rem] p-12 lg:p-14 relative overflow-hidden shadow-[0_20px_40px_rgba(0,0,0,0.4)] transition-all hover:border-white/10">
+                        <section className="h-full dark:bg-[#0a0c10]/60 bg-white backdrop-blur-3xl border dark:border-white/5 border-slate-200 rounded-[3.5rem] p-12 lg:p-14 relative overflow-hidden shadow-[0_20px_40px_rgba(0,0,0,0.4)] dark:shadow-none transition-all hover:dark:border-white/10 hover:border-slate-300">
                             {/* Large Background Trophy (as in screenshot) */}
-                            <div className="absolute inset-0 flex items-center justify-center opacity-[0.02] pointer-events-none scale-150">
+                            <div className="absolute inset-0 flex items-center justify-center dark:opacity-[0.02] opacity-[0.05] pointer-events-none scale-150">
                                 <Trophy size={500} strokeWidth={1} />
                             </div>
 
                             <div className="relative z-10 flex items-center gap-5 mb-16">
-                                <div className="w-14 h-14 bg-yellow-500/10 rounded-2xl flex items-center justify-center text-yellow-500 border border-yellow-500/10 shadow-lg shadow-yellow-500/5">
+                                <div className="w-14 h-14 bg-yellow-500/10 rounded-2xl flex items-center justify-center text-yellow-600 dark:text-yellow-500 border border-yellow-500/10 shadow-lg shadow-yellow-500/5">
                                     <Medal size={28} />
                                 </div>
                                 <div>
-                                    <h3 className="text-3xl font-black text-white tracking-tighter uppercase leading-none">Salón de la Fama</h3>
-                                    <p className="text-white/20 text-[9px] font-black uppercase tracking-[0.2em] mt-2">Conquista insignias y domina el lenguaje</p>
+                                    <h3 className="text-3xl font-black dark:text-white text-slate-900 tracking-tighter uppercase leading-none">Salón de la Fama</h3>
+                                    <p className="dark:text-white/20 text-slate-400 text-[9px] font-black uppercase tracking-[0.2em] mt-2">Conquista insignias y domina el lenguaje</p>
                                 </div>
                             </div>
 
@@ -283,17 +284,17 @@ const UserProfile = () => {
                                         const Icon = badge.isUnlocked ? (iconMap[badge.iconSlug] || Award) : Lock;
                                         return (
                                             <div key={idx} className={`flex flex-col items-center gap-5 transition-all duration-700 ${!badge.isUnlocked ? 'opacity-30' : 'hover:scale-105'}`}>
-                                                <div className={`w-28 h-28 rounded-full flex items-center justify-center border-4 relative ${!badge.isUnlocked ? 'bg-white/5 border-white/5 text-white/10' :
-                                                    badge.tier === 'platinum' ? 'border-cyan-400 text-cyan-400 ring-4 ring-cyan-400/20' :
-                                                        badge.tier === 'gold' ? 'border-yellow-400 text-yellow-400 ring-4 ring-yellow-400/20' :
-                                                            badge.tier === 'silver' ? 'border-slate-400 text-slate-300 ring-4 ring-slate-400/20' :
-                                                                'border-orange-500 text-orange-400 ring-4 ring-orange-500/20'
+                                                <div className={`w-28 h-28 rounded-full flex items-center justify-center border-4 relative ${!badge.isUnlocked ? 'dark:bg-white/5 bg-slate-100 dark:border-white/5 border-slate-200 dark:text-white/10 text-slate-300' :
+                                                    badge.tier === 'platinum' ? 'border-cyan-400 text-cyan-500 dark:text-cyan-400 ring-4 ring-cyan-400/20' :
+                                                        badge.tier === 'gold' ? 'border-yellow-400 text-yellow-600 dark:text-yellow-400 ring-4 ring-yellow-400/20' :
+                                                            badge.tier === 'silver' ? 'border-slate-400 text-slate-500 dark:text-slate-300 ring-4 ring-slate-400/20' :
+                                                                'border-orange-500 text-orange-600 dark:text-orange-400 ring-4 ring-orange-500/20'
                                                     }`}>
                                                     <Icon size={badge.isUnlocked ? 40 : 24} />
                                                 </div>
                                                 <div className="text-center">
-                                                    <h4 className="text-[10px] font-black text-white/80 uppercase tracking-widest leading-none mb-1">{badge.title}</h4>
-                                                    <span className="text-[8px] font-black text-white/10 uppercase tracking-[0.2em]">{badge.isUnlocked ? badge.tier : 'Objetivo'}</span>
+                                                    <h4 className="text-[10px] font-black dark:text-white/80 text-slate-700 uppercase tracking-widest leading-none mb-1">{badge.title}</h4>
+                                                    <span className="text-[8px] font-black dark:text-white/10 text-slate-300 uppercase tracking-[0.2em]">{badge.isUnlocked ? badge.tier : 'Objetivo'}</span>
                                                 </div>
                                             </div>
                                         );
@@ -308,25 +309,25 @@ const UserProfile = () => {
                         <div className="grid grid-cols-2 gap-6">
                             {[
                                 { icon: Flame, val: userStats?.current_streak || 0, label: 'Racha', color: 'text-orange-500' },
-                                { icon: Award, val: userStats?.completed_modules || 0, label: 'Módulos', color: 'text-green-400' },
-                                { icon: Clock, val: userStats?.total_time || '0m', label: 'Tiempo', color: 'text-purple-400' },
-                                { icon: Target, val: `${userStats?.avg_accuracy || 0}%`, label: 'Puntería', color: 'text-blue-400' },
+                                { icon: Award, val: userStats?.completed_modules || 0, label: 'Módulos', color: 'text-green-600 dark:text-green-400' },
+                                { icon: Clock, val: userStats?.total_time || '0m', label: 'Tiempo', color: 'text-purple-600 dark:text-purple-400' },
+                                { icon: Target, val: `${userStats?.avg_accuracy || 0}%`, label: 'Puntería', color: 'text-blue-600 dark:text-blue-400' },
                             ].map((s, i) => (
-                                <div key={i} className="bg-[#0a0c10]/60 backdrop-blur-3xl border border-white/5 rounded-[2.5rem] p-8 flex flex-col items-center text-center group hover:bg-[#0a0c10]/90 transition-all shadow-[0_20px_40px_rgba(0,0,0,0.4)] hover:border-white/10">
+                                <div key={i} className="dark:bg-[#0a0c10]/60 bg-white backdrop-blur-3xl border dark:border-white/5 border-slate-200 rounded-[2.5rem] p-8 flex flex-col items-center text-center group hover:dark:bg-[#0a0c10]/90 hover:bg-slate-50 transition-all shadow-[0_20px_40px_rgba(0,0,0,0.4)] dark:shadow-none hover:dark:border-white/10 hover:border-slate-300">
                                     <div className={`${s.color} mb-6 group-hover:scale-110 transition-transform`}><s.icon size={28} /></div>
-                                    <p className="text-3xl font-black text-white leading-none mb-1">{s.val}</p>
-                                    <p className="text-[9px] font-black text-white/20 uppercase tracking-widest">{s.label}</p>
+                                    <p className="text-3xl font-black dark:text-white text-slate-900 leading-none mb-1">{s.val}</p>
+                                    <p className="text-[9px] font-black dark:text-white/20 text-slate-400 uppercase tracking-widest">{s.label}</p>
                                 </div>
                             ))}
                         </div>
 
                         {/* Expediente Section - FULL DATA */}
-                        <section className="bg-[#0a0c10]/60 backdrop-blur-3xl border border-white/5 rounded-[3.5rem] p-10 space-y-8 group shadow-[0_20px_40px_rgba(0,0,0,0.4)] hover:border-white/10 transition-all relative overflow-hidden">
-                            <div className="absolute top-0 right-0 p-8 opacity-[0.03] pointer-events-none transition-transform group-hover:scale-110 duration-700"><Shield size={120} /></div>
+                        <section className="dark:bg-[#0a0c10]/60 bg-white backdrop-blur-3xl border dark:border-white/5 border-slate-200 rounded-[3.5rem] p-10 space-y-8 group shadow-[0_20px_40px_rgba(0,0,0,0.4)] dark:shadow-none hover:dark:border-white/10 hover:border-slate-300 transition-all relative overflow-hidden">
+                            <div className="absolute top-0 right-0 p-8 dark:opacity-[0.03] opacity-[0.05] pointer-events-none transition-transform group-hover:scale-110 duration-700"><Shield size={120} /></div>
 
                             <div className="flex items-center gap-4 relative z-10">
-                                <div className="p-2.5 bg-blue-500/10 text-blue-400 rounded-xl border border-blue-400/20"><Shield size={20} /></div>
-                                <h4 className="text-xl font-black text-white uppercase tracking-tight">Expediente Digit@l</h4>
+                                <div className="p-2.5 bg-blue-500/10 text-blue-500 dark:text-blue-400 rounded-xl border border-blue-400/20"><Shield size={20} /></div>
+                                <h4 className="text-xl font-black dark:text-white text-slate-900 uppercase tracking-tight">Expediente Digit@l</h4>
                             </div>
 
                             <div className="space-y-5 relative z-10">
@@ -338,27 +339,27 @@ const UserProfile = () => {
                                     { label: 'Rol de Sistema', icon: Crown, val: userData.role === 'admin' ? 'Administrador' : 'Estudiante' },
                                 ].map((field, idx) => (
                                     <div key={idx} className="space-y-1.5">
-                                        <div className="flex items-center gap-2 mb-1 opacity-40">
-                                            <field.icon size={10} className="text-blue-400" />
-                                            <p className="text-[8px] font-black text-white uppercase tracking-[0.2em]">{field.label}</p>
+                                        <div className="flex items-center gap-2 mb-1 dark:opacity-40 opacity-60">
+                                            <field.icon size={10} className="text-blue-500 dark:text-blue-400" />
+                                            <p className="text-[8px] font-black dark:text-white text-slate-500 uppercase tracking-[0.2em]">{field.label}</p>
                                         </div>
-                                        <div className="bg-white/5 border border-white/5 rounded-2xl px-5 py-4 flex items-center justify-between group/item hover:bg-white/[0.08] transition-all">
-                                            <span className="text-xs font-bold text-white/80">{field.val}</span>
-                                            <Lock size={12} className="text-white/10 opacity-0 group-hover/item:opacity-100 transition-opacity" />
+                                        <div className="dark:bg-[#05070a]/50 bg-slate-50 border dark:border-white/5 border-slate-200 rounded-2xl px-5 py-4 flex items-center justify-between group/item dark:hover:bg-white/[0.08] hover:bg-slate-100 transition-all">
+                                            <span className="text-xs font-bold dark:text-white/80 text-slate-700">{field.val}</span>
+                                            <Lock size={12} className="dark:text-white/10 text-slate-300 opacity-0 group-hover/item:opacity-100 transition-opacity" />
                                         </div>
                                     </div>
                                 ))}
                             </div>
 
                             {/* ID Metadata */}
-                            <div className="mt-8 pt-8 border-t border-white/5 flex items-center justify-between relative z-10">
+                            <div className="mt-8 pt-8 border-t dark:border-white/5 border-slate-200 flex items-center justify-between relative z-10">
                                 <div className="flex flex-col">
-                                    <span className="text-[7px] font-black text-white/20 uppercase tracking-widest mb-1">Registro</span>
-                                    <span className="text-[10px] font-black text-white">{new Date(userData.created_at).toLocaleDateString()}</span>
+                                    <span className="text-[7px] font-black dark:text-white/20 text-slate-400 uppercase tracking-widest mb-1">Registro</span>
+                                    <span className="text-[10px] font-black dark:text-white text-slate-900">{new Date(userData.created_at).toLocaleDateString()}</span>
                                 </div>
                                 <div className="flex flex-col items-end">
-                                    <span className="text-[7px] font-black text-white/20 uppercase tracking-widest mb-1">ID Único</span>
-                                    <span className="text-[10px] font-black text-blue-500">#{userData.id?.toString().padStart(5, '0')}</span>
+                                    <span className="text-[7px] font-black dark:text-white/20 text-slate-400 uppercase tracking-widest mb-1">ID Único</span>
+                                    <span className="text-[10px] font-black dark:text-blue-500 text-blue-600">#{userData.id?.toString().padStart(5, '0')}</span>
                                 </div>
                             </div>
                         </section>
@@ -367,16 +368,16 @@ const UserProfile = () => {
 
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
                     <div className="lg:col-span-12">
-                        <section className="bg-[#0a0c10]/60 backdrop-blur-3xl border border-white/5 hover:border-white/10 transition-all rounded-[3.5rem] p-12 overflow-hidden shadow-[0_20px_40px_rgba(0,0,0,0.4)] relative group">
+                        <section className="dark:bg-[#0a0c10]/60 bg-white backdrop-blur-3xl border dark:border-white/5 border-slate-200 hover:dark:border-white/10 hover:border-slate-300 transition-all rounded-[3.5rem] p-12 overflow-hidden shadow-[0_20px_40px_rgba(0,0,0,0.4)] dark:shadow-none relative group">
                             <div className="absolute inset-0 bg-blue-600/5 opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none" />
                             <div className="flex items-center justify-between mb-10 relative z-10">
                                 <div className="flex items-center gap-5">
-                                    <div className="w-14 h-14 bg-blue-500/10 rounded-2xl flex items-center justify-center text-blue-400 border border-blue-500/10 shadow-lg shadow-blue-500/5">
+                                    <div className="w-14 h-14 bg-blue-500/10 rounded-2xl flex items-center justify-center text-blue-500 dark:text-blue-400 border border-blue-500/10 shadow-lg shadow-blue-500/5">
                                         <History size={28} />
                                     </div>
                                     <div>
-                                        <h3 className="text-3xl font-black text-white tracking-tighter uppercase leading-none">Historial de Traducciones</h3>
-                                        <p className="text-white/20 text-[9px] font-black uppercase tracking-[0.2em] mt-2">Registros del traductor en tiempo real</p>
+                                        <h3 className="text-3xl font-black dark:text-white text-slate-900 tracking-tighter uppercase leading-none">Historial de Traducciones</h3>
+                                        <p className="dark:text-white/20 text-slate-400 text-[9px] font-black uppercase tracking-[0.2em] mt-2">Registros del traductor en tiempo real</p>
                                     </div>
                                 </div>
                             </div>
@@ -384,7 +385,7 @@ const UserProfile = () => {
                             <div className="overflow-x-auto custom-scrollbar">
                                 <table className="w-full text-left border-separate border-spacing-y-4">
                                     <thead>
-                                        <tr className="text-[10px] font-black text-white/20 uppercase tracking-[0.2em]">
+                                        <tr className="text-[10px] font-black dark:text-white/20 text-slate-400 uppercase tracking-[0.2em]">
                                             <th className="px-6 pb-2">Fecha y Hora</th>
                                             <th className="px-6 pb-2">Palabras</th>
                                             <th className="px-6 pb-2">Duración</th>
@@ -397,26 +398,26 @@ const UserProfile = () => {
                                             .filter(h => !h.module_id)
                                             .map((session, idx) => (
                                                 <tr key={idx} className="group/row transition-all">
-                                                    <td className="px-6 py-5 bg-white/[0.02] group-hover/row:bg-white/[0.05] border-y border-l border-white/5 group-hover/row:border-blue-500/30 rounded-l-2xl transition-all">
+                                                    <td className="px-6 py-5 dark:bg-white/[0.02] bg-slate-50 group-hover/row:dark:bg-white/[0.05] group-hover/row:bg-slate-100 border-y border-l dark:border-white/5 border-slate-200 group-hover/row:border-blue-500/30 rounded-l-2xl transition-all">
                                                         <div className="flex flex-col">
-                                                            <span className="text-xs font-bold text-white/80">{new Date(session.created_at).toLocaleDateString()}</span>
-                                                            <span className="text-[9px] font-black text-white/20 mt-1">{new Date(session.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                                                            <span className="text-xs font-bold dark:text-white/80 text-slate-700">{new Date(session.created_at).toLocaleDateString()}</span>
+                                                            <span className="text-[9px] font-black dark:text-white/20 text-slate-400 mt-1">{new Date(session.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                                                         </div>
                                                     </td>
-                                                    <td className="px-6 py-5 bg-white/[0.02] group-hover/row:bg-white/[0.05] border-y border-white/5 group-hover/row:border-blue-500/30 transition-all font-mono text-xs text-blue-400">
+                                                    <td className="px-6 py-5 dark:bg-white/[0.02] bg-slate-50 group-hover/row:dark:bg-white/[0.05] group-hover/row:bg-slate-100 border-y dark:border-white/5 border-slate-200 group-hover/row:border-blue-500/30 transition-all font-mono text-xs text-blue-600 dark:text-blue-400">
                                                         {session.score || 0} señas
                                                     </td>
-                                                    <td className="px-6 py-5 bg-white/[0.02] group-hover/row:bg-white/[0.05] border-y border-white/5 group-hover/row:border-blue-500/30 transition-all text-xs text-white/60">
+                                                    <td className="px-6 py-5 dark:bg-white/[0.02] bg-slate-50 group-hover/row:dark:bg-white/[0.05] group-hover/row:bg-slate-100 border-y dark:border-white/5 border-slate-200 group-hover/row:border-blue-500/30 transition-all text-xs dark:text-white/60 text-slate-600">
                                                         {session.duration || '0s'}
                                                     </td>
-                                                    <td className="px-6 py-5 bg-white/[0.02] group-hover/row:bg-white/[0.05] border-y border-white/5 group-hover/row:border-blue-500/30 transition-all">
+                                                    <td className="px-6 py-5 dark:bg-white/[0.02] bg-slate-50 group-hover/row:dark:bg-white/[0.05] group-hover/row:bg-slate-100 border-y dark:border-white/5 border-slate-200 group-hover/row:border-blue-500/30 transition-all">
                                                         <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-yellow-500/10 border border-yellow-500/20 w-fit">
                                                             <Zap size={10} className="text-yellow-500" />
                                                             <span className="text-[10px] font-black text-yellow-500">+{Math.min(50, (session.score || 0) * 2)} XP</span>
                                                         </div>
                                                     </td>
-                                                    <td className="px-6 py-5 bg-white/[0.02] group-hover/row:bg-white/[0.05] border-y border-r border-white/5 group-hover/row:border-blue-500/30 rounded-r-2xl transition-all">
-                                                        <p className="text-xs font-medium text-white/50 italic group-hover/row:text-blue-200 transition-colors truncate max-w-xs">
+                                                    <td className="px-6 py-5 dark:bg-white/[0.02] bg-slate-50 group-hover/row:dark:bg-white/[0.05] group-hover/row:bg-slate-100 border-y border-r dark:border-white/5 border-slate-200 group-hover/row:border-blue-500/30 rounded-r-2xl transition-all">
+                                                        <p className="text-xs font-medium dark:text-white/50 text-slate-500 italic group-hover/row:text-blue-600 dark:group-hover/row:text-blue-200 transition-colors truncate max-w-xs">
                                                             "{session.module_title === 'Práctica Libre' ? (JSON.parse(session.details || '[]').map(d => d.status).join(' ') || 'Sin texto') : session.module_title}"
                                                         </p>
                                                     </td>
@@ -440,14 +441,14 @@ const UserProfile = () => {
                 </div>
 
                 {/* Optional additional sections */}
-                <div className="pt-10 border-t border-white/5">
-                    <p className="text-center text-white/10 text-[10px] font-black uppercase tracking-[0.4em]">Finalización de Expediente — Sistema de Seguridad IA</p>
+                <div className="pt-10 border-t dark:border-white/5 border-slate-200">
+                    <p className="text-center dark:text-white/10 text-slate-300 text-[10px] font-black uppercase tracking-[0.4em]">Finalización de Expediente — Sistema de Seguridad IA</p>
                 </div>
             </div>
 
             {isEditing && (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-[#05070a]/80 backdrop-blur-xl transition-all animate-in fade-in duration-300">
-                    <div className="relative w-full max-w-2xl bg-[#0a0c10] border border-white/10 rounded-[3.5rem] p-12 lg:p-16 shadow-[0_0_100px_rgba(30,58,138,0.3)] overflow-hidden">
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 dark:bg-[#05070a]/80 bg-slate-900/40 backdrop-blur-xl transition-all animate-in fade-in duration-300">
+                    <div className="relative w-full max-w-2xl dark:bg-[#0a0c10] bg-white border dark:border-white/10 border-slate-200 rounded-[3.5rem] p-12 lg:p-16 shadow-[0_0_100px_rgba(30,58,138,0.3)] shadow-2xl overflow-hidden">
                         {/* Background Ambiance */}
                         <div className="absolute top-0 right-0 w-64 h-64 bg-blue-600/10 rounded-full blur-[100px] -mr-32 -mt-32"></div>
                         <div className="absolute bottom-0 left-0 w-64 h-64 bg-purple-600/10 rounded-full blur-[100px] -ml-32 -mb-32"></div>
@@ -458,10 +459,10 @@ const UserProfile = () => {
                                     <Edit2 size={32} />
                                 </div>
                                 <div className="flex-1">
-                                    <h2 className="text-4xl font-black text-white tracking-tighter uppercase leading-none">Editar Perfil</h2>
-                                    <p className="text-white/30 text-[10px] font-black uppercase tracking-[0.3em] mt-2">Actualiza tu identidad digital y seguridad</p>
+                                    <h2 className="text-4xl font-black dark:text-white text-slate-900 tracking-tighter uppercase leading-none">Editar Perfil</h2>
+                                    <p className="dark:text-white/30 text-slate-400 text-[10px] font-black uppercase tracking-[0.3em] mt-2">Actualiza tu identidad digital y seguridad</p>
                                 </div>
-                                <button onClick={handleCancel} className="p-3 bg-white/5 hover:bg-white/10 rounded-2xl border border-white/5 transition-all">
+                                <button onClick={handleCancel} className="p-3 dark:bg-white/5 bg-slate-100 hover:dark:bg-white/10 hover:bg-slate-200 rounded-2xl border dark:border-white/5 border-slate-200 transition-all dark:text-white text-slate-500">
                                     <X size={20} />
                                 </button>
                             </div>
@@ -469,7 +470,7 @@ const UserProfile = () => {
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 w-full">
                                 {/* BASIC DATA */}
                                 <div className="space-y-6">
-                                    <p className="text-[10px] font-black text-blue-500 uppercase tracking-[0.3em] border-b border-white/5 pb-3">Datos Básicos</p>
+                                    <p className="text-[10px] font-black text-blue-500 uppercase tracking-[0.3em] border-b dark:border-white/5 border-slate-200 pb-3">Datos Básicos</p>
                                     <div className="space-y-5">
                                         {[
                                             { label: 'Nombre Completo', icon: User, name: 'name', type: 'text' },
@@ -477,16 +478,16 @@ const UserProfile = () => {
                                             { label: 'Teléfono', icon: Phone, name: 'phone', type: 'tel' },
                                         ].map((input) => (
                                             <div key={input.name} className="group">
-                                                <label className="text-[8px] font-black text-white/30 uppercase tracking-widest ml-1 mb-2 block">{input.label}</label>
+                                                <label className="text-[8px] font-black dark:text-white/30 text-slate-400 uppercase tracking-widest ml-1 mb-2 block">{input.label}</label>
                                                 <div className="relative">
                                                     <input
                                                         type={input.type}
                                                         name={input.name}
                                                         value={formData[input.name]}
                                                         onChange={handleChange}
-                                                        className="w-full bg-[#05070a]/50 border border-white/10 group-hover:border-white/20 focus:border-blue-600 rounded-2xl px-5 py-4 text-xs font-bold text-white focus:outline-none transition-all"
+                                                        className="w-full dark:bg-[#05070a]/50 bg-slate-50 border dark:border-white/10 border-slate-200 group-hover:dark:border-white/20 group-hover:border-slate-300 focus:border-blue-600 rounded-2xl px-5 py-4 text-xs font-bold dark:text-white text-slate-900 focus:outline-none transition-all"
                                                     />
-                                                    <input.icon size={14} className="absolute right-5 top-1/2 -translate-y-1/2 text-white/10 group-hover:text-white/20 transition-colors" />
+                                                    <input.icon size={14} className="absolute right-5 top-1/2 -translate-y-1/2 dark:text-white/10 text-slate-300 group-hover:dark:text-white/20 group-hover:text-slate-500 transition-colors" />
                                                 </div>
                                             </div>
                                         ))}
@@ -495,7 +496,7 @@ const UserProfile = () => {
 
                                 {/* SECURITY DATA */}
                                 <div className="space-y-6">
-                                    <p className="text-[10px] font-black text-purple-500 uppercase tracking-[0.3em] border-b border-white/5 pb-3">Seguridad</p>
+                                    <p className="text-[10px] font-black text-purple-500 uppercase tracking-[0.3em] border-b dark:border-white/5 border-slate-200 pb-3">Seguridad</p>
                                     <div className="space-y-5">
                                         {[
                                             { label: 'Contraseña Actual', icon: Lock, name: 'currentPassword', type: 'password' },
@@ -503,7 +504,7 @@ const UserProfile = () => {
                                             { label: 'Confirmar Nueva', icon: Shield, name: 'confirmPassword', type: 'password' },
                                         ].map((input) => (
                                             <div key={input.name} className="group">
-                                                <label className="text-[8px] font-black text-white/30 uppercase tracking-widest ml-1 mb-2 block">{input.label}</label>
+                                                <label className="text-[8px] font-black dark:text-white/30 text-slate-400 uppercase tracking-widest ml-1 mb-2 block">{input.label}</label>
                                                 <div className="relative">
                                                     <input
                                                         type={input.type}
@@ -511,9 +512,9 @@ const UserProfile = () => {
                                                         value={formData[input.name] || ''}
                                                         onChange={handleChange}
                                                         placeholder="••••••••"
-                                                        className="w-full bg-[#05070a]/50 border border-white/10 group-hover:border-white/20 focus:border-purple-600 rounded-2xl px-5 py-4 text-xs font-bold text-white placeholder:text-white/10 focus:outline-none transition-all"
+                                                        className="w-full dark:bg-[#05070a]/50 bg-slate-50 border dark:border-white/10 border-slate-200 group-hover:dark:border-white/20 group-hover:border-slate-300 focus:border-purple-600 rounded-2xl px-5 py-4 text-xs font-bold dark:text-white text-slate-900 dark:placeholder:text-white/10 placeholder:text-slate-300 focus:outline-none transition-all"
                                                     />
-                                                    <input.icon size={14} className="absolute right-5 top-1/2 -translate-y-1/2 text-white/10 group-hover:text-white/20 transition-colors" />
+                                                    <input.icon size={14} className="absolute right-5 top-1/2 -translate-y-1/2 dark:text-white/10 text-slate-300 group-hover:dark:text-white/20 group-hover:text-slate-500 transition-colors" />
                                                 </div>
                                             </div>
                                         ))}

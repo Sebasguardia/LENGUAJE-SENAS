@@ -36,6 +36,8 @@ const UserManagement = () => {
   const [isLoading, setIsLoading] = useState(users.length === 0);
   const [searchTerm, setSearchTerm] = useState('');
   const [filter, setFilter] = useState('all');
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
 
   // Modal States
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -183,6 +185,22 @@ const UserManagement = () => {
     return matchesSearch && matchesFilter;
   });
 
+  const sortedUsers = [...filteredUsers].sort((a, b) => {
+    const dateA = new Date(a.created_at || 0);
+    const dateB = new Date(b.created_at || 0);
+    return dateA - dateB; // Más antiguos primero
+  });
+
+  const totalPages = Math.ceil(sortedUsers.length / itemsPerPage);
+  const paginatedUsers = sortedUsers.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+
+  const isInactiveVisual = (user) => {
+    if (!user.last_active_at) return false;
+    const diffTime = new Date() - new Date(user.last_active_at);
+    const diffDays = diffTime / (1000 * 60 * 60 * 24);
+    return diffDays > 15;
+  };
+
   return (
     <div className="space-y-4 sm:space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
 
@@ -220,7 +238,7 @@ const UserManagement = () => {
             type="text"
             placeholder="Buscar por nombre, email o DNI..."
             value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
+            onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }}
             className="w-full dark:bg-white/[0.02] bg-white border dark:border-white/5 border-slate-200 rounded-2xl pl-12 pr-4 py-4 text-sm dark:text-white text-slate-900 dark:placeholder-white/20 placeholder-slate-400 focus:outline-none focus:border-purple-500/50 transition-all font-bold hover:bg-white/[0.04]"
           />
         </div>
@@ -229,7 +247,7 @@ const UserManagement = () => {
           <Filter size={16} className="absolute left-4 top-1/2 -translate-y-1/2 dark:text-white/20 text-slate-400" />
           <select
             value={filter}
-            onChange={(e) => setFilter(e.target.value)}
+            onChange={(e) => { setFilter(e.target.value); setCurrentPage(1); }}
             className="w-full dark:bg-white/[0.02] bg-white border dark:border-white/5 border-slate-200 rounded-2xl pl-12 pr-4 py-4 text-sm dark:text-white text-slate-900 focus:outline-none focus:border-purple-500/50 transition-all appearance-none cursor-pointer font-bold dark:hover:bg-white/[0.04] hover:bg-slate-50"
           >
             <option value="all" className="dark:bg-[#0a0c10] bg-white">Todos</option>
@@ -259,7 +277,7 @@ const UserManagement = () => {
 
       {/* Lista de Usuarios - Responsive */}
       <div className="grid grid-cols-1 gap-4">
-        {filteredUsers.map((user) => (
+        {paginatedUsers.map((user) => (
           <div key={user.id} className="group dark:bg-white/[0.02] bg-white backdrop-blur-3xl border dark:border-white/5 border-slate-200 rounded-[2rem] p-6 dark:hover:bg-white/[0.04] hover:bg-slate-50 dark:hover:border-white/10 hover:border-slate-300 transition-all duration-300 flex flex-col lg:flex-row items-start lg:items-center gap-6 relative overflow-hidden shadow-sm dark:shadow-none">
 
             {/* Perfil Básico - Responsive */}
@@ -276,7 +294,14 @@ const UserManagement = () => {
                 </h3>
                 <div className="flex flex-col text-xs sm:text-sm dark:text-white/40 text-slate-500 font-medium">
                   <span className="truncate" title={user.email}>{user.email}</span>
-                  {user.dni && <span className="text-[10px] dark:text-white/20 text-slate-400">DNI: {user.dni}</span>}
+                  <div className="flex items-center gap-2 mt-1">
+                    {user.dni && <span className="text-[10px] dark:text-white/20 text-slate-400">DNI: {user.dni}</span>}
+                    {isInactiveVisual(user) && (
+                      <span className="px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest bg-orange-500/10 text-orange-500 border border-orange-500/20">
+                        Inactivo 15+ días
+                      </span>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
@@ -318,6 +343,43 @@ const UserManagement = () => {
           </div>
         ))}
       </div>
+
+      {/* Controles de Paginación */}
+      {totalPages > 1 && (
+        <div className="flex flex-wrap justify-center items-center gap-2 sm:gap-4 mt-8 pb-4">
+          <button
+            onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+            disabled={currentPage === 1}
+            className="px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg sm:rounded-xl dark:bg-white/5 bg-slate-100 text-xs sm:text-sm font-black dark:text-white/60 text-slate-600 disabled:opacity-30 dark:hover:bg-white/10 hover:bg-slate-200 transition-all border dark:border-white/10 border-slate-200 active:scale-95"
+          >
+            Anterior
+          </button>
+          
+          <div className="flex items-center gap-1 sm:gap-2">
+            {[...Array(totalPages)].map((_, i) => (
+              <button
+                key={i}
+                onClick={() => setCurrentPage(i + 1)}
+                className={`w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl text-xs sm:text-sm font-black transition-all active:scale-95 flex items-center justify-center ${
+                  currentPage === i + 1 
+                    ? 'bg-gradient-to-br from-purple-500 to-pink-600 text-white shadow-lg shadow-purple-500/20' 
+                    : 'dark:bg-white/5 bg-slate-100 dark:text-white/60 text-slate-600 dark:hover:bg-white/10 hover:bg-slate-200 dark:border-white/10 border-slate-200 border'
+                }`}
+              >
+                {i + 1}
+              </button>
+            ))}
+          </div>
+
+          <button
+            onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+            disabled={currentPage === totalPages}
+            className="px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg sm:rounded-xl dark:bg-white/5 bg-slate-100 text-xs sm:text-sm font-black dark:text-white/60 text-slate-600 disabled:opacity-30 dark:hover:bg-white/10 hover:bg-slate-200 transition-all border dark:border-white/10 border-slate-200 active:scale-95"
+          >
+            Siguiente
+          </button>
+        </div>
+      )}
 
       {/* Modal Ver Detalles Completos - Responsive */}
       {isViewModalOpen && selectedUser && (
@@ -436,7 +498,7 @@ const UserManagement = () => {
                     </h4>
                     <div className="grid grid-cols-1 gap-4">
                       {selectedUser.courses?.map((course, i) => (
-                        <div key={i} className="group flex items-center justify-between bg-[#05070a]/40 p-5 rounded-3xl border border-white/5 hover:border-blue-500/30 transition-all duration-500 shadow-xl overflow-hidden relative">
+                        <div key={i} className="group flex items-center justify-between dark:bg-[#05070a]/40 bg-slate-50 p-5 rounded-3xl border dark:border-white/5 border-slate-200 hover:border-blue-500/30 transition-all duration-500 shadow-xl overflow-hidden relative">
                           <div className={`absolute top-0 left-0 w-1 h-full ${course.progress >= 95 ? 'bg-green-500' : 'bg-blue-600'} opacity-50`} />
 
                           <div className="flex items-center gap-5 flex-1 min-w-0">
@@ -445,8 +507,8 @@ const UserManagement = () => {
                             </div>
                             <div className="flex-1 min-w-0 pr-4">
                               <div className="flex items-center gap-3 mb-2">
-                                <span className="font-black text-white text-lg tracking-tight truncate">{course.name}</span>
-                                <span className={`px-2.5 py-1 rounded-lg text-[8px] font-black uppercase tracking-widest ${course.status === 'Completado' ? 'bg-green-500/20 text-green-400 border border-green-500/20' : 'bg-blue-500/20 text-blue-400 border border-blue-500/20'}`}>
+                                <span className="font-black dark:text-white text-slate-800 text-lg tracking-tight truncate">{course.name}</span>
+                                <span className={`px-2.5 py-1 rounded-lg text-[8px] font-black uppercase tracking-widest ${course.status === 'Completado' ? 'bg-green-500/20 text-green-600 dark:text-green-400 border border-green-500/20' : 'bg-blue-500/20 text-blue-600 dark:text-blue-400 border border-blue-500/20'}`}>
                                   {course.status}
                                 </span>
                               </div>
@@ -462,7 +524,7 @@ const UserManagement = () => {
                             </div>
                           </div>
                           <div className="pl-6 border-l border-white/5 text-right min-w-[90px] group-hover:bg-white/[0.02] transition-colors py-1">
-                            <p className="text-[9px] font-black text-white/20 uppercase tracking-widest mb-1">RÉCORD</p>
+                            <p className="text-[9px] font-black dark:text-white/20 text-slate-400 uppercase tracking-widest mb-1">RÉCORD</p>
                             <p className={`text-2xl font-black ${course.precision >= 90 ? 'text-green-400' : 'text-blue-400'}`}>{course.precision}%</p>
                           </div>
                         </div>
@@ -472,30 +534,30 @@ const UserManagement = () => {
 
                   {/* Últimas Sesiones (NUEVO) */}
                   <div className="pb-10">
-                    <h4 className="text-[10px] sm:text-[11px] font-black text-white/20 mb-6 uppercase tracking-[0.25em] sticky top-0 bg-[#0a0c10] py-4 z-20 border-b border-white/5 flex items-center justify-between">
+                    <h4 className="text-[10px] sm:text-[11px] font-black dark:text-white/20 text-slate-400 mb-6 uppercase tracking-[0.25em] sticky top-0 dark:bg-[#0a0c10] bg-white py-4 z-20 border-b dark:border-white/5 border-slate-200 flex items-center justify-between">
                       <span>Historial Reciente</span>
                       <Sparkles size={14} className="text-yellow-500/40" />
                     </h4>
 
                     <div className="space-y-3">
                       {selectedUser.recent_sessions?.map((session, i) => (
-                        <div key={i} className="flex items-center justify-between p-4 bg-white/[0.02] rounded-2xl border border-white/5 group hover:bg-white/[0.04] transition-all">
+                        <div key={i} className="flex items-center justify-between p-4 dark:bg-white/[0.02] bg-slate-50 rounded-2xl border dark:border-white/5 border-slate-200 group hover:dark:bg-white/[0.04] hover:bg-slate-100 transition-all">
                           <div className="flex items-center gap-4">
-                            <div className="p-3 bg-blue-500/10 rounded-xl text-blue-400 group-hover:scale-110 transition-transform">
+                            <div className="p-3 bg-blue-500/10 rounded-xl text-blue-500 dark:text-blue-400 group-hover:scale-110 transition-transform">
                               <Zap size={16} />
                             </div>
                             <div>
-                              <p className="text-xs font-black text-white tracking-tight">{session.module}</p>
-                              <div className="flex items-center gap-3 text-[10px] text-white/30 font-bold uppercase tracking-widest">
+                              <p className="text-xs font-black dark:text-white text-slate-800 tracking-tight">{session.module}</p>
+                              <div className="flex items-center gap-3 text-[10px] dark:text-white/30 text-slate-500 font-bold uppercase tracking-widest">
                                 <span>{session.date}</span>
-                                <span className="text-white/10">•</span>
-                                <span className="text-yellow-500/60">+{session.xp} XP</span>
+                                <span className="dark:text-white/10 text-slate-300">•</span>
+                                <span className="text-yellow-600 dark:text-yellow-500/60">+{session.xp} XP</span>
                               </div>
                             </div>
                           </div>
-                          <div className="text-right">
-                            <div className="text-lg font-black text-white leading-none">{session.accuracy}%</div>
-                            <p className="text-[8px] font-black text-white/20 uppercase tracking-[0.2em] mt-1">Precisión</p>
+                           <div className="text-right">
+                            <div className="text-lg font-black dark:text-white text-slate-900 leading-none">{session.accuracy}%</div>
+                            <p className="text-[8px] font-black dark:text-white/20 text-slate-400 uppercase tracking-[0.2em] mt-1">Precisión</p>
                           </div>
                         </div>
                       ))}

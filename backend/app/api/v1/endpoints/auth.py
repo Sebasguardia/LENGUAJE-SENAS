@@ -1,4 +1,4 @@
-from datetime import timedelta
+from datetime import timedelta, datetime
 from typing import Any
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
@@ -122,11 +122,19 @@ async def google_login(
         print(f"DEBUG: Usuario {email} inactivo!", flush=True)
         raise HTTPException(status_code=400, detail="Usuario inactivo")
 
-    # 3. Actualizar racha
+    # 3. Check inactivity for Welcome Back modal
+    welcome_back = False
+    days_inactive = 0
+    if user.last_active_at:
+        days_inactive = (datetime.now().date() - user.last_active_at.date()).days
+        if days_inactive > 15:
+            welcome_back = True
+
+    # 4. Actualizar racha
     update_user_streak(db, user)
     db.commit()
 
-    # 4. Generar token de acceso local
+    # 5. Generar token de acceso local
     access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
     return {
         "access_token": security.create_access_token(
@@ -134,7 +142,9 @@ async def google_login(
         ),
         "token_type": "bearer",
         "password_change_required": False,
-        "is_2fa_enabled": user.is_2fa_enabled
+        "is_2fa_enabled": user.is_2fa_enabled,
+        "welcome_back": welcome_back,
+        "days_inactive": days_inactive
     }
 
 @router.post("/login/access-token", response_model=schemas.Token)
@@ -186,11 +196,20 @@ def login_access_token(
         except:
             pass
 
-    # 4. Actualizar racha al loguear
+    # 4. Check inactivity for Welcome Back modal
+    welcome_back = False
+    days_inactive = 0
+    if user.last_active_at:
+        from datetime import datetime
+        days_inactive = (datetime.now().date() - user.last_active_at.date()).days
+        if days_inactive > 15:
+            welcome_back = True
+
+    # 5. Actualizar racha al loguear
     update_user_streak(db, user)
     db.commit()
 
-    # 5. Generar token
+    # 6. Generar token
     access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
     return {
         "access_token": security.create_access_token(
@@ -198,7 +217,9 @@ def login_access_token(
         ),
         "token_type": "bearer",
         "password_change_required": password_change_required,
-        "is_2fa_enabled": user.is_2fa_enabled
+        "is_2fa_enabled": user.is_2fa_enabled,
+        "welcome_back": welcome_back,
+        "days_inactive": days_inactive
     }
 
 @router.post("/change-password", response_model=schemas.User)

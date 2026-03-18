@@ -6,6 +6,8 @@ class Token(BaseModel):
     token_type: str
     password_change_required: bool = False
     is_2fa_enabled: bool = False
+    welcome_back: bool = False
+    days_inactive: int = 0
 
     @field_validator('password_change_required', 'is_2fa_enabled', mode='before')
     @classmethod
