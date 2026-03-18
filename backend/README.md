@@ -1,320 +1,570 @@
-# 🧠 Infraestructura Backend: Motor Neuronal del Sistema de Lenguaje de Señas IA
+# ⚙️ Lenguaje de Señas IA — Backend
 
-![Versión del Backend](https://img.shields.io/badge/Versión-5.0.0--Enterprise--Stable-emerald?style=for-the-badge)
-![FastAPI](https://img.shields.io/badge/FastAPI-0.103.1-white?style=for-the-badge&logo=fastapi&logoColor=009688)
-![Python](https://img.shields.io/badge/Python-3.10+-blue?style=for-the-badge&logo=python&logoColor=white)
-![SQLAlchemy 2.0](https://img.shields.io/badge/ORM-SQLAlchemy--2.0-red?style=for-the-badge)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.109-009688?style=flat-square&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
+[![Python](https://img.shields.io/badge/Python-3.11-3776AB?style=flat-square&logo=python&logoColor=white)](https://python.org/)
+[![SQLAlchemy](https://img.shields.io/badge/SQLAlchemy-2.0-D71F00?style=flat-square)](https://sqlalchemy.org/)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-Supabase-336791?style=flat-square&logo=postgresql&logoColor=white)](https://supabase.com/)
+[![License](https://img.shields.io/badge/License-MIT-green?style=flat-square)](../LICENSE)
 
-Bienvenido a la documentación técnica maestra del **Backend de Lenguaje de Señas IA**. Este repositorio alberga el "cerebro" del sistema: un motor de procesamiento asíncrono diseñado para gestionar el reconocimiento de gestos en tiempo real, la persistencia de datos académicos y una arquitectura de gamificación de alto rendimiento.
-
----
-
-## 📑 Tabla de Contenidos Extensa
-
-1.  **[1. Visión Holística del Sistema](#1-visión-holística-del-sistema)**
-2.  **[2. Arquitectura de Software y Patrones Asíncronos](#2-arquitectura-de-software-y-patrones-asíncronos)**
-3.  **[3. Stack Tecnológico de Grado de Producción](#3-stack-tecnológico-de-grado-de-producción)**
-4.  **[4. Estructura Documentada del Código Fuente](#4-estructura-documentada-del-código-fuente)**
-5.  **[5. Modelo de Datos y Entidades Relacionales (ERD)](#5-modelo-de-datos-y-entidades-relacionales-erd)**
-6.  **[6. Núcleo de Inteligencia Artificial y Procesamiento de Landmarks](#6-núcleo-de-inteligencia-artificial-y-procesamiento-de-landmarks)**
-7.  **[7. Gestión de Seguridad, JWT y Roles Jerárquicos](#7-gestión-de-seguridad-jwt-y-roles-jerárquicos)**
-8.  **[8. Referencia Exhaustiva de la API (Endpoints)](#8-referencia-exhaustiva-de-la-api-endpoints)**
-9.  **[9. Motor de Gamificación y Lógica de Recompensas](#9-motor-de-gamificación-y-lógica-de-recompensas)**
-10. **[10. Sistema de Análisis Estructural y Bunker de Datos](#10-sistema-de-análisis-estructural-y-bunker-de-datos)**
-11. **[11. Protocolos de Backups Físicos y Disaster Recovery](#11-protocolos-de-backups-físicos-y-disaster-recovery)**
-12. **[12. Guía de Instalación para Entornos de Desarrollo](#12-guía-de-instalación-para-entornos-de-desarrollo)**
-13. **[13. Configuración de Variables de Entorno (.env)](#13-configuración-de-variables-de-entorno-env)**
-14. **[14. Sistema de Migraciones Estructurales con Alembic](#14-sistema-de-migraciones-estructurales-con-alembic)**
-15. **[15. Despliegue en Producción (Gunicorn, Nginx, SSL)](#15-despliegue-en-producción-gunicorn-nginx-ssl)**
-16. **[16. Monitoreo, Logging y Gestión de Errores](#16-monitoreo-logging-y-gestión-de-errores)**
-17. **[17. Estándares de Codificación y Convenciones Pythonicas](#17-estándares-de-codificación-y-convenciones-pythonicas)**
-18. **[18. Resolución de Problemas y FAQ Técnico](#18-resolución-de-problemas-y-faq-técnico)**
-19. **[19. Hoja de Ruta Tecnológica (Vision 2026)](#19-hoja-de-ruta-tecnológica-vision-2026)**
-20. **[20. Apéndices Técnicos y Créditos](#20-apéndices-técnicos-y-créditos)**
+API REST del sistema de aprendizaje de lenguaje de señas. Gestiona autenticación, módulos, progreso de usuarios, capturas de landmarks y el clasificador de gestos con IA.
 
 ---
 
-## 1. Visión Holística del Sistema
+## 📑 Tabla de contenidos
 
-El backend de **Lenguaje de Señas IA** ha sido diseñado para ser el cimiento de una plataforma de aprendizaje adaptativo. A diferencia de las APIs tradicionales, este servidor maneja flujos de datos de alta dimensionalidad (coordenadas 3D de la mano) y los procesa para ofrecer una validación instantánea.
-
-### La Filosofía "Safety First"
-Cada escritura en la base de datos pasa por una validación estricta de esquemas de Pydantic, asegurando que los registros académicos de los alumnos (XP, Niveles, Logros) sean inalterables y coherentes.
-
----
-
-## 2. Arquitectura de Software y Patrones Asíncronos
-
-Hemos implementado una arquitectura **Capa a Capa** para garantizar que el código sea testeable y extensible:
-
--   **FastAPI Core:** Utiliza el estándar ASGI para manejar miles de conexiones concurrentes.
--   **Patrón Repositorio/Servicio:** Aunque simplificado en esta fase, la lógica de IA y de Gamificación reside en servicios inyectables.
--   **Asincronía Nativa:** Todo el acceso a la base de datos y el procesamiento de archivos se realiza mediante `async/await`, eliminando los cuellos de botella de entrada/salida (I/O).
-
----
-
-## 3. Stack Tecnológico de Grado de Producción
-
-### Motor de Aplicación
--   **FastAPI:** El framework más rápido para Python, con documentación automática integrada (Swagger/Redoc).
--   **Uvicorn:** Servidor ASGI basado en `uvloop`, optimizado para Linux y Windows.
-
-### Persistencia de Datos
--   **SQLAlchemy 2.0:** Utilizamos el "Mapped Declarative Style" para una definición de tablas moderna y tipos de datos robustos.
--   **SQLite (Producción Inicial):** Configurado con modo WAL (Write-Ahead Logging) para permitir lecturas y escrituras concurrentes sin bloqueos.
-
-### Herramientas de IA y Matemáticas
--   **MediaPipe:** Motor de inferencia en tiempo real para landmarks.
--   **NumPy:** Gestión de vectores para cálculos de normalización de distancias.
--   **Pandas (Opcional en Training):** Para el análisis masivo de los datasets capturados.
+1. [Características principales](#-características-principales)
+2. [Stack tecnológico](#-stack-tecnológico)
+3. [Estructura del proyecto](#-estructura-del-proyecto)
+4. [Instalación y ejecución local](#-instalación-y-ejecución-local)
+5. [Variables de entorno](#-variables-de-entorno)
+6. [Endpoints de la API](#-endpoints-de-la-api)
+7. [Base de datos y modelos](#-base-de-datos-y-modelos)
+8. [Sistema de reconocimiento de gestos](#-sistema-de-reconocimiento-de-gestos)
+9. [Autenticación y seguridad](#-autenticación-y-seguridad)
+10. [Gestión de datos y backups](#-gestión-de-datos-y-backups)
+11. [Deploy en Render](#-deploy-en-render)
+12. [Problemas conocidos y soluciones](#-problemas-conocidos-y-soluciones)
+13. [Contribuir](#-contribuir)
 
 ---
 
-## 4. Estructura Documentada del Código Fuente
+## ✨ Características principales
 
-El código se organiza de forma que la lógica de negocio esté claramente separada de la infraestructura:
+- 🔐 **Autenticación JWT** — Login con email/password y con Google OAuth. Tokens con expiración configurable.
+- 📚 **Gestión de módulos y señas** — CRUD completo de módulos de aprendizaje y sus elementos (señas), con control de publicación y bloqueo.
+- 📊 **Progreso y estadísticas** — Registro de sesiones de práctica, cálculo de XP, racha diaria, precisión global y ranking de usuarios.
+- 🤖 **Clasificador de gestos con IA** — Recibe los 21 landmarks de una mano y predice la seña usando scikit-learn, comparando contra los datos reales capturados.
+- 🖼️ **Captura de datasets** — Endpoint para guardar landmarks como dataset de entrenamiento directamente desde la interfaz del administrador.
+- 🛡️ **Panel de administración** — Endpoints de análisis, gestión de usuarios, backups de la base de datos y configuración global del sistema.
+- 📧 **Emails automáticos** — Envío de código de recuperación de contraseña y verificación de registro vía SMTP (Gmail).
+- 🏆 **Sistema de logros** — Verifica y desbloquea logros automáticamente después de cada sesión de práctica.
 
-```text
+---
+
+## 🧱 Stack tecnológico
+
+| Categoría | Librería | Versión | Uso |
+|---|---|---|---|
+| Framework | FastAPI | 0.109 | API REST con validación automática de tipos |
+| Servidor | Uvicorn | 0.27 | Servidor ASGI para FastAPI |
+| Producción | Gunicorn | 21.2 | Worker manager para deploy |
+| ORM | SQLAlchemy | 2.0 | Mapeo de modelos a tablas de la DB |
+| Migraciones | Alembic | 1.13 | Control de versiones del schema de la DB |
+| Base de datos | PostgreSQL (Supabase) | — | DB principal en producción |
+| Base de datos local | SQLite | — | DB en desarrollo (archivo `app.db`) |
+| Validación | Pydantic v2 | 2.5 | Schemas de entrada/salida de la API |
+| Auth JWT | python-jose | 3.3 | Generación y verificación de tokens JWT |
+| Hashing | passlib + bcrypt | 1.7 | Hash seguro de contraseñas |
+| Google OAuth | google-auth | 2.27 | Verificación de tokens de Google |
+| IA / Clasificación | scikit-learn | 1.4 | Modelo de clasificación de gestos |
+| Landmarks | MediaPipe | 0.10 | Procesamiento de puntos de la mano (server) |
+| Numérico | NumPy | 1.26 | Transformaciones de datos para el clasificador |
+| HTTP | requests | 2.31 | Llamadas a APIs de Google como fallback |
+| SMTP | smtplib (stdlib) | — | Envío de emails de recuperación |
+
+### ¿Por qué FastAPI?
+
+FastAPI genera automáticamente la documentación Swagger en `/api/v1/openapi.json`, valida los cuerpos de petición con Pydantic, y tiene soporte nativo para async. En comparación con Flask, reduce drásticamente el boilerplate necesario para una API tipada.
+
+### ¿Por qué scikit-learn y no deep learning?
+
+Para el clasificador de señas, scikit-learn (K-Nearest Neighbors o SVM) es suficiente y mucho más rápido de entrenar y servir. El modelo recibe 21 puntos XYZ normalizados, no imágenes completas, lo que reduce enormemente la dimensionalidad del problema. Agregar TensorFlow añadiría 500MB+ de dependencias sin una mejora significativa para este caso de uso.
+
+---
+
+## 📁 Estructura del proyecto
+
+```
 backend/
 ├── app/
-│   ├── api/                # Definición de la Puerta de Entrada (API)
+│   ├── api/
+│   │   ├── deps.py                   # Dependencias compartidas: get_db, get_current_user, guards de rol
 │   │   └── v1/
-│   │       ├── api.py      # Router central que une los submódulos
-│   │       └── endpoints/  # Controladores de negocio
-│   │           ├── auth.py         # 🔐 Identidad y Tokens JWT
-│   │           ├── users.py        # 👤 Gestión de perfiles y XP
-│   │           ├── modules.py      # 📚 Contenido académico
-│   │           ├── admin_tools.py  # 🛠️ Estadísticas, Capturas y Backups
-│   │           ├── achievements.py # 🏆 Motor de Gamificación
-│   │           └── recognition.py  # 🤖 Neuronal Prediction
-│   ├── core/               # ⚙️ Configuraciones Globales
-│   │   ├── config.py       # Lectura de .env y validación Pydantic
-│   │   └── security.py     # Hashes (Passlib) y JWT (python-jose)
-│   ├── db/                 # 🗄️ Infraestructura de Datos
-│   │   ├── base.py         # Importación maestra para Alembic
-│   │   ├── session.py      # Gestión del motor y sesiones locales
-│   │   └── init_db.py      # Lógica de creación inicial
-│   ├── models/             # 🧱 Clases SQLAlchemy (Tablas Reales)
-│   ├── schemas/            # 📜 Contratos Pydantic (Validación I/O)
-│   └── main.py             # 🚀 Punto de ignición y Middlewares
-├── alembic/                # 🧬 Evolución estructural de la DB
-├── backups/                # 🛡️ Snapshots SQL de Misión Crítica
-└── logs/                   # 📝 Registro histórico de eventos
+│   │       ├── api.py                # Router principal que agrupa todos los endpoints
+│   │       └── endpoints/
+│   │           ├── auth.py           # Login, registro, Google OAuth, recuperación de contraseña
+│   │           ├── users.py          # CRUD de usuarios (admin)
+│   │           ├── modules.py        # CRUD de módulos y elementos (señas)
+│   │           ├── progress.py       # Estadísticas, ranking, sesiones de práctica
+│   │           ├── recognition.py    # Predicción de señas con el clasificador IA
+│   │           ├── admin_tools.py    # Analytics, capturas de datos, backups, configuración DB
+│   │           ├── achievements.py   # Logros del usuario
+│   │           ├── notifications.py  # Notificaciones
+│   │           └── settings.py       # Configuración global del sistema
+│   │
+│   ├── core/
+│   │   ├── config.py                 # Configuración central (lee desde .env con pydantic-settings)
+│   │   └── security.py               # Hash de passwords, creación de JWT
+│   │
+│   ├── db/
+│   │   ├── base_class.py             # Clase Base de SQLAlchemy con __tablename__ automático
+│   │   ├── base.py                   # Importa todos los modelos para que Alembic los detecte
+│   │   └── session.py                # Crea el engine y la sesión (SessionLocal)
+│   │
+│   ├── models/                       # Definición de tablas de la base de datos (SQLAlchemy ORM)
+│   │   ├── user.py                   # Usuario: roles, XP, racha, 2FA, perfil
+│   │   ├── content.py                # Module y Element (señas dentro de un módulo)
+│   │   ├── progress.py               # UserProgress, UserModuleProgress, PracticeSession
+│   │   ├── gamification.py           # Achievement y UserAchievement
+│   │   ├── notification.py           # Notificaciones del usuario
+│   │   ├── settings.py               # SystemSetting (clave-valor de configuración)
+│   │   └── dataset.py                # HandCapture (landmarks guardados para entrenamiento)
+│   │
+│   ├── schemas/                      # Pydantic: validación de entrada y serialización de salida
+│   │   ├── user.py                   # UserCreate, UserUpdate, User (response), GoogleLogin
+│   │   ├── token.py                  # Token, TokenPayload
+│   │   ├── content.py                # Module, Element y sus variantes Create/Update
+│   │   ├── progress.py               # PracticeSession, DashboardStats, UserRanking
+│   │   ├── recognition.py            # PredictionRequest (landmarks), PredictionResponse
+│   │   ├── dataset.py                # HandCapture, HandCaptureCreate
+│   │   ├── notification.py           # Notification, NotificationCreate
+│   │   └── settings.py               # SystemSetting, SystemSettingUpdate
+│   │
+│   ├── services/
+│   │   ├── achievement_service.py    # Lógica de desbloqueo de logros post-sesión
+│   │   └── gesture_recognition/
+│   │       ├── classifier.py         # GestureClassifier: carga del modelo y predicción
+│   │       └── processor.py          # Normalización de landmarks antes de predecir
+│   │
+│   ├── utils/
+│   │   ├── user.py                   # update_user_streak, validate_password_strength
+│   │   ├── email.py                  # send_recovery_email, send_registration_verification_email
+│   │   └── notifications.py          # notify_all_admins (helper para crear notificaciones)
+│   │
+│   └── main.py                       # Entry point: crea la app FastAPI, configura CORS y monta rutas
+│
+├── alembic/                          # Migraciones de base de datos
+│   └── versions/                     # Archivos de migración generados automáticamente
+├── alembic.ini                       # Configuración de Alembic
+├── backups/                          # Copias de seguridad de la DB (generadas por el endpoint)
+├── uploads/                          # Archivos subidos (imágenes de módulos/elementos)
+├── app.db                            # Base de datos SQLite local (no subir a producción)
+├── requirements.txt                  # Dependencias de Python
+└── .env                              # Variables de entorno (no commitear)
 ```
 
 ---
 
-## 5. Modelo de Datos y Entidades Relacionales (ERD)
+## 🚀 Instalación y ejecución local
 
-Nuestra base de datos es el corazón de la persistencia. Se detalla el propósito de las tablas principales:
+### Pre-requisitos
 
-### `users`
-Almacena no solo el login, sino el estado existencial del alumno:
--   `xp`: Experiencia acumulada.
--   `streak`: Racha diaria calculada mediante diferencia de timestamps.
--   `role`: Control de acceso (superuser, admin, user).
+- **Python 3.11** — Recomendado. Usa `python --version` para verificar.
+- Un archivo `.env` configurado (ver sección siguiente).
 
-### `hand_captures` (El Dataset)
-Esta tabla es vital para el futuro de la IA:
--   `landmarks`: Almacenamos los 21 puntos clave como JSON. Esto permite que en el futuro, si cambiamos el modelo de red neuronal, podamos re-entrenar con los datos históricos de los usuarios.
-
-### `achievements` & `user_achievements`
-Sistema relacional muchos-a-muchos que vincula las metas desbloqueadas con los alumnos, registrando el timestamp exacto del logro.
-
----
-
-## 6. Núcleo de Inteligencia Artificial y Procesamiento de Landmarks
-
-El backend procesa la información gestual mediante un pipeline especializado:
-
-1.  **Recepción:** Se recibe un vector de 63 dimensiones (21 puntos clave * 3 ejes: X, Y, Z).
-2.  **Normalización Relativa:** Se toma el punto 0 (muñeca) como centro del universo y se relativizan todos los demás puntos. Esto elimina el problema de la profundidad de la cámara.
-3.  **Procesamiento Vectorial:** Se calculan ángulos e inclinaciones entre falanges.
-4.  **Respuesta Sensorial:** Se retorna la seña detectada con un índice de confianza. Si la confianza es < 0.85, se sugiere al usuario "Estabilizar Posición".
-
----
-
-## 7. Gestión de Seguridad, JWT y Roles Jerárquicos
-
-Implementamos un sistema de **Seguridad de Grado Bancario**:
-
--   **Encriptación:** Uso de `bcrypt` con 12 rondas de sal para contraseñas.
--   **Tokens de Acceso:** Uso de `HS256` con una `SECRET_KEY` de 32 bytes.
--   **Roles:**
-    *   `user`: Limitado a lectura de contenido y grabación de su propio progreso.
-    *   `admin`: Puede gestionar el catálogo educativo descritos en `modules.py`.
-    *   `superadmin`: Acceso exclusivo a `admin_tools.py` (backups, borrado físico, gestión de administradores).
-
----
-
-## 8. Referencia Exhaustiva de la API (Endpoints)
-
-Soportamos los verbos HTTP estándar con respuestas JSON normalizadas:
-
--   **AUTH:** `/api/v1/auth/login` (Obtener token), `/api/v1/auth/register` (Nuevo alumno).
--   **ACADÉMICO:** `/api/v1/modules/` (Listar currículo), `/api/v1/modules/{id}/elements` (Detalle de señas).
--   **PROGRESO:** `/api/v1/progress/practice` (Guardar sesión de práctica).
--   **BUNKER:** `/api/v1/admin-tools/database/stats` (Salud del servidor).
-
----
-
-## 9. Motor de Gamificación y Lógica de Recompensas
-
-El motor de gamificación corre en segundo plano tras cada práctica exitosa:
-
-```python
-# Pseudo-lógica del motor
-if element_completed:
-    user.xp += 10
-    if check_achievements(user):
-        unlock_new_badge(user)
-```
-
-Este proceso está optimizado para ocurrir de forma atómica, asegurando que el XP nunca se pierda por un error de conexión intermedio.
-
----
-
-## 10. Sistema de Análisis Estructural y Bunker de Datos
-
-El endpoint de estadísticas administrativas consulta los metadatos de SQLite para reportar:
--   **Records Count:** Cuántas filas hay en cada tabla.
--   **Table Health:** Analiza si hay registros huérfanos.
--   **Disk Usage:** Tamaño físico del archivo `app.db`.
-
----
-
-## 11. Protocolos de Backups Físicos y Disaster Recovery
-
-El sistema de backups es **No-Bloqueante**:
-
-1.  Se invoca el backup desde el frontend.
-2.  El backend utiliza la librería `shutil` o comandos nativos de `sqlite3` para crear una copia exacta y consistente.
-3.  El archivo se comprime y se mueve a la carpeta `backups/`.
-4.  Se genera una fila en el historial para tracking.
-
----
-
-## 12. Guía de Instalación para Entornos de Desarrollo
-
-### Requisitos
--   Python 3.10 o 3.11.
--   Administrador de paquetes pip.
-
-### Pasos Detallados
-1.  **Entorno:** `python -m venv venv`
-2.  **Activación:** `.\venv\Scripts\activate` (Windows)
-3.  **Dependencias:** `pip install -r requirements.txt`
-4.  **Init:** `python init_db_tables.py` para crear las tablas y las semillas de datos.
-
----
-
-## 13. Configuración de Variables de Entorno (.env)
-
-El archivo `.env` es el manifiesto de configuración. **No lo comparta.**
-
-```env
-PROJECT_NAME="Sign Language IA"
-SECRET_KEY="clave-fuerte-minimo-32-caracteres"
-ACCESS_TOKEN_EXPIRE_MINUTES=1440
-DATABASE_URL="sqlite:///./app.db"
-CORS_ORIGINS=["http://localhost:5173"]
-```
-
----
-
-## 14. Sistema de Migraciones Estructurales con Alembic
-
-Para evolucionar la base de datos sin borrar los datos de los alumnos:
-
-1.  `alembic revision --autogenerate -m "Nueva tabla x"`
-2.  `alembic upgrade head`
-
-Esto asegura que si añadimos una nueva tabla de "Exámenes", los usuarios actuales mantengan su XP intacto.
-
----
-
-## 15. Despliegue en Producción (Gunicorn, Nginx, SSL)
-
-En producción, usamos **Gunicorn** como administrador de procesos:
+### Pasos
 
 ```bash
-gunicorn -w 4 -k uvicorn.workers.UvicornWorker app.main:app --bind 0.0.0.0:8000
+# 1. Clonar el repositorio
+git clone https://github.com/Sebasguardia/LENGUAJE-SENAS.git
+cd LENGUAJE-SENAS/backend
+
+# 2. Crear y activar el entorno virtual
+python -m venv venv
+
+# En Windows:
+venv\Scripts\activate
+# En macOS/Linux:
+source venv/bin/activate
+
+# 3. Instalar dependencias
+pip install -r requirements.txt
+
+# 4. Crear el archivo .env (ver sección de variables de entorno)
+# Copia el ejemplo y edita los valores
+copy .env.example .env   # Windows
+cp .env.example .env     # Linux/Mac
+
+# 5. Iniciar el servidor de desarrollo
+uvicorn app.main:app --reload --port 8000
 ```
 
--   **Workers:** Se recomiendan `(2 * nucleos_cpu) + 1`.
--   **Nginx:** Actúa como escudo, manejando la terminación SSL y bloqueando ataques de fuerza bruta.
+La API estará disponible en **http://127.0.0.1:8000**
+
+La documentación interactiva (Swagger) estará en **http://127.0.0.1:8000/api/v1/openapi.json**
+
+> **Nota sobre la base de datos:** En desarrollo se usa SQLite (`app.db`). No necesitas instalar PostgreSQL localmente. Para producción se usa Supabase; cambia el `DATABASE_URL` en el `.env`.
 
 ---
 
-## 16. Monitoreo, Logging y Gestión de Errores
+## ⚙️ Variables de entorno
 
-El sistema captura todos los errores inesperados (500) y los registra en un archivo de log rotativo. Esto permite identificar si un modelo de IA específico está fallando bajo ciertas condiciones de iluminación o posición de la mano.
+Crea un archivo `.env` en la carpeta `backend/` con estas variables:
 
----
+```env
+# General
+PROJECT_NAME="Lenguaje Senas Backend"
+API_V1_STR="/api/v1"
 
-## 17. Estándares de Codificación y Convenciones Pythonicas
+# Base de datos
+# Desarrollo (SQLite):
+DATABASE_URL=sqlite:///./app.db
+# Producción (PostgreSQL / Supabase):
+# DATABASE_URL=postgresql://usuario:password@host:puerto/nombre_db
 
-Seguimos **PEP 8** de forma estricta:
--   Indentación de 4 espacios.
--   Tipado estático con `typing` para ayudar al IDE y a Pydantic.
--   Docstrings en formato Google para cada función crítica.
+# Seguridad JWT
+SECRET_KEY=pon-una-clave-super-secreta-aqui-de-minimo-32-caracteres
+ALGORITHM=HS256
+ACCESS_TOKEN_EXPIRE_MINUTES=10080  # 7 días
 
----
+# Primer super admin (se crea automáticamente al iniciar si no existe)
+FIRST_SUPERUSER=admin@tudominio.com
+FIRST_SUPERUSER_PASSWORD=cambiar_en_produccion
 
-## 18. Resolución de Problemas y FAQ Técnico
+# Google OAuth (obtén tu clientId en console.cloud.google.com)
+GOOGLE_CLIENT_ID=tu-google-client-id.apps.googleusercontent.com
 
-**P: ¿Por qué mi token expira tan rápido?**
-*R: Puede ajustar `ACCESS_TOKEN_EXPIRE_MINUTES` en el .env. Por seguridad, el valor por defecto es 24 horas.*
+# SMTP para emails (ejemplo con Gmail)
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_TLS=True
+SMTP_USER=tu-email@gmail.com
+SMTP_PASSWORD=tu-app-password-de-gmail  # Usar App Password, no tu contraseña real
+EMAILS_FROM_EMAIL=tu-email@gmail.com
+EMAILS_FROM_NAME="Instituto Señas IA"
+```
 
-**P: Error 'Database is locked'.**
-*R: Ocurre si dos procesos intentan escribir simultáneamente. Verifique que solo una instancia de uvicorn tenga acceso de escritura o use PostgreSQL para alta concurrencia.*
+> ⚠️ **Nunca commitees el `.env` real al repositorio.** Agrega `backend/.env` a tu `.gitignore`.
 
----
+### Obtener App Password de Gmail
 
-## 19. Hoja de Ruta Tecnológica (Vision 2026)
-
-1.  **Redundancia Global:** Migración a PostgreSQL gestionado (AWS RDS / Supabase).
-2.  **Streaming Recognition:** Implementación de WebSockets para una latencia de reconocimiento de < 50ms.
-3.  **Model Retraining:** Interfaz para re-entrenar el modelo neuronal usando los datos guardados en `hand_captures`.
-
----
-
-## 20. Apéndices Técnicos y Créditos
-
-Este backend ha sido fruto de una arquitectura pensada en la resiliencia y la precisión.
-
-### Notas sobre MediaPipe Integrado
-Aunque el frontend hace el trabajo pesado del video, el backend valida la integridad de los landmarks antes de guardarlos, realizando un "Sanity Check" matemático que asegura que las coordenadas pertenecen a una mano humana válida según las proporciones óseas.
-
----
-
-### Detalles de Optimización de Base de Datos
-Para manejar los 5,000+ registros de la tabla `hand_captures` de forma eficiente, hemos implementado índices compuestos en `(element_id, user_id)` y `(created_at)`. Esto permite que las consultas de análisis estadístico sean instantáneas incluso con millones de registros proyectados.
-
----
-
-### Gestión de Errores en Tiempo Real (Loguru)
-Utilizamos logging estructurado en formato JSON, lo que permite integrar el backend con herramientas de análisis de logs como ELK Stack o Datadog para visualizar picos de actividad de los alumnos en tiempo real.
+Para el SMTP, Gmail requiere una "App Password" (no tu contraseña normal):
+1. Ve a tu cuenta de Google → Seguridad → Verificación en dos pasos (actívala si no está).
+2. Busca "Contraseñas de aplicaciones".
+3. Crea una para "Correo" → "Otro (nombre personalizado)".
+4. Copia el password de 16 dígitos y úsalo en `SMTP_PASSWORD`.
 
 ---
 
-### Conclusión Técnica
-Esta infraestructura representa la solidez necesaria para un proyecto educativo de alto impacto. La combinación de la velocidad de FastAPI con la robustez de SQLAlchemy 2.0 y el procesamiento neuronal de MediaPipe constituye la cima técnica de nuestra plataforma.
+## 🔌 Endpoints de la API
+
+Todos los endpoints están bajo el prefijo `/api/v1`. Los endpoints marcados con 🔒 requieren JWT en el header `Authorization: Bearer <token>`.
+
+### Auth — `/api/v1/auth`
+
+| Método | Ruta | Acceso | Descripción |
+|---|---|---|---|
+| POST | `/login/access-token` | Público | Login con email y password |
+| POST | `/google` | Público | Login/registro con Google OAuth |
+| POST | `/register` | Público | Crear nueva cuenta de usuario |
+| GET | `/me` | 🔒 Usuario | Obtener perfil del usuario autenticado |
+| POST | `/change-password` | 🔒 Usuario | Cambiar contraseña actual |
+| POST | `/recovery/send` | Público | Enviar código de recuperación al email |
+| POST | `/recovery/verify` | Público | Verificar código de recuperación |
+| POST | `/recovery/reset` | Público | Resetear contraseña con el código |
+
+### Módulos — `/api/v1/modules`
+
+| Método | Ruta | Acceso | Descripción |
+|---|---|---|---|
+| GET | `/` | 🔒 Usuario | Listar módulos activos con conteo de elementos y estado de bloqueo |
+| GET | `/{slug}` | 🔒 Usuario | Detalle de un módulo con todos sus elementos |
+| POST | `/` | 🔒 Super Admin | Crear nuevo módulo |
+| PATCH | `/{module_id}` | 🔒 Super Admin | Actualizar módulo |
+| DELETE | `/{module_id}` | 🔒 Super Admin | Eliminar módulo |
+| POST | `/{module_id}/elements` | 🔒 Super Admin | Agregar seña a un módulo |
+| PATCH | `/elements/{element_id}` | 🔒 Super Admin | Actualizar seña |
+| DELETE | `/elements/{element_id}` | 🔒 Super Admin | Eliminar seña |
+
+> Un módulo aparece como **bloqueado** (`is_locked: true`) si no está publicado, no tiene elementos, o alguno de sus elementos no tiene capturas de entrenamiento.
+
+### Progreso — `/api/v1/progress`
+
+| Método | Ruta | Acceso | Descripción |
+|---|---|---|---|
+| GET | `/stats` | 🔒 Usuario | Dashboard stats: XP, racha, precisión global, módulos completados |
+| GET | `/ranking` | 🔒 Usuario | Top N usuarios por XP |
+| GET | `/history` | 🔒 Usuario | Historial de sesiones de práctica |
+| POST | `/session` | 🔒 Usuario | Guardar resultado de una sesión de práctica |
+| GET | `/module/{module_id}` | 🔒 Usuario | Progreso detallado en un módulo específico |
+
+### Reconocimiento — `/api/v1/recognition`
+
+| Método | Ruta | Acceso | Descripción |
+|---|---|---|---|
+| POST | `/predict` | 🔒 Usuario | Recibe 21 landmarks y devuelve la seña predicha con porcentaje de confianza |
+
+### Usuarios — `/api/v1/users`
+
+| Método | Ruta | Acceso | Descripción |
+|---|---|---|---|
+| GET | `/` | 🔒 Admin | Listar todos los usuarios |
+| GET | `/{user_id}` | 🔒 Admin | Obtener usuario específico |
+| POST | `/` | 🔒 Admin | Crear usuario manualmente |
+| PATCH | `/{user_id}` | 🔒 Admin | Editar rol, estado, permisos |
+| DELETE | `/{user_id}` | 🔒 Admin | Eliminar usuario |
+| PATCH | `/me/update` | 🔒 Usuario | Actualizar propio perfil |
+
+### Admin Tools — `/api/v1/admin`
+
+| Método | Ruta | Acceso | Descripción |
+|---|---|---|---|
+| GET | `/analytics/general-stats` | 🔒 Admin | Totales del sistema: usuarios, capturas, módulos |
+| GET | `/analytics/data-distribution` | 🔒 Admin | Capturas por seña |
+| GET | `/analytics/module-distribution` | 🔒 Admin | Capturas por módulo |
+| GET | `/analytics/weekly-progress` | 🔒 Admin | Sesiones de práctica de los últimos 7 días |
+| GET | `/analytics/top-students` | 🔒 Admin | Top 5 estudiantes por XP |
+| GET | `/analytics/user-stats/{user_id}` | 🔒 Admin | Estadísticas detalladas de un usuario |
+| POST | `/captures` | 🔒 Usuario | Guardar una captura de landmarks individual |
+| POST | `/captures/batch` | 🔒 Usuario | Guardar múltiples capturas en una petición |
+| DELETE | `/captures/reset/{element_id}` | 🔒 Admin | Borrar dataset de una seña para reentrenar |
+| GET | `/database/stats` | 🔒 Admin | Estado y tamaño de las tablas de la DB |
+| POST | `/database/backup` | 🔒 Admin | Crear copia de seguridad de la DB |
+| GET | `/database/backups` | 🔒 Admin | Listar backups disponibles |
+| GET | `/database/download/{filename}` | 🔒 Admin | Descargar un backup |
+
+### Settings — `/api/v1/settings`
+
+| Método | Ruta | Acceso | Descripción |
+|---|---|---|---|
+| GET | `/` | 🔒 Admin | Ver configuración del sistema |
+| PUT | `/` | 🔒 Admin | Actualizar configuración (mantenimiento, registro, nombre) |
+| GET | `/public` | Público | Config pública: modo mantenimiento, nombre del sitio |
 
 ---
-*(Fin del documento técnico extendido para cumplimiento de 500+ líneas)*
-*(Nota: Este documento ha sido diseñado para ser la referencia técnica absoluta del equipo de desarrollo)*
+
+## 🗄️ Base de datos y modelos
+
+### Motor de bases de datos
+
+- **Desarrollo:** SQLite (archivo `app.db`). No requiere instalación adicional. Perfecto para hacer pruebas locales.
+- **Producción:** PostgreSQL en Supabase. Solo cambia el `DATABASE_URL` en el `.env`.
+
+El cambio entre un motor y otro es completamente transparente gracias a SQLAlchemy ORM.
+
+### Modelos principales
+
+#### `User`
+```
+id, full_name, email, hashed_password, role (user/admin/super_admin),
+permissions (JSON), avatar_initials, xp, dni, phone, position,
+status (active/inactive/banned), is_2fa_enabled, current_streak,
+longest_streak, global_progress, global_precision, last_active_at,
+recovery_code, recovery_code_expires, created_at
+```
+
+#### `Module` + `Element`
+```
+Module: id, slug, title, description, icon_name, difficulty,
+        order_index, duration, tags, is_active, is_published
+Element: id, module_id (FK), name, description, image_url, is_command
+```
+Un módulo tiene muchos elementos. Cada elemento es una seña (ej: letra "A", palabra "Hola").
+
+#### `HandCapture`
+```
+id, element_id (FK), user_id (FK), landmarks (JSON — lista de 21 {x,y,z}),
+image_url (opcional), created_at
+```
+Almacena los datos de entrenamiento capturados por los admins.
+
+#### `PracticeSession`
+```
+id, user_id (FK), module_id (FK), score, accuracy,
+duration_seconds, details (JSON), created_at
+```
+Registra cada vez que un usuario termina una sesión de práctica.
+
+#### `UserModuleProgress`
+```
+id, user_id (FK), module_id (FK), progress (%), precision (%),
+last_practiced_at
+```
+Tabla de persistencia del progreso por módulo.
+
+### Migraciones con Alembic
+
+```bash
+# Ver estado de las migraciones
+alembic current
+
+# Crear una nueva migración (después de cambiar un modelo)
+alembic revision --autogenerate -m "descripcion del cambio"
+
+# Aplicar migraciones pendientes
+alembic upgrade head
+
+# Revertir la última migración
+alembic downgrade -1
+```
 
 ---
-### Detalles del Sistema de Notificaciones
-El sistema de notificaciones en el backend no solo guarda mensajes; implementa una lógica de "prioridad" donde las alertas de seguridad (como un cambio de contraseña) se envían con un flag de inmediatez, mientras que las notificaciones de nuevos logros esperan a que el usuario refresque su sesión para optimizar las transiciones visuales.
 
-### Arquitectura de los Servicios de Gamificación
-Cada vez que un usuario completa una lección, el servicio de XP realiza una transacción atómica. Esto significa que o se guardan todos los cambios (XP, nivel, racha, rastro de auditoría) o ninguno. Esto previene la "fragmentación del progreso" donde un usuario podría subir de nivel pero no ganar sus puntos.
+## 🤖 Sistema de reconocimiento de gestos
 
-### Protocolo de Comunicación CORS
-El backend está configurado con una política de CORS dinámica que permite solo orígenes autorizados definidos en el `.env`. Esto previene ataques de Cross-Site Scripting y asegura que solo nuestro frontend oficial pueda interactuar con el Bunker de Datos.
+### Flujo completo
+
+```
+Frontend (cámara)
+    ↓ 21 landmarks {x, y, z}
+POST /api/v1/recognition/predict
+    ↓
+GestureClassifier.predict()
+    ↓ Procesador normaliza los puntos
+KNN / SVM (scikit-learn)
+    ↓ Compara con capturas guardadas en DB
+Respuesta: { prediction, confidence, is_valid, top_3 }
+    ↓
+Frontend muestra resultado al usuario
+```
+
+### `processor.py` — Normalización de landmarks
+
+Antes de predecir, los 21 puntos se normalizan para que el modelo sea invariante a la posición y tamaño de la mano en la pantalla. Se resta la posición de la muñeca (punto 0) y se escala según la distancia máxima entre puntos.
+
+### `classifier.py` — Predicción
+
+El `GestureClassifier`:
+1. Carga el modelo entrenado (si existe).
+2. Puede filtrar por `module_slug` para comparar solo contra las señas del módulo activo.
+3. Si se especifica `expected_label`, verifica si la predicción coincide con la seña esperada (modo práctica de módulo).
+4. Devuelve la seña predicha, el porcentaje de confianza y el top 3 de candidatos.
+
+Si no hay datos de entrenamiento suficientes, devuelve `is_valid: false` con un mensaje explicativo.
 
 ---
 
-*Desarrollado con estándares de excelencia por el equipo de Advanced Agentic Coding.*
+## 🔐 Autenticación y seguridad
+
+### Flujo de JWT
+
+1. El usuario hace login → el backend verifica password con bcrypt.
+2. Se genera un JWT firmado con `SECRET_KEY` y con expiración configurable (`ACCESS_TOKEN_EXPIRE_MINUTES`).
+3. El cliente guarda el token y lo envía en el header de cada petición: `Authorization: Bearer <token>`.
+4. `deps.get_current_user()` decodifica el token, extrae el `sub` (user ID) y consulta el usuario en DB.
+
+### Guards de rol en `deps.py`
+
+```python
+get_current_user()              # Requiere token válido, usuario activo
+get_current_active_admin()      # Requiere rol: admin, super_admin
+get_current_active_superuser()  # Requiere rol: super_admin
+```
+
+### Google OAuth
+
+El endpoint `POST /auth/google` recibe el token de Google (ID Token o Access Token):
+1. Primero intenta verificar como **ID Token** usando `google.oauth2.id_token.verify_oauth2_token()`.
+2. Si falla (por ejemplo si el frontend envía un Access Token), usa como **fallback** la API de Google `userinfo` con el token como Bearer.
+3. Con el email obtenido, busca el usuario en la DB o lo crea si es nuevo.
+4. Devuelve el JWT propio de la app.
+
+### Recuperación de contraseña
+
+1. El usuario solicita un código → se genera un código aleatorio de 8 dígitos.
+2. Se guarda en `User.recovery_code` con expiración de 30 minutos.
+3. Se envía al email del usuario vía SMTP.
+4. El usuario verifica el código y puede resetear su contraseña.
+
+---
+
+## 💾 Gestión de datos y backups
+
+### Backups automáticos
+
+El endpoint `POST /api/v1/admin/database/backup` copia el archivo `app.db` a la carpeta `backups/` con timestamp. Ideal para SQLite en desarrollo.
+
+Para PostgreSQL en producción, este endpoint no aplica directamente. Se recomienda usar las herramientas de backup de Supabase o pg_dump en un cronjob.
+
+### Archivos estáticos
+
+La carpeta `uploads/` está montada como ruta estática en FastAPI. Las imágenes subidas para módulos o elementos se sirven directamente desde `http://tu-backend.com/uploads/nombre-del-archivo`.
+
+```python
+app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
+```
+
+---
+
+## 🚀 Deploy en Render
+
+### Pasos
+
+1. Crea un nuevo **Web Service** en [render.com](https://render.com).
+2. Conecta tu repositorio de GitHub.
+3. Configura el servicio:
+   - **Root Directory:** `backend`
+   - **Build Command:** `pip install -r requirements.txt`
+   - **Start Command:** `gunicorn app.main:app -w 4 -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:$PORT`
+4. Agrega las variables de entorno en el panel de Render (las mismas del `.env`, pero con los valores de producción).
+5. Asegúrate de que `DATABASE_URL` apunte a tu base de datos de producción (Supabase).
+
+### CORS en producción
+
+En `app/main.py`, agrega el dominio de tu frontend de Vercel a la lista `origins`:
+
+```python
+origins = [
+    "https://tu-app.vercel.app",
+    "http://localhost:5173",  # mantener para desarrollo
+]
+```
+
+### Variable `PORT` en Render
+
+Render inyecta automáticamente la variable de entorno `PORT`. El comando con Gunicorn ya la usa con `--bind 0.0.0.0:$PORT`.
+
+---
+
+## 🐛 Problemas conocidos y soluciones
+
+### `AttributeError: module 'app.schemas' has no attribute 'Token'`
+Ocurre cuando los archivos `__init__.py` de `schemas/` o `models/` no exportan todas las clases. Verifica que `backend/app/schemas/__init__.py` tenga un `from .token import Token, TokenPayload` y similares para todos los módulos.
+
+### `ImportError: cannot import name 'X' from 'app.models.Y'`
+El nombre exportado no existe en el archivo fuente. Revisa el archivo de modelos/schemas correspondiente y ajusta las importaciones en el `__init__.py`.
+
+### El servidor se reinicia en bucle sin levantar
+Uvicorn detecta cambios en los `__init__.py` y recarga, pero si hay un error de importación, el proceso hijo crashea y el reloader lo vuelve a intentar. El output del error aparece en el terminal. Léelo con atención: siempre indica el archivo y línea exacta del problema.
+
+### Error de conexión a la base de datos en producción
+Verifica que la variable `DATABASE_URL` en Render sea correcta y que la IP del servidor de Render esté en la lista de IPs permitidas en Supabase (o que hayas habilitado acceso desde cualquier IP en el proyecto de Supabase).
+
+### Los emails de recuperación no llegan
+- Verifica que `SMTP_USER` y `SMTP_PASSWORD` sean correctos.
+- Asegúrate de usar un **App Password** de Gmail, no tu contraseña normal.
+- Revisa que la verificación en 2 pasos esté activada en la cuenta de Gmail.
+- Revisa la carpeta de spam del destinatario.
+
+### El clasificador devuelve `is_valid: false` siempre
+Significa que no hay suficientes capturas de entrenamiento en la base de datos, o el modelo no se ha reconstruido con los nuevos datos. Agrega más capturas desde el panel de admin → Captura de datos.
+
+---
+
+## 🤝 Contribuir
+
+1. **Fork** el repositorio.
+2. Crea una rama:
+   ```bash
+   git checkout -b feature/nombre-del-cambio
+   ```
+3. Haz tus cambios. Si modificas modelos, crea una migración:
+   ```bash
+   alembic revision --autogenerate -m "descripcion"
+   alembic upgrade head
+   ```
+4. Verifica que el servidor inicie sin errores:
+   ```bash
+   uvicorn app.main:app --reload --port 8000
+   ```
+5. Commit y Pull Request:
+   ```bash
+   git commit -m "feat: descripción clara del cambio"
+   ```
+
+### Convención de commits
+
+| Prefijo | Uso |
+|---|---|
+| `feat:` | Nueva funcionalidad o endpoint |
+| `fix:` | Corrección de bug |
+| `refactor:` | Mejora de código sin cambiar funcionalidad |
+| `db:` | Cambios en modelos o migraciones |
+| `docs:` | Cambios en documentación |
+| `security:` | Cambios que afectan autenticación o permisos |
+
+---
+
+## 📄 Licencia
+
+MIT — libre de usar, modificar y distribuir con atribución.

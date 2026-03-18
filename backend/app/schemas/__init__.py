@@ -1,12 +1,19 @@
-from .token import Token, TokenPayload
 from .user import (
-    User, UserCreate, UserUpdate, UserChangePassword,
-    PasswordRecoveryRequest, PasswordRecoveryVerify, PasswordResetWithCode, GoogleLogin
+    User, UserCreate, UserUpdate, UserBase, 
+    UserChangePassword, PasswordRecoveryRequest, PasswordRecoveryVerify, 
+    PasswordResetWithCode, GoogleLogin
 )
-from .content import Module, ModuleCreate, ModuleUpdate, ModuleSimple, Element, ElementCreate, ElementBase, ElementUpdate
-from .recognition import PredictionRequest, PredictionResponse
+from .token import Token, TokenPayload
+from .content import (
+    ElementBase, Element, ElementCreate, ElementUpdate, 
+    ModuleBase, Module, ModuleCreate, ModuleUpdate, ModuleSimple
+)
+from .progress import (
+    UserProgress, UserProgressCreate, 
+    PracticeSession, PracticeSessionCreate, 
+    UserRanking, DashboardStats
+)
+from .notification import Notification, NotificationCreate, NotificationUpdate
 from .settings import SystemSetting, SystemSettingUpdate
-from .dataset import HandCapture, HandCaptureCreate
-from . import notification
-
-
+from .recognition import Landmark, PredictionRequest, PredictionResponse
+from .dataset import HandCaptureBase, HandCaptureCreate, HandCapture
