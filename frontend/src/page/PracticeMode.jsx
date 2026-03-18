@@ -25,6 +25,7 @@ const PracticeMode = () => {
     const [lastSessionResult, setLastSessionResult] = useState(null);
     const [stats, setStats] = useState({ accurate: 0, total: 0 });
     const [controlElements, setControlElements] = useState([]);
+    const isModelReadyRef = useRef(false);
     const isTriggerHandClosedRef = useRef(false);
     const lastCaptureTimeRef = useRef(0);
     const startTimeRef = useRef(Date.now());
@@ -33,6 +34,8 @@ const PracticeMode = () => {
     const canvasRef = useRef(null);
     const handsRef = useRef(null);
     const cameraRef = useRef(null);
+    const resultsRef = useRef(null); // Para almacenar resultados sin disparar renders
+    const requestRef = useRef(); // Para el loop de animación
 
     // Ayudante: ¿Está la mano cerrada?
     const isHandClosed = (landmarks) => {
@@ -62,19 +65,73 @@ const PracticeMode = () => {
         });
 
         handsRef.current.setOptions({
-            maxNumHands: 2, // Soporte para dos manos
+            maxNumHands: 2,
             modelComplexity: 0,
-            minDetectionConfidence: 0.6,
-            minTrackingConfidence: 0.6
+            minDetectionConfidence: 0.5, // Más rápido al detectar inicialmente
+            minTrackingConfidence: 0.5   // Más persistente en el seguimiento
         });
 
+        // Evitar el error "Module.arguments" de MediaPipe v0.4
+        // No llamamos a .initialize() manualmente, dejamos que ocurra al primer .send()
+        // pero damos un pequeño margen de 1.5s para que el WASM cargue en background
+        setTimeout(() => {
+            isModelReadyRef.current = true;
+        }, 1500);
+
         handsRef.current.onResults(onResults);
+
+        // Iniciar el loop de dibujo optimizado
+        const animate = () => {
+            drawUI();
+            requestRef.current = requestAnimationFrame(animate);
+        };
+        requestRef.current = requestAnimationFrame(animate);
 
         return () => {
             if (cameraRef.current) cameraRef.current.stop();
             if (handsRef.current) handsRef.current.close();
+            if (requestRef.current) cancelAnimationFrame(requestRef.current);
         };
     }, []);
+
+    // FUNCIÓN DE DIBUJO DE ALTO RENDIMIENTO (Sin lag)
+    const drawUI = () => {
+        if (!canvasRef.current || !resultsRef.current) return;
+        const canvasCtx = canvasRef.current.getContext('2d');
+        const results = resultsRef.current;
+        const { width, height } = canvasRef.current;
+
+        canvasCtx.save();
+        canvasCtx.clearRect(0, 0, width, height);
+
+        if (results.multiHandLandmarks) {
+            for (const landmarks of results.multiHandLandmarks) {
+                // Dibujar conexiones (Líneas base) - OPTIMIZADO: Single Path
+                canvasCtx.strokeStyle = '#00f0ff';
+                canvasCtx.lineWidth = 3;
+                canvasCtx.lineCap = 'round';
+                canvasCtx.lineJoin = 'round';
+
+                canvasCtx.beginPath();
+                for (const [start, end] of HAND_CONNECTIONS) {
+                    const p1 = landmarks[start];
+                    const p2 = landmarks[end];
+                    canvasCtx.moveTo(p1.x * width, p1.y * height);
+                    canvasCtx.lineTo(p2.x * width, p2.y * height);
+                }
+                canvasCtx.stroke();
+
+                // Dibujar puntos (Nodos)
+                canvasCtx.fillStyle = '#ffffff';
+                for (const point of landmarks) {
+                    canvasCtx.beginPath();
+                    canvasCtx.arc(point.x * width, point.y * height, 3, 0, 2 * Math.PI);
+                    canvasCtx.fill();
+                }
+            }
+        }
+        canvasCtx.restore();
+    };
 
     // Fetch Control Elements (ESPACIO, BORRAR, etc)
     useEffect(() => {
@@ -93,41 +150,9 @@ const PracticeMode = () => {
         fetchControls();
     }, []);
 
-    const onResults = async (results) => {
-        if (!canvasRef.current || !videoRef.current || !canvasRef.current.width) return;
-
-        const canvasCtx = canvasRef.current.getContext('2d');
-        canvasCtx.save();
-        canvasCtx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
-
-        // OPTIMIZACIÓN DE DIBUJO: Función reutilizable
-        const drawHand = (lm) => {
-            canvasCtx.shadowColor = '#00d2ff';
-            canvasCtx.shadowBlur = 15;
-            canvasCtx.strokeStyle = '#00f0ff';
-            canvasCtx.lineWidth = 4;
-            canvasCtx.lineCap = 'round';
-            canvasCtx.lineJoin = 'round';
-
-            canvasCtx.beginPath();
-            for (const [start, end] of HAND_CONNECTIONS) {
-                const p1 = lm[start];
-                const p2 = lm[end];
-                canvasCtx.moveTo(p1.x * canvasRef.current.width, p1.y * canvasRef.current.height);
-                canvasCtx.lineTo(p2.x * canvasRef.current.width, p2.y * canvasRef.current.height);
-            }
-            canvasCtx.stroke();
-
-            canvasCtx.shadowColor = '#ffffff';
-            canvasCtx.shadowBlur = 5;
-            canvasCtx.fillStyle = '#ffffff';
-
-            for (const point of lm) {
-                canvasCtx.beginPath();
-                canvasCtx.arc(point.x * canvasRef.current.width, point.y * canvasRef.current.height, 4, 0, 2 * Math.PI);
-                canvasCtx.fill();
-            }
-        };
+    const onResults = (results) => {
+        // Actualizar referencia de resultados para el loop de animación
+        resultsRef.current = results;
 
         if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
             let foundSigner = null;
@@ -137,7 +162,6 @@ const PracticeMode = () => {
                 const handedness = results.multiHandedness[index];
                 if (handedness.label === 'Right') foundSigner = landmarks;
                 else foundTrigger = landmarks;
-                drawHand(landmarks);
             });
 
             if (foundTrigger) {
@@ -181,7 +205,6 @@ const PracticeMode = () => {
             setPrediction({ name: 'Esperando...', confidence: 0 });
             setTopPredictions([]);
         }
-        canvasCtx.restore();
     };
 
     const toggleCamera = async () => {
@@ -195,10 +218,16 @@ const PracticeMode = () => {
                 if (!cameraRef.current && videoRef.current) {
                     cameraRef.current = new MPCamera(videoRef.current, {
                         onFrame: async () => {
-                            await handsRef.current.send({ image: videoRef.current });
+                            if (isModelReadyRef.current && handsRef.current && videoRef.current && videoRef.current.readyState === 4) {
+                                try {
+                                    await handsRef.current.send({ image: videoRef.current });
+                                } catch (e) {
+                                    if (!e.message?.includes('width')) console.error("MediaPipe Error:", e);
+                                }
+                            }
                         },
-                        width: 640,
-                        height: 480
+                        width: 480, // Resolución reducida para velocidad extrema
+                        height: 360
                     });
                 }
                 await cameraRef.current.start();
@@ -276,9 +305,9 @@ const PracticeMode = () => {
     };
 
     return (
-        <div className="min-h-screen bg-slate-950 text-white font-sans selection:bg-blue-500/30">
+        <div className="min-h-screen bg-[#05070a] text-white font-sans selection:bg-blue-500/30">
             {/* Header / Nav */}
-            <div className="border-b border-white/5 bg-slate-900/50 backdrop-blur-md sticky top-0 z-50">
+            <div className="border-b border-white/5 bg-[#0a0c10]/50 backdrop-blur-md sticky top-0 z-50">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-4">
                     <button onClick={() => navigate('/dashboard')} className="flex items-center gap-2 text-white/60 hover:text-white transition-all group min-w-0">
                         <ArrowLeft size={20} className="group-hover:-translate-x-1 transition-transform shrink-0" />
@@ -305,7 +334,7 @@ const PracticeMode = () => {
                         <canvas ref={canvasRef} className="absolute inset-0 w-full h-full object-cover mirror z-10" width="640" height="480" />
 
                         {!isCameraActive && (
-                            <div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-900/80 backdrop-blur-sm z-10">
+                            <div className="absolute inset-0 flex flex-col items-center justify-center bg-[#05070a]/80 backdrop-blur-sm z-10">
                                 <div className="w-20 h-20 bg-white/5 rounded-full flex items-center justify-center mb-4 border border-white/10">
                                     <CameraOff size={40} className="text-white/20" />
                                 </div>
@@ -442,7 +471,7 @@ const PracticeMode = () => {
                     </div>
 
                     {/* Teclas Especiales Dinámicas */}
-                    <div className="bg-slate-900/40 border border-white/5 rounded-3xl p-6 relative overflow-hidden group">
+                    <div className="bg-[#0a0c10]/40 border border-white/5 rounded-3xl p-6 relative overflow-hidden group">
                         <div className="flex items-center gap-3 mb-6 relative z-10">
                             <div className="p-2 bg-blue-500/20 rounded-lg">
                                 <Zap size={20} className="text-blue-400" />
@@ -507,8 +536,8 @@ const PracticeMode = () => {
             {/* Modal de Finalización */}
             {showCompletionModal && (
                 <div className="fixed inset-0 z-[100] flex items-center justify-center p-6">
-                    <div className="absolute inset-0 bg-slate-950/80 backdrop-blur-xl animate-in fade-in duration-300" />
-                    <div className="relative w-full max-w-lg bg-slate-900 border border-white/10 rounded-[3rem] shadow-2xl p-8 text-center animate-in zoom-in-95 duration-300">
+                    <div className="absolute inset-0 bg-[#05070a]/80 backdrop-blur-xl animate-in fade-in duration-300" />
+                    <div className="relative w-full max-w-lg bg-[#0a0c10] border border-white/10 rounded-[3rem] shadow-2xl p-8 text-center animate-in zoom-in-95 duration-300">
                         <div className="w-20 h-20 bg-green-500/20 rounded-3xl flex items-center justify-center text-green-500 mx-auto mb-6 shadow-lg shadow-green-500/10">
                             <ShieldCheck size={40} />
                         </div>

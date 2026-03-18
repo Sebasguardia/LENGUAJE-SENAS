@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { getGlobalRank } from '../data/achievements';
 import { authService } from '../api/authService';
+import { authStorage } from '../utils/authStorage';
 import { achievementService } from '../api/achievementService';
 import { progressService } from '../api/progressService';
 import { moduleService } from '../api/moduleService';
@@ -17,12 +18,11 @@ const UserProfile = () => {
     const [isEditing, setIsEditing] = useState(false);
     // --- Estado Inteligente (Carga desde Cache) ---
     const [userData, setUserData] = useState(() => {
-        const stored = localStorage.getItem('userData');
-        return stored ? JSON.parse(stored) : {};
+        return authStorage.getUser() || {};
     });
 
     // Solo mostramos loader si NO hay nada en cache
-    const [isLoading, setIsLoading] = useState(!localStorage.getItem('userData'));
+    const [isLoading, setIsLoading] = useState(!authStorage.getUser());
 
     const [userStats, setUserStats] = useState(null);
     const [categories, setCategories] = useState([]);
@@ -140,7 +140,7 @@ const UserProfile = () => {
     };
 
     if (isLoading) return (
-        <div className="min-h-screen bg-[#03070d] flex items-center justify-center">
+        <div className="min-h-screen bg-[#05070a] flex items-center justify-center">
             <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
         </div>
     );
@@ -163,7 +163,7 @@ const UserProfile = () => {
     };
 
     return (
-        <div className="min-h-screen bg-[#03070d] text-white selection:bg-blue-500/30 overflow-x-hidden">
+        <div className="min-h-screen bg-[#05070a] text-white selection:bg-blue-500/30 overflow-x-hidden">
             {/* Background Ambient Effects */}
             <div className="fixed inset-0 z-0 pointer-events-none">
                 <div className="absolute top-[-20%] left-[-10%] w-[800px] h-[800px] bg-blue-600/10 rounded-full blur-[120px] animate-pulse"></div>
@@ -193,17 +193,17 @@ const UserProfile = () => {
                 </div>
 
                 {/* 2. SYMMETRICAL HERO SECTION */}
-                <section className="relative rounded-[3.5rem] bg-gradient-to-br from-slate-900/80 to-slate-950/90 backdrop-blur-3xl border border-white/5 p-12 lg:p-16 overflow-hidden shadow-2xl">
+                <section className="relative rounded-[3.5rem] bg-[#0a0c10]/80 backdrop-blur-3xl border border-white/5 p-12 lg:p-16 overflow-hidden shadow-[0_40px_80px_rgba(0,0,0,0.5)] cursor-default transition-all duration-500 hover:border-blue-500/20">
                     <div className="flex flex-col lg:flex-row items-center justify-between gap-12 relative z-10">
 
                         {/* LEFT: Avatar Wrapper */}
                         <div className="flex flex-col items-center gap-4">
                             <div className="relative group">
                                 <div className="absolute inset-x-0 inset-y-0 rounded-full blur-3xl opacity-20" style={{ backgroundColor: globalRank.color }}></div>
-                                <div className="w-40 h-40 lg:w-48 lg:h-48 rounded-full bg-slate-950 border-[10px] border-slate-900 flex items-center justify-center relative z-10 shadow-2xl overflow-hidden">
+                                <div className="w-40 h-40 lg:w-48 lg:h-48 rounded-full bg-[#05070a] border-[10px] border-[#0a0c10] flex items-center justify-center relative z-10 shadow-2xl overflow-hidden group-hover:scale-105 transition-transform duration-500">
                                     <span className="text-6xl lg:text-7xl font-black text-white drop-shadow-xl">{userAvatar}</span>
                                 </div>
-                                <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 px-5 py-1.5 rounded-full bg-white text-slate-950 font-black text-[9px] uppercase tracking-[0.3em] shadow-xl z-20 border-2 border-slate-900 leading-none">
+                                <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 px-5 py-1.5 rounded-full bg-white text-[#05070a] font-black text-[9px] uppercase tracking-[0.3em] shadow-[0_10px_20px_rgba(0,0,0,0.5)] z-20 border-2 border-[#0a0c10] leading-none">
                                     NIVEL {userStats?.level || 1}
                                 </div>
                             </div>
@@ -258,7 +258,7 @@ const UserProfile = () => {
 
                     {/* LEFT AREA: Salón de la Fama */}
                     <div className="lg:col-span-8">
-                        <section className="h-full bg-slate-900/40 backdrop-blur-3xl border border-white/5 rounded-[3.5rem] p-12 lg:p-14 relative overflow-hidden shadow-xl">
+                        <section className="h-full bg-[#0a0c10]/60 backdrop-blur-3xl border border-white/5 rounded-[3.5rem] p-12 lg:p-14 relative overflow-hidden shadow-[0_20px_40px_rgba(0,0,0,0.4)] transition-all hover:border-white/10">
                             {/* Large Background Trophy (as in screenshot) */}
                             <div className="absolute inset-0 flex items-center justify-center opacity-[0.02] pointer-events-none scale-150">
                                 <Trophy size={500} strokeWidth={1} />
@@ -312,7 +312,7 @@ const UserProfile = () => {
                                 { icon: Clock, val: userStats?.total_time || '0m', label: 'Tiempo', color: 'text-purple-400' },
                                 { icon: Target, val: `${userStats?.avg_accuracy || 0}%`, label: 'Puntería', color: 'text-blue-400' },
                             ].map((s, i) => (
-                                <div key={i} className="bg-slate-900/40 backdrop-blur-3xl border border-white/5 rounded-[2rem] p-8 flex flex-col items-center text-center group hover:bg-slate-900/60 transition-all shadow-lg">
+                                <div key={i} className="bg-[#0a0c10]/60 backdrop-blur-3xl border border-white/5 rounded-[2.5rem] p-8 flex flex-col items-center text-center group hover:bg-[#0a0c10]/90 transition-all shadow-[0_20px_40px_rgba(0,0,0,0.4)] hover:border-white/10">
                                     <div className={`${s.color} mb-6 group-hover:scale-110 transition-transform`}><s.icon size={28} /></div>
                                     <p className="text-3xl font-black text-white leading-none mb-1">{s.val}</p>
                                     <p className="text-[9px] font-black text-white/20 uppercase tracking-widest">{s.label}</p>
@@ -321,8 +321,8 @@ const UserProfile = () => {
                         </div>
 
                         {/* Expediente Section - FULL DATA */}
-                        <section className="bg-slate-900/40 backdrop-blur-3xl border border-white/5 rounded-[2.5rem] p-10 space-y-8 group shadow-xl relative overflow-hidden">
-                            <div className="absolute top-0 right-0 p-8 opacity-[0.03] pointer-events-none"><Shield size={120} /></div>
+                        <section className="bg-[#0a0c10]/60 backdrop-blur-3xl border border-white/5 rounded-[3.5rem] p-10 space-y-8 group shadow-[0_20px_40px_rgba(0,0,0,0.4)] hover:border-white/10 transition-all relative overflow-hidden">
+                            <div className="absolute top-0 right-0 p-8 opacity-[0.03] pointer-events-none transition-transform group-hover:scale-110 duration-700"><Shield size={120} /></div>
 
                             <div className="flex items-center gap-4 relative z-10">
                                 <div className="p-2.5 bg-blue-500/10 text-blue-400 rounded-xl border border-blue-400/20"><Shield size={20} /></div>
@@ -367,8 +367,9 @@ const UserProfile = () => {
 
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
                     <div className="lg:col-span-12">
-                        <section className="bg-slate-900/40 backdrop-blur-3xl border border-white/5 rounded-[3.5rem] p-12 overflow-hidden shadow-xl">
-                            <div className="flex items-center justify-between mb-10">
+                        <section className="bg-[#0a0c10]/60 backdrop-blur-3xl border border-white/5 hover:border-white/10 transition-all rounded-[3.5rem] p-12 overflow-hidden shadow-[0_20px_40px_rgba(0,0,0,0.4)] relative group">
+                            <div className="absolute inset-0 bg-blue-600/5 opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none" />
+                            <div className="flex items-center justify-between mb-10 relative z-10">
                                 <div className="flex items-center gap-5">
                                     <div className="w-14 h-14 bg-blue-500/10 rounded-2xl flex items-center justify-center text-blue-400 border border-blue-500/10 shadow-lg shadow-blue-500/5">
                                         <History size={28} />
@@ -444,10 +445,9 @@ const UserProfile = () => {
                 </div>
             </div>
 
-            {/* EDIT PROFILE MODAL */}
             {isEditing && (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-slate-950/80 backdrop-blur-xl transition-all animate-in fade-in duration-300">
-                    <div className="relative w-full max-w-2xl bg-slate-900 border border-white/10 rounded-[3.5rem] p-12 lg:p-16 shadow-[0_0_100px_rgba(30,58,138,0.3)] overflow-hidden">
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-[#05070a]/80 backdrop-blur-xl transition-all animate-in fade-in duration-300">
+                    <div className="relative w-full max-w-2xl bg-[#0a0c10] border border-white/10 rounded-[3.5rem] p-12 lg:p-16 shadow-[0_0_100px_rgba(30,58,138,0.3)] overflow-hidden">
                         {/* Background Ambiance */}
                         <div className="absolute top-0 right-0 w-64 h-64 bg-blue-600/10 rounded-full blur-[100px] -mr-32 -mt-32"></div>
                         <div className="absolute bottom-0 left-0 w-64 h-64 bg-purple-600/10 rounded-full blur-[100px] -ml-32 -mb-32"></div>
@@ -484,7 +484,7 @@ const UserProfile = () => {
                                                         name={input.name}
                                                         value={formData[input.name]}
                                                         onChange={handleChange}
-                                                        className="w-full bg-slate-950/50 border border-white/10 group-hover:border-white/20 focus:border-blue-600 rounded-2xl px-5 py-4 text-xs font-bold text-white focus:outline-none transition-all"
+                                                        className="w-full bg-[#05070a]/50 border border-white/10 group-hover:border-white/20 focus:border-blue-600 rounded-2xl px-5 py-4 text-xs font-bold text-white focus:outline-none transition-all"
                                                     />
                                                     <input.icon size={14} className="absolute right-5 top-1/2 -translate-y-1/2 text-white/10 group-hover:text-white/20 transition-colors" />
                                                 </div>
@@ -511,7 +511,7 @@ const UserProfile = () => {
                                                         value={formData[input.name] || ''}
                                                         onChange={handleChange}
                                                         placeholder="••••••••"
-                                                        className="w-full bg-slate-950/50 border border-white/10 group-hover:border-white/20 focus:border-purple-600 rounded-2xl px-5 py-4 text-xs font-bold text-white placeholder:text-white/10 focus:outline-none transition-all"
+                                                        className="w-full bg-[#05070a]/50 border border-white/10 group-hover:border-white/20 focus:border-purple-600 rounded-2xl px-5 py-4 text-xs font-bold text-white placeholder:text-white/10 focus:outline-none transition-all"
                                                     />
                                                     <input.icon size={14} className="absolute right-5 top-1/2 -translate-y-1/2 text-white/10 group-hover:text-white/20 transition-colors" />
                                                 </div>

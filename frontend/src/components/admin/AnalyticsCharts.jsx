@@ -77,7 +77,7 @@ const AnalyticsCharts = () => {
     return (
       <div className="flex flex-col items-center justify-center min-h-[400px] animate-pulse">
         <Loader2 size={40} className="text-blue-500 animate-spin mb-4" />
-        <p className="text-white/40 font-medium">Cargando auditoría de datos...</p>
+        <p className="dark:text-white/40 text-slate-500 font-medium">Cargando auditoría de datos...</p>
       </div>
     );
   }
@@ -86,25 +86,27 @@ const AnalyticsCharts = () => {
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
 
       {/* Header de Analíticas */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 bg-slate-900/40 backdrop-blur-xl border border-white/10 p-8 rounded-[2.5rem]">
-        <div className="flex items-center gap-4">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 dark:bg-white/[0.02] bg-white backdrop-blur-3xl border dark:border-white/5 border-slate-200 p-8 rounded-[2.5rem] shadow-2xl relative overflow-hidden">
+        {/* Ambient glow */}
+        <div className="absolute -top-32 -right-32 w-64 h-64 bg-blue-500/10 blur-[60px] rounded-full pointer-events-none" />
+        <div className="flex items-center gap-4 relative z-10">
           <div className="p-4 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl shadow-lg shadow-blue-500/20">
             <BarChart3 className="text-white" size={32} />
           </div>
           <div>
-            <h2 className="text-2xl font-bold text-white">Auditoría de Datos</h2>
-            <p className="text-white/40 text-sm">Análisis granular del dataset de entrenamiento</p>
+            <h2 className="text-2xl font-black dark:text-white text-slate-900 tracking-tight uppercase">Auditoría de Datos</h2>
+            <p className="dark:text-white/40 text-slate-500 text-sm font-bold uppercase tracking-widest mt-1">Análisis granular del dataset de entrenamiento</p>
           </div>
         </div>
-        <div className="flex gap-4">
+        <div className="flex gap-4 relative z-10">
           <div className="text-right">
-            <div className="text-[10px] text-white/30 uppercase font-black tracking-[0.2em] mb-1">Muestras Totales</div>
-            <div className="text-3xl font-black text-white">{getTotalSamples()}</div>
+            <div className="text-[10px] dark:text-white/30 text-slate-400 uppercase font-black tracking-[0.2em] mb-1">Muestras Totales</div>
+            <div className="text-3xl font-black dark:text-white text-slate-900">{getTotalSamples()}</div>
           </div>
-          <div className="w-px h-10 bg-white/10 self-center"></div>
+          <div className="w-px h-10 dark:bg-white/10 bg-slate-200 self-center"></div>
           <div className="text-right">
-            <div className="text-[10px] text-white/30 uppercase font-black tracking-[0.2em] mb-1">Precisión Teórica</div>
-            <div className="text-3xl font-black text-green-400">92.4%</div>
+            <div className="text-[10px] dark:text-white/30 text-slate-400 uppercase font-black tracking-[0.2em] mb-1">Precisión Teórica</div>
+            <div className="text-3xl font-black text-green-500 dark:text-green-400">92.4%</div>
           </div>
         </div>
       </div>
@@ -113,9 +115,9 @@ const AnalyticsCharts = () => {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
 
         {/* Distribución Global (Pie Chart) */}
-        <div className="lg:col-span-1 bg-slate-900/40 backdrop-blur-xl rounded-[2.5rem] p-8 border border-white/10 shadow-2xl flex flex-col">
-          <h3 className="text-lg font-bold text-white mb-6 flex items-center gap-3">
-            <Layers size={20} className="text-blue-400" />
+        <div className="lg:col-span-1 dark:bg-white/[0.02] bg-white backdrop-blur-3xl rounded-[2.5rem] p-8 border dark:border-white/5 border-slate-200 shadow-2xl flex flex-col relative overflow-hidden group hover:dark:bg-white/[0.03] hover:bg-slate-50 transition-all">
+          <h3 className="text-lg font-black dark:text-white text-slate-900 mb-6 flex items-center gap-3 relative z-10 tracking-tight">
+            <Layers size={20} className="text-blue-500 dark:text-blue-400" />
             Distribución del Dataset
           </h3>
           <div className="flex-1 min-h-[300px] relative">
@@ -145,16 +147,18 @@ const AnalyticsCharts = () => {
               </PieChart>
             </ResponsiveContainer>
             <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-              <span className="text-white/20 text-[10px] uppercase font-bold tracking-widest">Base de Datos</span>
-              <span className="text-2xl font-black text-white">{getTotalSamples()}</span>
+              <span className="dark:text-white/20 text-slate-400 text-[10px] uppercase font-bold tracking-widest">Base de Datos</span>
+              <span className="text-2xl font-black dark:text-white text-slate-900">{getTotalSamples()}</span>
             </div>
           </div>
         </div>
 
         {/* Grid de Módulos (Interactivo) */}
-        <div className="lg:col-span-2 bg-slate-900/40 backdrop-blur-xl border border-white/10 p-8 rounded-[2.5rem] shadow-2xl">
-          <h3 className="text-lg font-bold text-white mb-6">Estado por Módulo</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[400px] overflow-y-auto custom-scrollbar pr-2">
+        <div className="lg:col-span-2 dark:bg-white/[0.02] bg-white backdrop-blur-3xl border dark:border-white/5 border-slate-200 p-8 rounded-[2.5rem] shadow-2xl relative overflow-hidden group hover:dark:bg-white/[0.03] hover:bg-slate-50 transition-all">
+          {/* Ambient glow */}
+          <div className="absolute -bottom-32 -right-32 w-64 h-64 bg-purple-500/10 blur-[60px] rounded-full pointer-events-none" />
+          <h3 className="text-lg font-black tracking-tight dark:text-white text-slate-900 mb-6 relative z-10">Estado por Módulo</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[400px] overflow-y-auto custom-scrollbar pr-2 relative z-10">
             {modules.map((mod) => {
               const completion = Math.round(getModuleCompletion(mod));
               const isSelected = selectedModuleId === mod.id;
@@ -163,23 +167,23 @@ const AnalyticsCharts = () => {
                 <button
                   key={mod.id}
                   onClick={() => setSelectedModuleId(mod.id)}
-                  className={`p-5 rounded-2xl border transition-all duration-500 text-left group relative overflow-hidden ${isSelected
-                    ? 'bg-blue-600/20 border-blue-500/50 shadow-[0_0_20px_rgba(59,130,246,0.15)]'
-                    : 'bg-white/5 border-white/10 hover:bg-white/10'
+                  className={`p-5 rounded-[1.5rem] border transition-all duration-500 text-left group/btn relative overflow-hidden ${isSelected
+                    ? 'bg-blue-500/10 border-blue-500/20 shadow-[0_0_20px_rgba(59,130,246,0.15)]'
+                    : 'dark:bg-white/[0.02] bg-slate-50 dark:border-white/5 border-slate-200 hover:dark:bg-white/[0.05] hover:bg-slate-100 dark:hover:border-white/10 hover:border-slate-300'
                     }`}
                 >
                   <div className="flex items-center justify-between mb-4 relative z-10">
-                    <div className={`p-2 rounded-lg ${isSelected ? 'bg-blue-500 text-white' : 'bg-white/10 text-white/40'}`}>
+                    <div className={`p-2 rounded-lg ${isSelected ? 'bg-blue-500 text-white' : 'dark:bg-white/10 bg-slate-200 dark:text-white/40 text-slate-500'}`}>
                       <Layers size={18} />
                     </div>
-                    <span className={`text-[10px] font-bold uppercase tracking-widest ${isSelected ? 'text-blue-400' : 'text-white/20'}`}>
+                    <span className={`text-[10px] font-bold uppercase tracking-widest ${isSelected ? 'text-blue-500 dark:text-blue-400' : 'dark:text-white/20 text-slate-400'}`}>
                       {completion}%
                     </span>
                   </div>
-                  <h4 className="text-white font-bold mb-1 relative z-10">{mod.title}</h4>
-                  <div className="w-full bg-white/5 h-1.5 rounded-full mt-3 overflow-hidden">
+                  <h4 className="dark:text-white text-slate-900 font-bold mb-1 relative z-10">{mod.title}</h4>
+                  <div className="w-full dark:bg-white/5 bg-slate-100 h-1.5 rounded-full mt-3 overflow-hidden">
                     <div
-                      className={`h-full rounded-full transition-all duration-1000 ${isSelected ? 'bg-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.5)]' : 'bg-white/10'}`}
+                      className={`h-full rounded-full transition-all duration-1000 ${isSelected ? 'bg-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.5)]' : 'dark:bg-white/10 bg-slate-200'}`}
                       style={{ width: `${completion}%` }}
                     ></div>
                   </div>
@@ -197,30 +201,32 @@ const AnalyticsCharts = () => {
 
       {/* Detalle Profundo del Módulo Seleccionado */}
       {currentModule && (
-        <div className="bg-slate-900/40 backdrop-blur-xl border border-white/10 p-10 rounded-[2.5rem] shadow-2xl animate-in fade-in zoom-in duration-500">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-10">
+        <div className="dark:bg-white/[0.02] bg-white backdrop-blur-3xl border dark:border-white/5 border-slate-200 p-10 rounded-[2.5rem] shadow-2xl animate-in fade-in zoom-in duration-500 relative overflow-hidden hover:dark:bg-white/[0.03] hover:bg-slate-50 transition-all">
+          {/* Ambient glow */}
+          <div className="absolute -top-32 left-1/2 -translate-x-1/2 w-64 h-64 bg-blue-500/10 blur-[60px] rounded-full pointer-events-none" />
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-10 relative z-10">
             <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-xl bg-blue-500/20 border border-blue-500/20 flex items-center justify-center">
-                <Zap className="text-blue-400" size={24} />
+              <div className="w-12 h-12 rounded-[1rem] bg-blue-500/10 border border-blue-500/20 flex items-center justify-center shadow-lg shadow-blue-500/10">
+                <Zap className="text-blue-600 dark:text-blue-400" size={24} />
               </div>
               <div>
-                <h3 className="text-2xl font-black text-white uppercase tracking-tight">
-                  Analítica Detallada: <span className="text-blue-400">{currentModule.title}</span>
+                <h3 className="text-2xl font-black dark:text-white text-slate-900 uppercase tracking-tight">
+                  Analítica Detallada: <span className="text-blue-600 dark:text-blue-400">{currentModule.title}</span>
                 </h3>
-                <p className="text-white/40 text-sm">Desglose de cada elemento y su nivel de preparación para entrenamiento</p>
+                <p className="dark:text-white/40 text-slate-500 text-sm">Desglose de cada elemento y su nivel de preparación para entrenamiento</p>
               </div>
             </div>
-            <div className="flex items-center gap-6">
+            <div className="flex items-center gap-6 relative z-10">
               <div className="text-center">
-                <div className="text-white font-black text-xl">{currentModule.elements?.length || 0}</div>
-                <div className="text-white/20 text-[10px] uppercase font-bold tracking-widest">Elementos</div>
+                <div className="dark:text-white text-slate-900 font-black text-xl">{currentModule.elements?.length || 0}</div>
+                <div className="dark:text-white/20 text-slate-400 text-[10px] uppercase font-bold tracking-widest">Elementos</div>
               </div>
-              <div className="w-px h-8 bg-white/10"></div>
+              <div className="w-px h-8 dark:bg-white/10 bg-slate-200"></div>
               <div className="text-center">
-                <div className="text-blue-400 font-black text-xl">
+                <div className="text-blue-600 dark:text-blue-400 font-black text-xl">
                   {currentModule.elements ? currentModule.elements.reduce((s, e) => s + (e.captured_count || 0), 0) : 0}
                 </div>
-                <div className="text-white/20 text-[10px] uppercase font-bold tracking-widest">Capturas</div>
+                <div className="dark:text-white/20 text-slate-400 text-[10px] uppercase font-bold tracking-widest">Capturas</div>
               </div>
             </div>
           </div>
@@ -229,10 +235,11 @@ const AnalyticsCharts = () => {
             {selectedModuleBars.length > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={selectedModuleBars} margin={{ bottom: 40 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
+                  <CartesianGrid strokeDasharray="3 3" stroke="currentColor" className="text-slate-200 dark:text-white/5" vertical={false} />
                   <XAxis
                     dataKey="name"
-                    stroke="rgba(255,255,255,0.3)"
+                    stroke="currentColor"
+                    className="text-slate-400 dark:text-white/30"
                     fontSize={12}
                     angle={-45}
                     textAnchor="end"
@@ -240,21 +247,22 @@ const AnalyticsCharts = () => {
                     tickLine={false}
                   />
                   <YAxis
-                    stroke="rgba(255,255,255,0.3)"
+                    stroke="currentColor"
+                    className="text-slate-400 dark:text-white/30"
                     fontSize={12}
                     axisLine={false}
                     tickLine={false}
                   />
-                  <Tooltip
-                    cursor={{ fill: 'rgba(255,255,255,0.05)' }}
+                   <Tooltip
+                    cursor={{ fill: 'currentColor', className: 'text-slate-100 dark:text-white/5' }}
                     contentStyle={{
-                      backgroundColor: '#0f172a',
-                      border: '1px solid rgba(255,255,255,0.1)',
+                      backgroundColor: 'var(--bg-card)',
+                      border: '1px solid var(--border)',
                       borderRadius: '16px',
-                      color: '#fff'
+                      color: 'var(--text-primary)'
                     }}
-                    itemStyle={{ color: '#fff' }}
-                    labelStyle={{ color: '#fff' }}
+                    itemStyle={{ color: 'var(--text-primary)' }}
+                    labelStyle={{ color: 'var(--text-primary)' }}
                   />
                   <Bar dataKey="captured" radius={[4, 4, 0, 0]}>
                     {selectedModuleBars.map((entry, index) => (
@@ -268,16 +276,16 @@ const AnalyticsCharts = () => {
                 </BarChart>
               </ResponsiveContainer>
             ) : (
-              <div className="h-full flex items-center justify-center text-white/20 italic">
+              <div className="h-full flex items-center justify-center dark:text-white/20 text-slate-400 italic">
                 No hay elementos configurados para este módulo.
               </div>
             )}
           </div>
 
-          <div className="mt-8 p-6 bg-blue-500/5 rounded-3xl border border-blue-500/10 flex items-start gap-4">
-            <Info className="text-blue-400 shrink-0 mt-0.5" size={20} />
-            <p className="text-blue-200/60 text-sm leading-relaxed">
-              Los elementos marcados en <span className="text-green-400 font-bold underline">verde</span> han alcanzado el objetivo mínimo de 50 muestras y están listos para ser incluidos en el próximo ciclo de entrenamiento del motor de IA. Los elementos en <span className="text-blue-400 font-bold underline">azul</span> requieren más capturas para garantizar la precisión del reconocimiento de señas.
+          <div className="mt-8 p-6 dark:bg-blue-500/5 bg-blue-50 rounded-3xl border dark:border-blue-500/10 border-blue-200 flex items-start gap-4 relaltive z-10">
+            <Info className="text-blue-600 dark:text-blue-400 shrink-0 mt-0.5" size={20} />
+            <p className="dark:text-blue-200/60 text-blue-800 text-sm leading-relaxed">
+              Los elementos marcados en <span className="text-green-600 dark:text-green-400 font-bold underline">verde</span> han alcanzado el objetivo mínimo de 50 muestras y están listos para ser incluidos en el próximo ciclo de entrenamiento del motor de IA. Los elementos en <span className="text-blue-600 dark:text-blue-400 font-bold underline">azul</span> requieren más capturas para garantizar la precisión del reconocimiento de señas.
             </p>
           </div>
         </div>
@@ -285,9 +293,11 @@ const AnalyticsCharts = () => {
 
       <style>{`
                 .custom-scrollbar::-webkit-scrollbar { width: 6px; }
-                .custom-scrollbar::-webkit-scrollbar-track { background: rgba(255, 255, 255, 0.02); border-radius: 10px; }
-                .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.1); border-radius: 10px; }
-                .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.2); }
+                .custom-scrollbar::-webkit-scrollbar-track { background: transparent; border-radius: 10px; }
+                .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(100, 116, 139, 0.2); border-radius: 10px; }
+                .dark .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.1); }
+                .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(100, 116, 139, 0.3); }
+                .dark .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.2); }
             `}</style>
     </div>
   );

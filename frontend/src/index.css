@@ -1,3 +1,108 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* ═══════════════════════════════════════════════════════════════
+   DESIGN TOKENS — Light & Dark Mode
+   ═══════════════════════════════════════════════════════════════ */
+:root {
+  /* Backgrounds */
+  --bg-page:    #f8fafc;
+  --bg-card:    #ffffff;
+  --bg-surface: #f1f5f9;
+  --bg-muted:   #e8edf3;
+  --bg-input:   #f8fafc;
+
+  /* Text */
+  --text-primary:   #0f172a;
+  --text-secondary: #475569;
+  --text-muted:     #94a3b8;
+  --text-inverse:   #ffffff;
+
+  /* Borders */
+  --border:       #e2e8f0;
+  --border-focus: rgba(59,130,246,0.5);
+
+  /* Accents (same both modes) */
+  --accent:       #3b82f6;
+  --accent-hover: #2563eb;
+  --accent-muted: rgba(59,130,246,0.12);
+
+  /* Shadows */
+  --shadow-card: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+  --shadow-lg:   0 10px 40px rgba(0,0,0,0.08);
+}
+
+.dark {
+  /* Backgrounds */
+  --bg-page:    #05070a;
+  --bg-card:    #0a0c10;
+  --bg-surface: #0d1117;
+  --bg-muted:   rgba(255,255,255,0.04);
+  --bg-input:   rgba(255,255,255,0.04);
+
+  /* Text */
+  --text-primary:   #ffffff;
+  --text-secondary: rgba(255,255,255,0.5);
+  --text-muted:     rgba(255,255,255,0.2);
+  --text-inverse:   #0f172a;
+
+  /* Borders */
+  --border:       rgba(255,255,255,0.08);
+  --border-focus: rgba(59,130,246,0.5);
+
+  /* Accents (same) */
+  --accent:       #3b82f6;
+  --accent-hover: #60a5fa;
+  --accent-muted: rgba(59,130,246,0.15);
+
+  /* Shadows */
+  --shadow-card: 0 1px 3px rgba(0,0,0,0.3), 0 1px 2px rgba(0,0,0,0.2);
+  --shadow-lg:   0 10px 40px rgba(0,0,0,0.4);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   BASE STYLES
+   ═══════════════════════════════════════════════════════════════ */
+*, *::before, *::after { box-sizing: border-box; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  background-color: var(--bg-page);
+  color: var(--text-primary);
+  transition: background-color 0.3s ease, color 0.3s ease;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   SCROLLBARS
+   ═══════════════════════════════════════════════════════════════ */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+
+.dark ::-webkit-scrollbar-track { background: #05070a; }
+.dark ::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 10px; }
+.dark ::-webkit-scrollbar-thumb:hover { background: #334155; }
+
+:root ::-webkit-scrollbar-track { background: #f1f5f9; }
+:root ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+:root ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+/* Custom scrollbar utility */
+.custom-scrollbar { scrollbar-width: thin; }
+
+/* ═══════════════════════════════════════════════════════════════
+   THEME TRANSITION — smooth color changes on all elements
+   ═══════════════════════════════════════════════════════════════ */
+*, *::before, *::after {
+  transition-property: background-color, border-color, color, fill, stroke;
+  transition-duration: 200ms;
+  transition-timing-function: ease;
+}
+
+/* Exclude animations from transition interference */
+.animate-pulse, .animate-spin, .animate-bounce,
+[class*="animate-"], [style*="animation"] {
+  transition-property: none !important;
+}

@@ -24,16 +24,15 @@ origins = [
     "http://localhost:5173",          # desarrollo local
     "http://127.0.0.1:5173",
     "http://localhost:3000",
-
-    # ✅ Tus dominios en Render (LOS IMPORTANTES)
-    "https://lenguaje-senas-5-we.onrender.com",   # TU FRONTEND ACTUAL
-    "https://lenguaje-senas.vercel.app",          # TU FRONTEND EN VERCEL (SI LO USAS)
+    "http://127.0.0.1:8000",
+    "https://lenguaje-senas-5-we.onrender.com",
+    "https://lenguaje-senas.vercel.app",
 ]
 
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
+    allow_origins=origins, # Usamos la lista explícita para ser compatibles con allow_credentials=True
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

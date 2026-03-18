@@ -33,9 +33,11 @@ class User(Base):
     global_precision = Column(Float, default=0.0)
     last_active_at = Column(DateTime(timezone=True), nullable=True)
     
-    # Seguridad
+    # Seguridad y Recuperación
     is_2fa_enabled = Column(Boolean, default=False)
     last_password_change = Column(DateTime(timezone=True), server_default=func.now())
+    recovery_code = Column(String, nullable=True)
+    recovery_code_expires = Column(DateTime(timezone=True), nullable=True)
     
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     

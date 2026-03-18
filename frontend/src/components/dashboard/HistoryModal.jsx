@@ -123,33 +123,33 @@ const HistoryModal = ({ isOpen, onClose, userHistory }) => {
     return (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6">
             <div
-                className="absolute inset-0 bg-slate-950/80 backdrop-blur-xl animate-in fade-in duration-300"
+                className="absolute inset-0 dark:bg-[#05070a]/80 bg-slate-900/40 backdrop-blur-xl animate-in fade-in duration-300"
                 onClick={handleClose}
             />
 
-            <div className="relative w-full max-w-4xl max-h-[85vh] bg-slate-900 border border-white/10 rounded-[3rem] shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-300">
+            <div className="relative w-full max-w-4xl max-h-[85vh] dark:bg-[#0a0c10] bg-white dark:border-white/10 border-slate-200 rounded-[3rem] shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-300">
 
                 {/* Header */}
-                <div className="p-8 border-b border-white/5 flex items-center justify-between bg-gradient-to-r from-blue-500/10 to-transparent shrink-0">
+                <div className="p-8 dark:border-b dark:border-white/5 border-b border-slate-100 flex items-center justify-between bg-gradient-to-r dark:from-blue-500/10 from-blue-50 to-transparent shrink-0">
                     <div className="flex items-center gap-4">
                         <div className="w-14 h-14 bg-blue-500/20 rounded-2xl flex items-center justify-center text-blue-500 shadow-lg shadow-blue-500/10">
                             <History size={32} />
                         </div>
                         <div>
-                            <h2 className="text-3xl font-black text-white tracking-tight">Historial de Aprendizaje</h2>
-                            <p className="text-xs font-bold text-white/40 uppercase tracking-[0.2em]">Registro completo de tus sesiones</p>
+                            <h2 className="text-3xl font-black dark:text-white text-slate-900 tracking-tight transition-colors transition-colors">Historial de Aprendizaje</h2>
+                            <p className="text-xs font-bold dark:text-white/40 text-slate-400 uppercase tracking-[0.2em] transition-colors">Registro completo de tus sesiones</p>
                         </div>
                     </div>
                     <button
                         onClick={handleClose}
-                        className="p-3 rounded-2xl bg-white/5 text-white/40 hover:text-white hover:bg-white/10 transition-all font-bold"
+                        className="p-3 rounded-2xl dark:bg-white/5 bg-slate-100 dark:text-white/40 text-slate-400 hover:dark:text-white hover:text-slate-900 hover:dark:bg-white/10 hover:bg-slate-200 transition-all font-bold"
                     >
                         <X size={24} />
                     </button>
                 </div>
 
                 {/* Body */}
-                <div className="flex-1 overflow-y-auto p-8 custom-scrollbar bg-[#0a1221]/50">
+                <div className="flex-1 overflow-y-auto p-8 custom-scrollbar dark:bg-[#05070a]/30 bg-slate-50/50">
                     {selectedSession ? (
                         <SessionDetailView
                             session={selectedSession}
@@ -161,53 +161,53 @@ const HistoryModal = ({ isOpen, onClose, userHistory }) => {
                                 <div
                                     key={index}
                                     onClick={() => setSelectedSession(session)}
-                                    className={`group relative border rounded-[2.5rem] p-6 hover:border-blue-500/30 transition-all flex flex-col gap-6 cursor-pointer overflow-hidden ${session.module_id === null ? 'bg-indigo-500/5 border-purple-500/20' : 'bg-white/[0.02] border-white/5'}`}
+                                    className={`group relative border rounded-[2.5rem] p-6 hover:border-blue-500/30 transition-all flex flex-col gap-6 cursor-pointer overflow-hidden shadow-sm hover:shadow-xl ${session.module_id === null ? 'dark:bg-indigo-500/5 bg-indigo-50 dark:border-purple-500/20 border-purple-200' : 'dark:bg-white/[0.02] bg-white dark:border-white/5 border-slate-200'}`}
                                 >
                                     <div className={`absolute top-0 right-0 w-32 h-32 blur-3xl opacity-0 group-hover:opacity-100 transition-opacity ${session.module_id === null ? 'bg-purple-500/10' : 'bg-blue-500/5'}`} />
 
                                     <div className="flex justify-between items-start relative z-10">
                                         <div>
                                             <div className="flex items-center gap-2 mb-1">
-                                                <Calendar size={12} className="text-white/20" />
-                                                <span className="text-[10px] font-black text-white/20 uppercase tracking-widest">
+                                                <Calendar size={12} className="dark:text-white/20 text-slate-400" />
+                                                <span className="text-[10px] font-black dark:text-white/20 text-slate-400 uppercase tracking-widest transition-colors">
                                                     {new Date(session.created_at).toLocaleDateString()} a las {new Date(session.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                                     <span className="ml-2 text-blue-500/40">({formatRelativeTime(session.created_at)})</span>
                                                 </span>
                                             </div>
                                             <div className="flex items-center gap-2">
-                                                <h3 className={`text-xl font-black tracking-tight group-hover:text-blue-400 transition-colors uppercase ${session.module_id === null ? 'text-purple-400' : 'text-white'}`}>
+                                                <h3 className={`text-xl font-black tracking-tight group-hover:text-blue-500 transition-colors uppercase transition-colors ${session.module_id === null ? 'dark:text-purple-400 text-purple-600' : 'dark:text-white text-slate-900'}`}>
                                                     {session.module_title}
                                                 </h3>
                                                 {session.module_id === null && (
-                                                    <span className="px-2 py-0.5 rounded-md bg-purple-500/20 text-purple-400 text-[8px] font-black uppercase tracking-widest border border-purple-500/30">
+                                                    <span className="px-2 py-0.5 rounded-md dark:bg-purple-500/20 bg-purple-100 dark:text-purple-400 text-purple-600 text-[8px] font-black uppercase tracking-widest border dark:border-purple-500/30 border-purple-200 transition-colors">
                                                         Live
                                                     </span>
                                                 )}
                                             </div>
                                         </div>
-                                        <div className="px-3 py-1 rounded-full bg-white/5 text-white/40 text-[9px] font-black uppercase tracking-widest border border-white/5">
+                                        <div className="px-3 py-1 rounded-full dark:bg-white/5 bg-slate-100 dark:text-white/40 text-slate-500 text-[9px] font-black uppercase tracking-widest border dark:border-white/5 border-slate-200 transition-colors">
                                             {session.duration}
                                         </div>
                                     </div>
 
                                     <div className="grid grid-cols-2 gap-4 relative z-10">
-                                        <div className="p-4 rounded-2xl bg-white/5 border border-white/5">
-                                            <div className="flex items-center gap-2 mb-2 text-blue-400">
+                                        <div className="p-4 rounded-2xl dark:bg-white/5 bg-slate-50 border dark:border-white/5 border-slate-100 transition-colors">
+                                            <div className="flex items-center gap-2 mb-2 text-blue-500">
                                                 <Target size={14} />
-                                                <span className="text-[10px] font-black uppercase tracking-widest">Precisión</span>
+                                                <span className="text-[10px] font-black uppercase tracking-widest transition-colors">Precisión</span>
                                             </div>
-                                            <p className="text-2xl font-black text-white">{session.accuracy}%</p>
+                                            <p className="text-2xl font-black dark:text-white text-slate-800 transition-colors">{session.accuracy}%</p>
                                         </div>
-                                        <div className="p-4 rounded-2xl bg-white/5 border border-white/5">
-                                            <div className="flex items-center gap-2 mb-2 text-yellow-500">
+                                        <div className="p-4 rounded-2xl dark:bg-white/5 bg-slate-50 border dark:border-white/5 border-slate-100 transition-colors">
+                                            <div className="flex items-center gap-2 mb-2 text-yellow-600 dark:text-yellow-500">
                                                 <Zap size={14} />
-                                                <span className="text-[10px] font-black uppercase tracking-widest">XP</span>
+                                                <span className="text-[10px] font-black uppercase tracking-widest transition-colors">XP</span>
                                             </div>
-                                            <p className="text-2xl font-black text-white">{session.score}</p>
+                                            <p className="text-2xl font-black dark:text-white text-slate-800 transition-colors">{session.score}</p>
                                         </div>
                                     </div>
 
-                                    <div className="mt-auto pt-4 border-t border-white/5 flex justify-between items-center relative z-10 text-white/20 group-hover:text-blue-400 transition-colors">
+                                    <div className="mt-auto pt-4 dark:border-t dark:border-white/5 border-t border-slate-100 flex justify-between items-center relative z-10 dark:text-white/20 text-slate-400 group-hover:text-blue-500 transition-colors">
                                         <span className="text-[10px] font-black uppercase tracking-widest">Ver Detalles</span>
                                         <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />
                                     </div>
@@ -226,15 +226,15 @@ const HistoryModal = ({ isOpen, onClose, userHistory }) => {
 
                 {/* Footer */}
                 {!selectedSession && (
-                    <div className="p-8 bg-white/[0.02] border-t border-white/5 flex items-center justify-between shrink-0">
+                    <div className="p-8 dark:bg-white/[0.02] bg-slate-50 dark:border-t dark:border-white/5 border-t border-slate-100 flex items-center justify-between shrink-0 transition-colors">
                         <div className="flex gap-8">
                             <div>
-                                <p className="text-[10px] font-black text-white/30 uppercase tracking-widest mb-1">Total Sesiones</p>
-                                <p className="text-xl font-black text-white">{userHistory.length}</p>
+                                <p className="text-[10px] font-black dark:text-white/30 text-slate-400 uppercase tracking-widest mb-1 transition-colors">Total Sesiones</p>
+                                <p className="text-xl font-black dark:text-white text-slate-900 transition-colors">{userHistory.length}</p>
                             </div>
                             <div>
-                                <p className="text-[10px] font-black text-white/30 uppercase tracking-widest mb-1">Precisión Media</p>
-                                <p className="text-xl font-black text-green-400">
+                                <p className="text-[10px] font-black dark:text-white/30 text-slate-400 uppercase tracking-widest mb-1 transition-colors">Precisión Media</p>
+                                <p className="text-xl font-black text-green-600 dark:text-green-400 transition-colors">
                                     {userHistory.length > 0
                                         ? Math.round(userHistory.reduce((acc, s) => acc + s.accuracy, 0) / userHistory.length)
                                         : 0}%

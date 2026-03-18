@@ -5,6 +5,8 @@ import AchievementToast from './components/common/AchievementToast';
 import { checkNewAchievements } from './data/achievements';
 import { getUserStats } from './data/userProgress';
 import { adminService } from './api/adminService';
+import { authStorage } from './utils/authStorage';
+import { ThemeProvider } from './context/ThemeContext';
 
 // Optimización: Carga Perezosa (Lazy Loading) de Vistas
 const Landing = lazy(() => import('./page/Landing'));
@@ -17,27 +19,44 @@ const UserProfile = lazy(() => import('./page/UserProfile'));
 const AdminDashboard = lazy(() => import('./page/AdminDashboard'));
 const ModuleLearning = lazy(() => import('./page/ModuleLearning'));
 const PasswordChange = lazy(() => import('./page/PasswordChange'));
-const MaintenancePage = lazy(() => import('./pages/MaintenancePage'));
 
-// Skeleton de carga premium para transiciones
-const ViewLoader = () => (
-  <div className="min-h-screen bg-[#03070d] flex flex-col items-center justify-center space-y-4">
-    <div className="w-16 h-16 border-4 border-blue-600 border-t-transparent rounded-full animate-spin shadow-lg shadow-blue-600/20"></div>
-    <p className="text-blue-500 font-black text-[10px] uppercase tracking-[0.4em] animate-pulse">Sincronizando Interfaz...</p>
-  </div>
-);
 
-// Guard for authenticated users
+// Skeleton de carga para transiciones - Ajustado para soportar light mode
+const ViewLoader = () => {
+  return (
+    <div className="min-h-screen dark:bg-[#03070d] bg-slate-50 flex flex-col items-center justify-center space-y-6 transition-colors duration-500">
+      <div className="relative">
+        <div className="w-20 h-20 border-4 dark:border-blue-600/20 border-blue-600/10 rounded-full"></div>
+        <div className="w-20 h-20 border-4 border-blue-600 border-t-transparent rounded-full animate-spin absolute top-0 left-0 shadow-[0_0_20px_rgba(37,99,235,0.3)]"></div>
+      </div>
+      <div className="flex flex-col items-center gap-2">
+        <p className="dark:text-blue-400 text-blue-600 font-black text-xs uppercase tracking-[0.5em] animate-pulse">Sincronizando Sistema</p>
+        <div className="flex gap-1">
+          {[1,2,3].map(i => (
+            <div key={i} className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-bounce" style={{ animationDelay: `${i * 0.2}s` }} />
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Guard for authenticated regular users (prevents admins from entering user views)
 const ProtectedRoute = ({ children }) => {
-  const token = localStorage.getItem('token');
+  const token = authStorage.getToken();
+  const userData = authStorage.getUser() || {};
+  const isAdmin = userData.role === 'admin' || userData.role === 'super_admin' || userData.role === 'superadmin' || userData.role === 'SuperAdmin';
+
   if (!token) return <Navigate to="/login" replace />;
+  if (isAdmin) return <Navigate to="/admin" replace />;
+
   return children;
 };
 
 // Guard for admin users
 const AdminRoute = ({ children }) => {
-  const token = localStorage.getItem('token');
-  const userData = JSON.parse(localStorage.getItem('userData') || '{}');
+  const token = authStorage.getToken();
+  const userData = authStorage.getUser() || {};
   const isAdmin = userData.role === 'admin' || userData.role === 'super_admin' || userData.role === 'superadmin';
 
   if (!token) return <Navigate to="/login" replace />;
@@ -50,7 +69,7 @@ function AchievementListener() {
 
   React.useEffect(() => {
     try {
-      const stored = JSON.parse(localStorage.getItem('userData'));
+      const stored = authStorage.getUser();
       if (stored && stored.id) {
         const stats = getUserStats(stored.id);
         const newUnlocks = checkNewAchievements(stats);
@@ -80,32 +99,41 @@ function App() {
   });
   const [loadingConfig, setLoadingConfig] = React.useState(true);
 
-  const fetchConfig = async () => {
+  const fetchConfig = React.useCallback(async () => {
+    // 1. Cargar cache inmediatamente si existe
+    const cached = localStorage.getItem('public_config');
+    if (cached) {
+      try {
+        const parsed = JSON.parse(cached);
+        setConfig(prev => ({ ...prev, ...parsed }));
+        if (parsed.site_name) document.title = parsed.site_name;
+        // Si hay cache, ya podemos mostrar la app
+        setLoadingConfig(false);
+      } catch (e) {
+        console.warn("Error parsing cached config", e);
+      }
+    }
+
     try {
-      // Intentar cargar primero de cache para velocidad instantánea
-      const cached = localStorage.getItem('public_config');
-      if (cached) {
-        setConfig(JSON.parse(cached));
-      }
-
+      // 2. Traer configuración fresca en background
       const settings = await adminService.getPublicSettings();
-      setConfig(settings);
-
-      if (settings.site_name) {
-        document.title = settings.site_name;
-      }
-
-      localStorage.setItem('public_config', JSON.stringify(settings));
+      setConfig(prev => {
+        const next = { ...prev, ...settings };
+        if (settings.site_name) document.title = settings.site_name;
+        localStorage.setItem('public_config', JSON.stringify(next));
+        return next;
+      });
     } catch (e) {
-      console.error("Failed to fetch config", e);
+      console.error("[Config] Background sync error:", e.message);
     } finally {
+      // 3. Garantizar que la app se desbloquee incluso sin cache
       setLoadingConfig(false);
     }
-  };
+  }, []);
 
   // Optimización: Prefetch de datos críticos
   const prefetchData = async () => {
-    const token = localStorage.getItem('token');
+    const token = authStorage.getToken();
     if (!token) return;
 
     console.log("[Prefetch] Iniciando pre-carga de datos críticos...");
@@ -142,10 +170,14 @@ function App() {
     const handleLogin = () => prefetchData();
     window.addEventListener('login-success', handleLogin);
 
+    // Polling de configuración: Actualizar cada 30 segundos para sincronización en tiempo real
+    const pollingInterval = setInterval(fetchConfig, 30000);
+
     return () => {
       window.removeEventListener('site-config-updated', handleUpdate);
       window.removeEventListener('unauthorized', handleUnauthorized);
       window.removeEventListener('login-success', handleLogin);
+      clearInterval(pollingInterval);
     };
   }, []);
 
@@ -154,40 +186,42 @@ function App() {
   }
 
   // Global Maintenance Mode Guard
-  if (config.maintenance_mode === 'true' || config.maintenance_mode === true) {
-    return <MaintenancePage />;
-  }
+
+
 
   return (
-    <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
-      <Toaster />
-      <AchievementListener />
-      <Suspense fallback={<ViewLoader />}>
-        <Routes>
-          {/* Public Routes */}
-          <Route path="/" element={<Landing />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
-          <Route path="/forgot-password" element={<ForgotPassword />} />
-          <Route path="/change-password" element={<ProtectedRoute><PasswordChange /></ProtectedRoute>} />
+    <ThemeProvider>
+      {loadingConfig && !localStorage.getItem('public_config') ? (
+        <ViewLoader />
+      ) : (
+        <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+          <Toaster />
+          <AchievementListener />
+          <Suspense fallback={<ViewLoader />}>
+            <Routes>
+              {/* Public Routes */}
+              <Route path="/" element={<Landing />} />
+              <Route path="/login" element={<Login />} />
+              <Route path="/register" element={<Register />} />
+              <Route path="/forgot-password" element={<ForgotPassword />} />
+              <Route path="/change-password" element={<ProtectedRoute><PasswordChange /></ProtectedRoute>} />
 
-          {/* User Protected Routes */}
-          <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-          <Route path="/practice" element={<ProtectedRoute><PracticeMode /></ProtectedRoute>} />
-          <Route path="/profile" element={<ProtectedRoute><UserProfile /></ProtectedRoute>} />
-          <Route path="/module/:moduleId" element={<ProtectedRoute><ModuleLearning /></ProtectedRoute>} />
+              {/* User Protected Routes */}
+              <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+              <Route path="/practice" element={<ProtectedRoute><PracticeMode /></ProtectedRoute>} />
+              <Route path="/profile" element={<ProtectedRoute><UserProfile /></ProtectedRoute>} />
+              <Route path="/module/:moduleId" element={<ProtectedRoute><ModuleLearning /></ProtectedRoute>} />
 
-          {/* Admin Protected Routes */}
-          <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
+              {/* Admin Protected Routes */}
+              <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
 
-          {/* Maintenance Route (Optional access) */}
-          <Route path="/maintenance" element={<MaintenancePage />} />
-
-          {/* Catch all */}
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
-      </Suspense>
-    </Router>
+              {/* Catch all */}
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </Routes>
+          </Suspense>
+        </Router>
+      )}
+    </ThemeProvider>
   );
 }
 

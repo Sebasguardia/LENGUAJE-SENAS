@@ -42,6 +42,7 @@ const ModuleLearning = () => {
     const [isCompleting, setIsCompleting] = useState(false);
     const [sessionScore, setSessionScore] = useState(0);
     const [sessionTime, setSessionTime] = useState(0);
+    const isModelReadyRef = useRef(false);
 
     // Si ya tenemos info del cache, no mostramos loading
     const [isLoading, setIsLoading] = useState(!moduleInfo);
@@ -78,6 +79,8 @@ const ModuleLearning = () => {
     const handsRef = useRef(null);
     const cameraRef = useRef(null);
     const activeItemRef = useRef(null);
+    const resultsRef = useRef(null);
+    const requestRef = useRef();
 
     // 0. CARGA DEL MÓDULO Y PROGRESO REAL
     useEffect(() => {
@@ -161,66 +164,77 @@ const ModuleLearning = () => {
                 minTrackingConfidence: 0.5
             });
 
+            // Evitar el error "Module.arguments" de MediaPipe v0.4
+            // No llamamos a .initialize() manualmente, dejamos que ocurra al primer .send()
+            // pero damos un pequeño margen de 1.5s para que el WASM cargue en background
+            setTimeout(() => {
+                isModelReadyRef.current = true;
+            }, 1500);
+
             handsRef.current.onResults(onResults);
+
+            // Loop de animación optimizado
+            const animate = () => {
+                drawHands();
+                requestRef.current = requestAnimationFrame(animate);
+            };
+            requestRef.current = requestAnimationFrame(animate);
         }
 
         return () => {
             if (cameraRef.current) cameraRef.current.stop();
             if (handsRef.current) handsRef.current.close();
+            if (requestRef.current) cancelAnimationFrame(requestRef.current);
         };
     }, [isLoading, moduleInfo]);
 
+    const drawHands = () => {
+        if (!resultsRef.current) return;
+        const results = resultsRef.current;
 
-    const onResults = async (results) => {
-        // OPTIMIZACIÓN DE DIBUJO: Función reutilizable de alto rendimiento
-        const drawHand = (ctx, lm, width, height) => {
-            // Estilo Neón Premium
-            ctx.shadowColor = '#00d2ff';
-            ctx.shadowBlur = 15;
-            ctx.strokeStyle = '#00ffff';
-            ctx.lineWidth = 4;
-            ctx.lineCap = 'round';
-            ctx.lineJoin = 'round';
-
-            ctx.beginPath();
-            for (const [start, end] of HAND_CONNECTIONS) {
-                const p1 = lm[start];
-                const p2 = lm[end];
-                ctx.moveTo(p1.x * width, p1.y * height);
-                ctx.lineTo(p2.x * width, p2.y * height);
-            }
-            ctx.stroke();
-
-            // Puntos Blancos Brillantes
-            ctx.shadowColor = '#ffffff';
-            ctx.shadowBlur = 5;
-            ctx.fillStyle = '#ffffff';
-
-            for (const point of lm) {
-                ctx.beginPath();
-                ctx.arc(point.x * width, point.y * height, 4, 0, 2 * Math.PI);
-                ctx.fill();
-            }
-        };
-
-        // Dibujar en ambos canvas si existen (Desktop y Mobile)
         [canvasRef, canvasMobileRef].forEach(ref => {
             if (ref.current) {
-                const canvasCtx = ref.current.getContext('2d');
+                const ctx = ref.current.getContext('2d');
                 const w = ref.current.width;
                 const h = ref.current.height;
 
-                canvasCtx.save();
-                canvasCtx.clearRect(0, 0, w, h);
+                ctx.save();
+                ctx.clearRect(0, 0, w, h);
 
                 if (results.multiHandLandmarks) {
                     for (const landmarks of results.multiHandLandmarks) {
-                        drawHand(canvasCtx, landmarks, w, h);
+                        // Dibujar conexiones - OPTIMIZADO: Single Path
+                        ctx.strokeStyle = '#00ffff';
+                        ctx.lineWidth = 4;
+                        ctx.lineCap = 'round';
+                        ctx.lineJoin = 'round';
+
+                        ctx.beginPath();
+                        for (const [start, end] of HAND_CONNECTIONS) {
+                            const p1 = landmarks[start];
+                            const p2 = landmarks[end];
+                            ctx.moveTo(p1.x * w, p1.y * h);
+                            ctx.lineTo(p2.x * w, p2.y * h);
+                        }
+                        ctx.stroke();
+
+                        // Puntos Blancos
+                        ctx.fillStyle = '#ffffff';
+                        for (const point of landmarks) {
+                            ctx.beginPath();
+                            ctx.arc(point.x * w, point.y * h, 4, 0, 2 * Math.PI);
+                            ctx.fill();
+                        }
                     }
                 }
-                canvasCtx.restore();
+                ctx.restore();
             }
         });
+    };
+
+
+    const onResults = (results) => {
+        resultsRef.current = results;
 
         if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
             const landmarks = results.multiHandLandmarks[0];
@@ -231,26 +245,21 @@ const ModuleLearning = () => {
 
                 const expected = elementsRef.current[currentIndexRef.current]?.name;
 
-                try {
-                    const res = await recognitionService.predict(landmarks, moduleId, expected);
+                recognitionService.predict(landmarks, moduleId, expected).then(res => {
                     setLastPrediction(res.prediction);
-
                     setAccuracy(prev => {
-                        // Si enviamos expected_label, res.confidence ya es el porcentaje de similitud
-                        // con la seña que el usuario DEBE hacer.
                         const newVal = res.confidence * 100;
-
                         setAccuracyHistory(h => [...h.slice(1), newVal]);
                         return newVal;
                     });
-                } catch (error) {
+                }).catch(error => {
                     console.error("Error en predicción detectada:", error);
-                } finally {
+                }).finally(() => {
                     setTimeout(() => {
                         isProcessingRef.current = false;
                         setIsProcessing(false);
-                    }, 100); // 100ms para alta respuesta
-                }
+                    }, 100);
+                });
             }
         } else {
             if (isDetectingRef.current) setAccuracy(prev => Math.max(0, prev - 10));
@@ -259,29 +268,49 @@ const ModuleLearning = () => {
 
     const toggleCamera = async () => {
         if (isCameraActive) {
-            if (cameraRef.current) cameraRef.current.stop();
+            if (cameraRef.current) {
+                await cameraRef.current.stop();
+                cameraRef.current = null;
+            }
             setIsCameraActive(false);
             setIsDetecting(false);
         } else {
             try {
                 // Seleccionar el video ref que esté disponible (Desktop o Mobile)
                 const activeVideo = videoRef.current || videoMobileRef.current;
-                if (!cameraRef.current && activeVideo) {
-                    cameraRef.current = new MPCamera(activeVideo, {
-                        onFrame: async () => {
-                            if (handsRef.current) {
-                                await handsRef.current.send({ image: activeVideo });
-                            }
-                        },
-                        width: 640,
-                        height: 480
-                    });
+                
+                if (!activeVideo) {
+                    console.warn("No se encontró elemento de video activo.");
+                    return;
                 }
+
+                // Si ya existe una cámara, detenerla antes de crear una nueva para evitar fugas
+                if (cameraRef.current) {
+                    await cameraRef.current.stop();
+                    cameraRef.current = null;
+                }
+
+                cameraRef.current = new MPCamera(activeVideo, {
+                    onFrame: async () => {
+                        // VALIDACIÓN CRITICA: Solo enviar si el video y el modelo están listos
+                        if (isModelReadyRef.current && handsRef.current && activeVideo && activeVideo.readyState === 4) {
+                            try {
+                                await handsRef.current.send({ image: activeVideo });
+                            } catch (e) {
+                                // Ignorar errores de dimensionado durante transiciones
+                                if (!e.message?.includes('width')) console.error("MediaPipe Error:", e);
+                            }
+                        }
+                    },
+                    width: 480, // Resolución optimizada para velocidad
+                    height: 360
+                });
+                
                 await cameraRef.current.start();
                 setIsCameraActive(true);
             } catch (err) {
                 console.error("Error al activar cámara:", err);
-                alert("No se pudo acceder a la cámara.");
+                alert("No se pudo acceder a la cámara o el dispositivo está ocupado.");
             }
         }
     };
@@ -540,7 +569,7 @@ const ModuleLearning = () => {
 
     if (isLoading) {
         return (
-            <div className="min-h-screen bg-[#050b14] flex flex-col items-center justify-center space-y-4">
+            <div className="min-h-screen bg-[#05070a] flex flex-col items-center justify-center space-y-4">
                 <div className={`w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin`}></div>
                 <p className="text-white/40 font-bold animate-pulse uppercase tracking-[0.2em] text-xs">Sincronizando con la red neuronal...</p>
             </div>
@@ -550,7 +579,7 @@ const ModuleLearning = () => {
     if (!moduleInfo) return <ModuleNotFound navigate={navigate} />;
 
     return (
-        <div className="min-h-screen lg:h-screen bg-[#050b14] text-white font-sans overflow-y-auto lg:overflow-hidden flex flex-col relative selection:bg-blue-500/30">
+        <div className="min-h-screen lg:h-screen bg-[#05070a] text-white font-sans overflow-y-auto lg:overflow-hidden flex flex-col relative selection:bg-blue-500/30">
 
             {/* BACKGROUND AMBIENTE */}
             <div className="absolute inset-0 pointer-events-none z-0">
@@ -560,7 +589,7 @@ const ModuleLearning = () => {
             </div>
 
             {/* --- HEADER --- */}
-            <header className="h-14 sm:h-16 flex items-center justify-between px-3 sm:px-6 border-b border-white/5 bg-[#050b14]/80 backdrop-blur-md relative z-50 shrink-0">
+            <header className="h-14 sm:h-16 flex items-center justify-between px-3 sm:px-6 border-b border-white/5 bg-[#05070a]/80 backdrop-blur-md relative z-50 shrink-0">
                 <div className="flex items-center gap-2 sm:gap-4 flex-1 min-w-0">
                     <button onClick={() => navigate('/dashboard', { state: { scrollToModules: true } })} className="p-1.5 sm:p-2 rounded-xl bg-white/5 hover:bg-white/10 text-white/60 hover:text-white transition-colors shrink-0">
                         <ArrowLeft size={16} className="sm:w-[18px] sm:h-[18px]" />
@@ -627,8 +656,8 @@ const ModuleLearning = () => {
 
             {/* MODAL DE RESULTADOS FINAL */}
             {isModuleFinished && (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-[#050b14]/95 backdrop-blur-xl animate-in fade-in duration-500">
-                    <div className="w-full max-w-lg bg-slate-900/50 border border-white/10 rounded-[3rem] p-8 lg:p-12 text-center relative overflow-hidden shadow-2xl">
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-[#0a0c10]/95 backdrop-blur-xl animate-in fade-in duration-500">
+                    <div className="w-full max-w-lg bg-[#0a0c10]/80 border border-white/10 rounded-[3rem] p-8 lg:p-12 text-center relative overflow-hidden shadow-2xl">
                         <div className={`absolute -top-24 -left-24 w-64 h-64 bg-${themeColor} opacity-10 blur-[100px] animate-pulse`}></div>
 
                         <div className="relative z-10 space-y-8">
@@ -690,7 +719,7 @@ const ModuleLearning = () => {
                 {/* MOBILE LAYOUT (< lg) - Stack: Camera + Horizontal Lessons + Compact Guide */}
                 <div className="flex lg:hidden flex-col flex-1 overflow-hidden">
                     {/* Camera Area */}
-                    <div className="flex-[2] relative bg-[#03070d] flex items-center justify-center p-2 sm:p-3 overflow-hidden">
+                    <div className="flex-[2] relative bg-[#05070a] flex items-center justify-center p-2 sm:p-3 overflow-hidden">
                         {/* Marco Tecnológico */}
                         <div className="absolute inset-2 border border-white/10 rounded-2xl pointer-events-none z-20">
                             <div className={`absolute top-0 left-0 w-4 h-4 border-t-2 border-l-2 border-${themeColor} rounded-tl-xl opacity-50`}></div>
@@ -762,7 +791,7 @@ const ModuleLearning = () => {
                     </div>
 
                     {/* Controls */}
-                    <div className="h-14 px-2 pb-2 flex items-center justify-center gap-2 bg-[#03070d] shrink-0">
+                    <div className="h-14 px-2 pb-2 flex items-center justify-center gap-2 bg-[#05070a] shrink-0">
                         <button onClick={() => handleNav('prev')} disabled={currentElementIndex === 0 || isDetecting} className="h-10 w-10 rounded-xl bg-white/5 border border-white/5 flex items-center justify-center text-white/50 disabled:opacity-20 shrink-0">
                             <ArrowLeft size={16} />
                         </button>

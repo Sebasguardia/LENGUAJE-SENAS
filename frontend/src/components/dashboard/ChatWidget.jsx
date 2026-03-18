@@ -5,8 +5,10 @@ import {
     BookOpen, Send, Minus, User, ArrowLeft,
     Lightbulb, Info
 } from 'lucide-react';
+import { useTheme } from '../../context/ThemeContext';
 
 const ChatWidget = ({ userStats, currentUser, allModules = [], onSpeak, isMuted }) => {
+    const { theme } = useTheme();
     const [isChatOpen, setIsChatOpen] = useState(false);
     const [messages, setMessages] = useState([]);
     const [currentMenu, setCurrentMenu] = useState('main'); // 'main', 'progress', 'faq', 'tips'
@@ -189,25 +191,25 @@ const ChatWidget = ({ userStats, currentUser, allModules = [], onSpeak, isMuted 
 
             {/* Ventana de Chat */}
             {isChatOpen && (
-                <div className="w-[calc(100vw-2rem)] sm:w-[400px] h-[70vh] sm:h-[600px] max-h-[600px] bg-slate-900/95 backdrop-blur-2xl border border-white/10 rounded-[2.5rem] shadow-[0_20px_80px_rgba(0,0,0,0.6)] overflow-hidden animate-in slide-in-from-bottom-12 fade-in duration-300 flex flex-col">
+                <div className="w-[calc(100vw-2rem)] sm:w-[400px] h-[70vh] sm:h-[600px] max-h-[600px] dark:bg-[#0a0c10]/95 bg-white backdrop-blur-2xl border dark:border-white/10 border-slate-200 rounded-[2.5rem] shadow-[0_20px_80px_rgba(0,0,0,0.1)] dark:shadow-[0_20px_80px_rgba(0,0,0,0.6)] overflow-hidden animate-in slide-in-from-bottom-12 fade-in duration-300 flex flex-col">
 
                     {/* Header Sticky */}
-                    <div className="shrink-0 p-5 bg-gradient-to-r from-blue-900/40 to-indigo-900/40 border-b border-white/5 flex items-center justify-between backdrop-blur-md">
+                    <div className="shrink-0 p-5 bg-gradient-to-r dark:from-blue-900/40 dark:to-indigo-900/40 from-blue-50 to-indigo-50 dark:border-b dark:border-white/5 border-b border-slate-100 flex items-center justify-between backdrop-blur-md">
                         <div className="flex items-center gap-3">
                             <div className="relative">
                                 <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-blue-500/30">
                                     <Bot size={20} />
                                 </div>
-                                <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-green-500 border-2 border-slate-900 rounded-full animate-pulse"></div>
+                                <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-green-500 dark:border-slate-900 border-white rounded-full animate-pulse"></div>
                             </div>
                             <div>
-                                <h3 className="text-white font-bold text-sm">Lexa IA</h3>
-                                <p className="text-blue-300 text-[10px] font-bold uppercase tracking-wider">Asistente Virtual</p>
+                                <h3 className="dark:text-white text-slate-900 font-bold text-sm transition-colors">Lexa IA</h3>
+                                <p className="dark:text-blue-300 text-blue-600 text-[10px] font-bold uppercase tracking-wider transition-colors">Asistente Virtual</p>
                             </div>
                         </div>
                         <button
                             onClick={() => setIsChatOpen(false)}
-                            className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-white/10 text-white/40 hover:text-white transition-colors"
+                            className="w-8 h-8 flex items-center justify-center rounded-full hover:dark:bg-white/10 hover:bg-slate-200 dark:text-white/40 text-slate-400 hover:dark:text-white hover:text-slate-900 transition-colors"
                         >
                             <X size={18} />
                         </button>
@@ -221,13 +223,13 @@ const ChatWidget = ({ userStats, currentUser, allModules = [], onSpeak, isMuted 
                         {messages.map((msg, idx) => (
                             <div key={idx} className={`flex gap-3 ${msg.type === 'user' ? 'justify-end' : 'justify-start'} animate-in slide-in-from-bottom-2 fade-in duration-300`}>
                                 {msg.type === 'bot' && (
-                                    <div className="w-8 h-8 shrink-0 rounded-full bg-slate-800 flex items-center justify-center text-blue-400 border border-white/5 mt-auto">
+                                    <div className="w-8 h-8 shrink-0 rounded-full dark:bg-[#05070a] bg-slate-100 flex items-center justify-center dark:text-blue-400 text-blue-600 dark:border-white/5 border-slate-200 mt-auto shadow-sm transition-colors">
                                         <Bot size={14} />
                                     </div>
                                 )}
                                 <div className={`max-w-[80%] rounded-2xl p-4 text-sm leading-relaxed ${msg.type === 'user'
-                                    ? 'bg-blue-600 text-white rounded-br-none shadow-lg shadow-blue-900/20'
-                                    : 'bg-slate-800 text-slate-200 border border-white/5 rounded-bl-none'
+                                    ? 'bg-blue-600 text-white rounded-br-none shadow-lg shadow-blue-900/10 dark:shadow-blue-900/20'
+                                    : 'dark:bg-[#05070a] bg-slate-50 dark:text-slate-200 text-slate-800 dark:border-white/5 border-slate-100 rounded-bl-none shadow-sm transition-colors'
                                     }`}>
                                     {msg.message}
                                 </div>
@@ -236,8 +238,8 @@ const ChatWidget = ({ userStats, currentUser, allModules = [], onSpeak, isMuted 
                     </div>
 
                     {/* Área de Opciones (Menu) */}
-                    <div className="shrink-0 p-4 bg-slate-950/50 border-t border-white/5">
-                        <p className="text-[10px] text-white/30 font-bold uppercase tracking-widest mb-3 pl-1">
+                    <div className="shrink-0 p-4 dark:bg-[#05070a]/50 bg-slate-50 dark:border-t dark:border-white/5 border-t border-slate-100 transition-colors">
+                        <p className="text-[10px] dark:text-white/30 text-slate-400 font-black uppercase tracking-widest mb-3 pl-1 transition-colors">
                             {currentMenu === 'main' ? 'Opciones Disponibles' : 'Selecciona una opción'}
                         </p>
                         <div className="flex flex-col gap-2 max-h-[160px] overflow-y-auto custom-scrollbar pr-1">
@@ -248,8 +250,8 @@ const ChatWidget = ({ userStats, currentUser, allModules = [], onSpeak, isMuted 
                                         key={option.id}
                                         onClick={() => handleOptionClick(option)}
                                         className={`group w-full flex items-center gap-3 p-3 rounded-xl border transition-all text-left ${option.style === 'secondary'
-                                            ? 'bg-transparent border-white/10 hover:bg-white/5 text-white/60 hover:text-white'
-                                            : 'bg-white/5 border-white/5 hover:border-blue-500/30 hover:bg-blue-600/10 text-slate-200 hover:text-white'
+                                            ? 'bg-transparent dark:border-white/10 border-slate-200 hover:dark:bg-white/5 hover:bg-slate-100 dark:text-white/60 text-slate-500 dark:hover:text-white hover:text-slate-900'
+                                            : 'dark:bg-white/5 bg-white dark:border-white/5 border-slate-200 hover:dark:border-blue-500/30 hover:border-blue-500/30 hover:dark:bg-blue-600/10 hover:bg-blue-50 dark:text-slate-200 text-slate-700 dark:hover:text-white hover:text-blue-600 shadow-sm'
                                             }`}
                                     >
                                         <Icon size={16} className={`${option.style === 'secondary' ? 'text-white/40' : 'text-blue-400 group-hover:text-blue-300'}`} />
@@ -266,7 +268,7 @@ const ChatWidget = ({ userStats, currentUser, allModules = [], onSpeak, isMuted 
             {/* Botón Flotante de Activación */}
             <button
                 onClick={() => setIsChatOpen(!isChatOpen)}
-                className={`relative w-16 h-16 rounded-full flex items-center justify-center shadow-[0_10px_40px_rgba(0,0,0,0.5)] transition-all duration-500 hover:scale-110 active:scale-95 z-[200] ${isChatOpen
+                className={`relative w-16 h-16 rounded-full flex items-center justify-center shadow-[0_10px_40px_rgba(0,0,0,0.1)] dark:shadow-[0_10px_40px_rgba(0,0,0,0.5)] transition-all duration-500 hover:scale-110 active:scale-95 z-[200] ${isChatOpen
                     ? 'bg-white text-slate-950 rotate-90 scale-90'
                     : 'bg-gradient-to-br from-blue-600 to-indigo-600 text-white animate-bounce-subtle'
                     }`}
@@ -283,8 +285,8 @@ const ChatWidget = ({ userStats, currentUser, allModules = [], onSpeak, isMuted 
             <style>{`
                 .custom-scrollbar::-webkit-scrollbar { width: 4px; }
                 .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
-                .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 10px; }
-                .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); }
+                .custom-scrollbar::-webkit-scrollbar-thumb { background: ${theme === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)'}; border-radius: 10px; }
+                .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: ${theme === 'dark' ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.2)'}; }
                 @keyframes bounce-subtle { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
                 .animate-bounce-subtle { animation: bounce-subtle 3s ease-in-out infinite; }
             `}</style>

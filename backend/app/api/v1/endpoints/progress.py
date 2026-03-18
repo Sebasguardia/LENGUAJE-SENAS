@@ -87,6 +87,8 @@ def save_practice_session(
 
         # 5. ACTUALIZAR TABLA DE PERSISTENCIA (UserModuleProgress) Y GLOBAL (User)
         if session_in.module_id:
+            # Usar savepoint para proteger el registro de la sesión si esto falla
+            sp_module = db.begin_nested()
             try:
                 module = db.query(models.Module).filter(models.Module.id == session_in.module_id).first()
                 if module and module.elements:
@@ -138,13 +140,19 @@ def save_practice_session(
                 current_user.global_precision = round(total_global_prec / num_modules, 1)
                 db.add(current_user)
             except Exception as module_err:
+                sp_module.rollback()
                 print(f"[WARN] Error actualizando progreso de módulo (no crítico): {module_err}")
                 # No falla el guardado de sesión por esto
                 
-        # 6. VERIFICAR LOGROS (envuelto en try/except para no bloquear el guardado)
+        # 6. VERIFICAR LOGROS (envuelto en savepoint para no bloquear el guardado)
         try:
-            from app.services.achievement_service import achievement_service
-            achievement_service.check_and_award_achievements(db, current_user)
+            sp_achv = db.begin_nested()
+            try:
+                from app.services.achievement_service import achievement_service
+                achievement_service.check_and_award_achievements(db, current_user)
+            except Exception as ach_err:
+                sp_achv.rollback()
+                raise ach_err # Re-lanzar para el log de afuera del savepoint
         except Exception as ach_err:
             print(f"[WARN] Error verificando logros (no crítico): {ach_err}")
 

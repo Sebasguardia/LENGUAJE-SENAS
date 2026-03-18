@@ -152,7 +152,7 @@ const AgentIA = () => {
 
       {/* Chat del bot - En Portal */}
       {isOpen && ReactDOM.createPortal(
-        <div className="fixed bottom-0 left-0 right-0 sm:left-auto sm:right-6 sm:bottom-6 sm:w-96 w-full h-[85vh] sm:h-[500px] bg-white/95 backdrop-blur-xl sm:rounded-3xl rounded-t-3xl border border-white/20 shadow-2xl z-[100] flex flex-col transition-all duration-300 ease-out transform translate-y-0">
+        <div className="fixed bottom-0 left-0 right-0 sm:left-auto sm:right-6 sm:bottom-6 sm:w-96 w-full h-[85vh] sm:h-[500px] bg-[#0a0c10]/95 backdrop-blur-xl sm:rounded-3xl rounded-t-3xl border border-white/10 shadow-2xl z-[100] flex flex-col transition-all duration-300 ease-out transform translate-y-0">
           {/* Header del chat */}
           <div className="bg-gradient-to-r from-blue-600 to-purple-600 p-3 sm:p-4 sm:rounded-t-3xl rounded-t-3xl text-white flex items-center justify-between">
             <div className="flex items-center gap-2 sm:gap-3">
@@ -181,13 +181,13 @@ const AgentIA = () => {
               >
                 <div
                   className={`inline-block max-w-[85%] sm:max-w-xs p-2.5 sm:p-3 rounded-2xl text-sm sm:text-base ${message.isBot
-                    ? 'bg-blue-50 text-gray-800 rounded-bl-none'
+                    ? 'bg-[#05070a] text-slate-200 border border-white/5 rounded-bl-none'
                     : 'bg-gradient-to-r from-blue-500 to-purple-500 text-white rounded-br-none'
                     }`}
                 >
                   {message.text}
                 </div>
-                <div className={`text-[10px] sm:text-xs text-gray-500 mt-1 ${message.isBot ? 'text-left' : 'text-right'}`}>
+                <div className={`text-[10px] sm:text-xs text-white/40 mt-1 ${message.isBot ? 'text-left' : 'text-right'}`}>
                   {message.timestamp.toLocaleTimeString('es-ES', {
                     hour: '2-digit',
                     minute: '2-digit'
@@ -204,8 +204,8 @@ const AgentIA = () => {
               <button
                 onClick={toggleListening}
                 className={`p-2 rounded-xl transition-colors ${isListening
-                  ? 'bg-red-100 text-red-600'
-                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  ? 'bg-red-500/20 text-red-400'
+                  : 'bg-white/5 text-white/60 hover:bg-white/10'
                   }`}
               >
                 {isListening ? <MicOff size={16} className="sm:w-[18px] sm:h-[18px]" /> : <Mic size={16} className="sm:w-[18px] sm:h-[18px]" />}
@@ -216,7 +216,7 @@ const AgentIA = () => {
                 onChange={(e) => setInputMessage(e.target.value)}
                 onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
                 placeholder="Escribe tu mensaje..."
-                className="flex-1 bg-gray-100 rounded-xl px-3 sm:px-4 text-sm sm:text-base focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="flex-1 bg-[#05070a] text-white border border-white/10 rounded-xl px-3 sm:px-4 text-sm sm:text-base focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
               <button
                 onClick={handleSendMessage}

@@ -34,6 +34,21 @@ class UserChangePassword(BaseModel):
     old_password: str
     new_password: str
 
+class PasswordRecoveryRequest(BaseModel):
+    email: EmailStr
+
+class PasswordRecoveryVerify(BaseModel):
+    email: EmailStr
+    code: str
+
+class PasswordResetWithCode(BaseModel):
+    email: EmailStr
+    code: str
+    new_password: str
+
+class GoogleLogin(BaseModel):
+    token: str
+
 # Propiedades para devolver en API (Response)
 class User(UserBase):
     id: int

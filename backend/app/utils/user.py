@@ -1,6 +1,7 @@
 from datetime import datetime, date
 from sqlalchemy.orm import Session
 from app.models.user import User
+import re
 
 def update_user_streak(db: Session, user: User) -> User:
     """
@@ -35,3 +36,24 @@ def update_user_streak(db: Session, user: User) -> User:
     db.flush()
     db.refresh(user)
     return user
+
+def validate_password_strength(password: str) -> bool:
+    """
+    Valida que la contraseña tenga al menos 6 caracteres.
+    """
+    return len(password) >= 6
+
+def is_disposable_email(email: str) -> bool:
+    """
+    Verifica si el email pertenece a un dominio de correos temporales/desechables.
+    """
+    disposable_domains = {
+        'tempmail.com', 'mailinator.com', '10minutemail.com', 
+        'guerrillamail.com', 'dispostable.com', 'trashmail.com',
+        'yopmail.com', 'temp-mail.org', 'dropmail.me'
+    }
+    try:
+        domain = email.split('@')[1].lower()
+        return domain in disposable_domains
+    except:
+        return True # Si no hay arroba, lo tratamos como inválido

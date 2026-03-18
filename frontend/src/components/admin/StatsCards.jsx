@@ -9,7 +9,10 @@ const StatsCards = () => {
       value: '1,247',
       change: '+12%',
       trend: 'up',
-      color: 'blue'
+      color: 'text-blue-400',
+      bg: 'bg-blue-500/10',
+      border: 'border-blue-500/20',
+      glow: 'bg-blue-600/10'
     },
     {
       icon: BookOpen,
@@ -17,7 +20,10 @@ const StatsCards = () => {
       value: '15',
       change: '+3',
       trend: 'up',
-      color: 'green'
+      color: 'text-green-400',
+      bg: 'bg-green-500/10',
+      border: 'border-green-500/20',
+      glow: 'bg-green-600/10'
     },
     {
       icon: Database,
@@ -25,7 +31,10 @@ const StatsCards = () => {
       value: '45.2K',
       change: '+2.1K',
       trend: 'up',
-      color: 'purple'
+      color: 'text-purple-400',
+      bg: 'bg-purple-500/10',
+      border: 'border-purple-500/20',
+      glow: 'bg-purple-600/10'
     },
     {
       icon: Award,
@@ -33,7 +42,10 @@ const StatsCards = () => {
       value: '94.3%',
       change: '+2.5%',
       trend: 'up',
-      color: 'yellow'
+      color: 'text-yellow-400',
+      bg: 'bg-yellow-500/10',
+      border: 'border-yellow-500/20',
+      glow: 'bg-yellow-600/10'
     },
     {
       icon: Clock,
@@ -41,7 +53,10 @@ const StatsCards = () => {
       value: '328h',
       change: '-5h',
       trend: 'down',
-      color: 'orange'
+      color: 'text-orange-400',
+      bg: 'bg-orange-500/10',
+      border: 'border-orange-500/20',
+      glow: 'bg-orange-600/10'
     },
     {
       icon: TrendingUp,
@@ -49,21 +64,12 @@ const StatsCards = () => {
       value: '89',
       change: '+15',
       trend: 'up',
-      color: 'pink'
+      color: 'text-emerald-400',
+      bg: 'bg-emerald-500/10',
+      border: 'border-emerald-500/20',
+      glow: 'bg-emerald-600/10'
     }
   ];
-
-  const getColorClasses = (color) => {
-    const colors = {
-      blue: 'bg-blue-500/20 border-blue-400/30 text-blue-300',
-      green: 'bg-green-500/20 border-green-400/30 text-green-300',
-      purple: 'bg-purple-500/20 border-purple-400/30 text-purple-300',
-      yellow: 'bg-yellow-500/20 border-yellow-400/30 text-yellow-300',
-      orange: 'bg-orange-500/20 border-orange-400/30 text-orange-300',
-      pink: 'bg-pink-500/20 border-pink-400/30 text-pink-300'
-    };
-    return colors[color] || colors.blue;
-  };
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mb-6 sm:mb-8">
@@ -72,19 +78,26 @@ const StatsCards = () => {
         return (
           <div
             key={index}
-            className={`bg-white/10 backdrop-blur-xl rounded-xl sm:rounded-2xl p-4 sm:p-6 border border-white/20 transition-all hover:scale-105 hover:shadow-xl`}
+            className="relative dark:bg-white/[0.02] bg-white border dark:border-white/5 border-slate-200 rounded-[2.5rem] p-6 lg:p-8 h-full overflow-hidden dark:hover:bg-white/[0.04] hover:bg-slate-50 dark:hover:border-white/10 hover:border-slate-300 transition-all duration-500 group shadow-sm dark:shadow-none"
           >
-            <div className="flex items-center justify-between mb-3 sm:mb-4">
-              <div className={`p-2 sm:p-3 rounded-lg sm:rounded-xl ${getColorClasses(stat.color)}`}>
-                <Icon size={20} className="sm:w-6 sm:h-6" />
+             {/* Ambient glow */}
+             <div className={`absolute -bottom-8 -right-8 w-32 h-32 ${stat.glow} blur-[40px] group-hover:opacity-150 transition-opacity`} />
+
+            <div className="flex items-center justify-between mb-6 relative z-10">
+              <div className={`relative w-12 h-12 rounded-2xl ${stat.bg} border ${stat.border} flex items-center justify-center group-hover:scale-110 transition-transform duration-500 shadow-2xl`}>
+                <Icon size={20} className={stat.color} />
               </div>
-              <span className={`text-xs sm:text-sm font-semibold ${stat.trend === 'up' ? 'text-green-400' : 'text-red-400'
-                }`}>
+              <span className={`text-[10px] sm:text-xs font-black tracking-[0.2em] uppercase px-3 py-1 rounded-full border ${stat.trend === 'up' ? 'text-green-400 bg-green-500/10 border-green-500/20' : 'text-red-400 bg-red-500/10 border-red-500/20'}`}>
                 {stat.change}
               </span>
             </div>
-            <h3 className="text-2xl sm:text-3xl font-bold text-white mb-1">{stat.value}</h3>
-            <p className="text-white/60 text-xs sm:text-sm truncate">{stat.label}</p>
+            
+            <h3 className="relative z-10 text-3xl sm:text-4xl font-black dark:text-white text-slate-900 mb-2 tracking-tighter group-hover:text-transparent group-hover:bg-clip-text group-hover:bg-gradient-to-r group-hover:from-blue-600 group-hover:to-blue-400 dark:group-hover:from-white dark:group-hover:to-white/50 transition-all">
+              {stat.value}
+            </h3>
+            <p className="relative z-10 dark:text-white/30 text-slate-500 text-[10px] sm:text-xs font-black uppercase tracking-widest truncate">
+              {stat.label}
+            </p>
           </div>
         );
       })}

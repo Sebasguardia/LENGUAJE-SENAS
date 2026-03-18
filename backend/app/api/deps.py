@@ -73,10 +73,13 @@ def get_current_active_admin(
 ) -> User:
     # Accept variations of admin roles to be safe, AND 'user' for dev/testing to unblock dashboard
     allowed_roles = ['admin', 'super_admin', 'superadmin', 'Admin', 'SuperAdmin', 'user']
-    print(f"DEBUG: Verificando permisos para usuario {current_user.email} con rol {current_user.role}")
+    print(f"DEBUG: Checking admin privileges for {current_user.email} (ID: {current_user.id})")
+    print(f"DEBUG: Current role: '{current_user.role}'")
+    
     if current_user.role not in allowed_roles:
-        print(f"DEBUG: Permiso DENEGADO para rol {current_user.role}")
+        print(f"DEBUG: ACCESS DENIED. Role '{current_user.role}' not in {allowed_roles}")
         raise HTTPException(
             status_code=400, detail=f"The user doesn't have enough privileges. Role: {current_user.role}"
         )
+    print("DEBUG: ACCESS GRANTED")
     return current_user

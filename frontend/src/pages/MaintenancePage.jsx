@@ -39,6 +39,24 @@ const MaintenancePage = () => {
                     </p>
                 </div>
 
+                {/* Navigation Actions */}
+                <div className="mt-12 flex flex-col sm:flex-row items-center justify-center gap-4 animate-in fade-in slide-in-from-bottom-8 duration-1000 delay-500">
+                    <button
+                        onClick={() => window.location.href = '/'}
+                        className="w-full sm:w-auto px-8 py-4 bg-white/5 hover:bg-white/10 text-white rounded-2xl font-bold border border-white/10 backdrop-blur-md transition-all hover:scale-105 active:scale-95 flex items-center justify-center gap-2 group"
+                    >
+                        <RefreshCw size={18} className="group-hover:rotate-180 transition-transform duration-500" />
+                        Regresar al Inicio
+                    </button>
+                    <button
+                        onClick={() => window.location.href = '/login'}
+                        className="w-full sm:w-auto px-8 py-4 bg-blue-600 hover:bg-blue-500 text-white rounded-2xl font-bold shadow-2xl shadow-blue-600/20 transition-all hover:scale-105 active:scale-95 flex items-center justify-center gap-2"
+                    >
+                        <ShieldAlert size={18} />
+                        Acceso Administrativo
+                    </button>
+                </div>
+
                 {/* Progress Indicators */}
                 <div className="mt-16 grid grid-cols-1 sm:grid-cols-3 gap-6">
                     <div className="bg-slate-900/40 backdrop-blur-xl border border-white/10 p-6 rounded-[2rem] group hover:border-blue-500/30 transition-all">

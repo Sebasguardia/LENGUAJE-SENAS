@@ -1,31 +1,34 @@
 import apiClient from './apiClient';
+import { authStorage } from '../utils/authStorage';
 
 export const authService = {
-    login: async (email, password) => {
-        const formData = new FormData();
-        formData.append('username', email);
-        formData.append('password', password);
+    login: async (email, password, rememberMe = true) => {
+        const params = new URLSearchParams();
+        params.append('username', email);
+        params.append('password', password);
 
-        const response = await apiClient.post('/auth/login/access-token', formData, {
-            headers: { 'Content-Type': 'multipart/form-data' }
+        const response = await apiClient.post('/auth/login/access-token', params, {
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
         });
 
         if (response.data.access_token) {
-            localStorage.setItem('token', response.data.access_token);
+            // We'll also need the user data to save it all together
+            const userData = await authService.getMeWithToken(response.data.access_token);
+            authStorage.saveAuth(response.data.access_token, userData, rememberMe);
         }
         return response.data;
     },
 
     // Method to login WITHOUT saving to localStorage immediately (for validation)
     loginNoSave: async (email, password) => {
-        const formData = new FormData();
-        formData.append('username', email);
-        formData.append('password', password);
+        const params = new URLSearchParams();
+        params.append('username', email);
+        params.append('password', password);
 
-        const response = await apiClient.post('/auth/login/access-token', formData, {
+        const response = await apiClient.post('/auth/login/access-token', params, {
             headers: {
-                'Content-Type': 'multipart/form-data',
-                'X-Skip-Auth': 'true' // Custom flag if we want to ignore in interceptor
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'X-Skip-Auth': 'true'
             }
         });
         return response.data;
@@ -38,39 +41,32 @@ export const authService = {
 
     getMe: async () => {
         // OPTIMIZACIÓN SWR: Retornar datos cacheados inmediatamente para eliminar espera visual
-        const cached = localStorage.getItem('userData');
+        const cached = authStorage.getUser();
         if (cached) {
             // Retornamos el cache e iniciamos la actualización en segundo plano
-            const parsed = JSON.parse(cached);
-
             // Llamada asíncrona "silenciosa" para actualizar el cache
             apiClient.get('/auth/me').then(response => {
-                localStorage.setItem('userData', JSON.stringify(response.data));
+                authStorage.updateUser(response.data);
                 window.dispatchEvent(new CustomEvent('user-profile-updated', { detail: response.data }));
             }).catch(e => console.warn("Background profile sync failed", e));
 
-            return parsed;
+            return cached;
         }
 
         // Si no hay cache, hacemos la petición normal
         const response = await apiClient.get('/auth/me');
-        localStorage.setItem('userData', JSON.stringify(response.data));
+        authStorage.updateUser(response.data);
         return response.data;
     },
 
     updateMe: async (userData) => {
-        // Prepare query params if needed, or send as body if backend allows
-        // Our backend expects query params or body depending on implementation
-        // The one I just wrote uses optional query params but FastAPI might favor body for PATCH
-        // Actually I defined them as optional params in the function signature: full_name: str = None...
-
         const params = new URLSearchParams();
         if (userData.full_name) params.append('full_name', userData.full_name);
         if (userData.dni) params.append('dni', userData.dni);
         if (userData.phone) params.append('phone', userData.phone);
 
         const response = await apiClient.patch(`/users/me/update?${params.toString()}`);
-        localStorage.setItem('userData', JSON.stringify(response.data));
+        authStorage.updateUser(response.data);
         return response.data;
     },
 
@@ -79,19 +75,55 @@ export const authService = {
         const response = await apiClient.get('/auth/me', {
             headers: {
                 Authorization: `Bearer ${token}`,
-                'X-Skip-Auth': 'true'
+                'X-Skip-Auth': 'true',
+                'X-No-Cache': 'true' // Forzar petición real al servidor
             }
         });
         return response.data;
     },
 
     logout: () => {
-        localStorage.removeItem('token');
-        localStorage.removeItem('userData');
+        authStorage.clearAuth();
+        window.location.href = '/login';
     },
 
     changePassword: async (passwords) => {
         const response = await apiClient.post('/auth/change-password', passwords);
+        return response.data;
+    },
+
+    recoverPassword: async (email) => {
+        const response = await apiClient.post('/auth/password-recovery', { email });
+        return response.data;
+    },
+
+    verifyRecoveryCode: async (email, code) => {
+        const response = await apiClient.post('/auth/verify-recovery-code', { email, code });
+        return response.data;
+    },
+
+    resetPasswordWithCode: async (email, code, newPassword) => {
+        const response = await apiClient.post('/auth/reset-password-with-code', {
+            email,
+            code,
+            new_password: newPassword
+        });
+        return response.data;
+    },
+
+    verifyRegistration: async (email, code) => {
+        const response = await apiClient.post('/auth/verify-registration', { token: credential });
+        return response.data;
+    },
+
+    googleLogin: async (credential, rememberMe = true) => {
+        const response = await apiClient.post('/auth/google', { token: credential });
+
+        if (response.data.access_token) {
+            const userData = await authService.getMeWithToken(response.data.access_token);
+            authStorage.saveAuth(response.data.access_token, userData, rememberMe);
+        }
+
         return response.data;
     }
 };

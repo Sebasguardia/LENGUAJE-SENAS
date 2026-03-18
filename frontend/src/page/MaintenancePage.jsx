@@ -78,6 +78,22 @@ const MaintenancePage = () => {
                     </div>
                 </div>
 
+                {/* Action Buttons */}
+                <div className="mt-12 flex flex-col sm:flex-row items-center justify-center gap-4 animate-in slide-in-from-bottom-8 duration-1000">
+                    <button 
+                        onClick={() => window.location.href = '/'}
+                        className="px-8 py-4 bg-white/5 hover:bg-white/10 text-white rounded-2xl font-black text-xs uppercase tracking-[0.2em] border border-white/5 transition-all w-full sm:w-auto flex items-center justify-center gap-2"
+                    >
+                        Volver al Inicio
+                    </button>
+                    <button 
+                        onClick={() => window.location.href = '/login'}
+                        className="px-8 py-4 bg-blue-600 hover:bg-blue-500 text-white rounded-2xl font-black text-xs uppercase tracking-[0.2em] shadow-xl shadow-blue-600/20 transition-all w-full sm:w-auto flex items-center justify-center gap-2"
+                    >
+                        Ingreso Administrativo
+                    </button>
+                </div>
+
                 {/* Status Bar */}
                 <div className="mt-20 py-6 border-t border-white/5 flex flex-col sm:flex-row items-center justify-between gap-6 opacity-30">
                     <div className="flex items-center gap-2">

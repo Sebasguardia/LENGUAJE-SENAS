@@ -66,13 +66,13 @@ const UserManagement = () => {
   };
 
   useEffect(() => {
-    loadUsers();
+    loadUsers().catch(() => {});
   }, []);
 
   // Listener para actualizaciones en background (SWR)
   useEffect(() => {
     const handleCacheUpdate = (event) => {
-      if (event.detail.key.includes('/users/')) {
+      if (event.detail.url && event.detail.url.includes('/users/')) {
         setUsers(mapUserData(event.detail.data));
       }
     };
@@ -187,25 +187,27 @@ const UserManagement = () => {
     <div className="space-y-4 sm:space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
 
       {/* Header - Responsive */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 sm:gap-6 bg-slate-900/40 backdrop-blur-xl border border-white/10 p-4 sm:p-6 lg:p-8 rounded-2xl sm:rounded-[2.5rem] shadow-2xl">
-        <div className="flex items-center gap-3 sm:gap-4">
-          <div className="p-3 sm:p-4 bg-gradient-to-br from-purple-500 to-pink-600 rounded-xl sm:rounded-2xl shadow-lg shadow-purple-500/20">
-            <Users className="text-white" size={24} />
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 sm:gap-6 dark:bg-white/[0.02] bg-white backdrop-blur-3xl border dark:border-white/5 border-slate-200 p-6 sm:p-8 rounded-2xl sm:rounded-[2.5rem] dark:shadow-2xl shadow-sm relative overflow-hidden">
+        {/* Ambient glow */}
+        <div className="absolute -top-32 -left-32 w-64 h-64 bg-purple-500/10 blur-[60px] rounded-full pointer-events-none" />
+        <div className="flex items-center gap-4 relative z-10">
+          <div className="p-4 bg-gradient-to-br from-purple-500 to-pink-600 rounded-2xl shadow-lg shadow-purple-500/20">
+            <Users className="text-white" size={32} />
           </div>
           <div>
-            <h2 className="text-xl sm:text-2xl font-bold text-white tracking-tight">Gestión de Usuarios</h2>
-            <p className="text-white/40 text-xs sm:text-sm">Administración completa de perfiles</p>
+            <h2 className="text-2xl font-black dark:text-white text-slate-900 tracking-tight uppercase">Gestión de Usuarios</h2>
+            <p className="dark:text-white/40 text-slate-500 text-sm font-bold uppercase tracking-widest mt-1">Administración completa de perfiles</p>
           </div>
         </div>
 
         <div className="flex items-center gap-4 sm:gap-6">
-          <div className="text-center px-3 sm:px-4 border-r border-white/10">
-            <div className="text-xl sm:text-2xl font-black text-white">{users.length}</div>
-            <div className="text-[9px] sm:text-[10px] font-bold text-white/40 uppercase tracking-widest">Total</div>
+          <div className="text-center px-3 sm:px-4 border-r dark:border-white/10 border-slate-200">
+            <div className="text-xl sm:text-2xl font-black dark:text-white text-slate-900">{users.length}</div>
+            <div className="text-[9px] sm:text-[10px] font-bold dark:text-white/40 text-slate-500 uppercase tracking-widest">Total</div>
           </div>
           <div className="text-center px-3 sm:px-4">
-            <div className="text-xl sm:text-2xl   font-black text-green-400">{users.filter(u => u.status === 'active').length}</div>
-            <div className="text-[9px] sm:text-[10px] font-bold text-white/40 uppercase tracking-widest">Activos</div>
+            <div className="text-xl sm:text-2xl   font-black text-green-500 dark:text-green-400">{users.filter(u => u.status === 'active').length}</div>
+            <div className="text-[9px] sm:text-[10px] font-bold dark:text-white/40 text-slate-500 uppercase tracking-widest">Activos</div>
           </div>
         </div>
       </div>
@@ -213,79 +215,89 @@ const UserManagement = () => {
       {/* Toolbar - Responsive */}
       <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
         <div className="relative flex-1">
-          <Search size={16} className="absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 text-white/20" />
+          <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 dark:text-white/20 text-slate-400" />
           <input
             type="text"
             placeholder="Buscar por nombre, email o DNI..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full bg-slate-900/40 border border-white/10 rounded-xl sm:rounded-2xl pl-10 sm:pl-12 pr-3 sm:pr-4 py-3 sm:py-4 text-sm sm:text-base text-white placeholder-white/20 focus:outline-none focus:border-purple-500/50 transition-all font-medium"
+            className="w-full dark:bg-white/[0.02] bg-white border dark:border-white/5 border-slate-200 rounded-2xl pl-12 pr-4 py-4 text-sm dark:text-white text-slate-900 dark:placeholder-white/20 placeholder-slate-400 focus:outline-none focus:border-purple-500/50 transition-all font-bold hover:bg-white/[0.04]"
           />
         </div>
 
         <div className="relative min-w-[160px] sm:min-w-[200px]">
-          <Filter size={16} className="absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 text-white/20" />
+          <Filter size={16} className="absolute left-4 top-1/2 -translate-y-1/2 dark:text-white/20 text-slate-400" />
           <select
             value={filter}
             onChange={(e) => setFilter(e.target.value)}
-            className="w-full bg-slate-900/40 border border-white/10 rounded-xl sm:rounded-2xl pl-10 sm:pl-12 pr-3 sm:pr-4 py-3 sm:py-4 text-sm sm:text-base text-white focus:outline-none focus:border-purple-500/50 transition-all appearance-none cursor-pointer font-bold"
+            className="w-full dark:bg-white/[0.02] bg-white border dark:border-white/5 border-slate-200 rounded-2xl pl-12 pr-4 py-4 text-sm dark:text-white text-slate-900 focus:outline-none focus:border-purple-500/50 transition-all appearance-none cursor-pointer font-bold dark:hover:bg-white/[0.04] hover:bg-slate-50"
           >
-            <option value="all">Todos</option>
-            <option value="active">Activos</option>
-            <option value="inactive">Inactivos</option>
+            <option value="all" className="dark:bg-[#0a0c10] bg-white">Todos</option>
+            <option value="active" className="dark:bg-[#0a0c10] bg-white">Activos</option>
+            <option value="inactive" className="dark:bg-[#0a0c10] bg-white">Inactivos</option>
           </select>
         </div>
       </div>
 
-      {/* Loading State */}
-      {isLoading && users.length === 0 && (
-        <div className="flex flex-col items-center justify-center py-20 gap-4">
-          <div className="w-12 h-12 border-4 border-purple-500 border-t-transparent rounded-full animate-spin"></div>
-          <p className="text-white/40 animate-pulse font-bold tracking-widest text-xs uppercase">Sincronizando base de datos...</p>
+      {/* Loading State - Theme Aware */}
+      {isLoading && (!users || users.length === 0) && (
+        <div className="flex flex-col items-center justify-center py-20 gap-6 animate-in fade-in duration-500">
+          <div className="relative">
+            <div className="w-16 h-16 border-4 dark:border-purple-500/20 border-purple-500/10 rounded-full"></div>
+            <div className="w-16 h-16 border-4 border-purple-500 border-t-transparent rounded-full animate-spin absolute top-0 left-0 shadow-[0_0_20px_rgba(168,85,247,0.3)]"></div>
+          </div>
+          <div className="flex flex-col items-center gap-2">
+            <p className="dark:text-purple-400 text-purple-600 font-black text-[10px] uppercase tracking-[0.4em] animate-pulse">Sincronizando Base de Datos</p>
+            <div className="flex gap-1.5">
+              {[1, 2, 3, 4].map(i => (
+                <div key={i} className="w-1.5 h-1.5 rounded-full bg-purple-500/40 animate-bounce" style={{ animationDelay: `${i * 0.15}s` }} />
+              ))}
+            </div>
+          </div>
         </div>
       )}
 
       {/* Lista de Usuarios - Responsive */}
-      <div className="grid grid-cols-1 gap-3 sm:gap-4">
+      <div className="grid grid-cols-1 gap-4">
         {filteredUsers.map((user) => (
-          <div key={user.id} className="group bg-slate-900/40 backdrop-blur-xl border border-white/10 rounded-xl sm:rounded-[2rem] p-4 sm:p-6 hover:border-white/20 transition-all duration-300 flex flex-col lg:flex-row items-start lg:items-center gap-4 sm:gap-6 relative overflow-hidden">
+          <div key={user.id} className="group dark:bg-white/[0.02] bg-white backdrop-blur-3xl border dark:border-white/5 border-slate-200 rounded-[2rem] p-6 dark:hover:bg-white/[0.04] hover:bg-slate-50 dark:hover:border-white/10 hover:border-slate-300 transition-all duration-300 flex flex-col lg:flex-row items-start lg:items-center gap-6 relative overflow-hidden shadow-sm dark:shadow-none">
 
             {/* Perfil Básico - Responsive */}
             <div className="flex items-center gap-3 sm:gap-5 w-full lg:w-1/3 min-w-0">
               <div className={`w-12 h-12 sm:w-14 sm:h-14 rounded-xl sm:rounded-2xl flex items-center justify-center text-lg sm:text-xl font-bold shadow-lg shrink-0 ${user.role === 'admin' ? 'bg-gradient-to-br from-purple-500 to-indigo-600 text-white shadow-purple-500/20' :
-                'bg-white/5 border border-white/10 text-white/60'
+                'dark:bg-white/5 bg-slate-100 border dark:border-white/10 border-slate-200 dark:text-white/60 text-slate-600'
                 }`}>
                 {user.name.charAt(0)}
               </div>
               <div className="min-w-0 flex-1">
-                <h3 className="text-base sm:text-lg font-bold text-white flex items-center gap-2 truncate">
+                <h3 className="text-base sm:text-lg font-bold dark:text-white text-slate-900 flex items-center gap-2 truncate">
                   <span className="truncate">{user.name}</span>
-                  {user.role === 'admin' && <Shield size={14} className="text-purple-400 shrink-0" />}
+                  {user.role === 'admin' && <Shield size={14} className="text-purple-500 dark:text-purple-400 shrink-0" />}
                 </h3>
-                <div className="flex flex-col text-xs sm:text-sm text-white/40 font-medium">
+                <div className="flex flex-col text-xs sm:text-sm dark:text-white/40 text-slate-500 font-medium">
                   <span className="truncate" title={user.email}>{user.email}</span>
-                  {user.dni && <span className="text-[10px] text-white/20">DNI: {user.dni}</span>}
+                  {user.dni && <span className="text-[10px] dark:text-white/20 text-slate-400">DNI: {user.dni}</span>}
                 </div>
               </div>
             </div>
 
             {/* Stats Resumidas - Responsive */}
             <div className="flex-1 w-full grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-4 items-center">
-              <div className="bg-white/5 rounded-lg sm:rounded-xl p-2 sm:p-3 border border-white/5 hidden sm:block">
-                <div className="text-[9px] sm:text-[10px] font-bold text-white/30 uppercase tracking-widest mb-1 flex items-center gap-1">
+              <div className="dark:bg-white/5 bg-slate-50 rounded-lg sm:rounded-xl p-2 sm:p-3 border dark:border-white/5 border-slate-200 hidden sm:block">
+                <div className="text-[9px] sm:text-[10px] font-bold dark:text-white/30 text-slate-400 uppercase tracking-widest mb-1 flex items-center gap-1">
                   <Award size={10} /> Nivel
                 </div>
-                <div className="text-xs sm:text-sm font-black text-white truncate">{Math.floor((user.xp || 0) / 100) + 1}</div>
+                <div className="text-xs sm:text-sm font-black dark:text-white text-slate-900 truncate">{Math.floor((user.xp || 0) / 100) + 1}</div>
               </div>
 
-              <div className="bg-white/5 rounded-lg sm:rounded-xl p-2 sm:p-3 border border-white/5 min-w-[140px]">
+              <div className="dark:bg-white/5 bg-slate-50 rounded-lg sm:rounded-xl p-2 sm:p-3 border dark:border-white/5 border-slate-200 min-w-[140px]">
                 <div className="flex justify-between items-center mb-1">
-                  <div className="text-[9px] font-black text-white/30 uppercase tracking-widest flex items-center gap-1.5">
+                  <div className="text-[9px] font-black dark:text-white/30 text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
                     <BookOpen size={10} /> PROGRESO
                   </div>
-                  <div className="text-[10px] font-bold text-green-400">{Math.round(user.progress_summary?.global_progress || 0)}%</div>
+                  <div className="text-[10px] font-bold text-green-500 dark:text-green-400">{Math.round(user.progress_summary?.global_progress || 0)}%</div>
                 </div>
-                <div className="h-1.5 w-full bg-white/10 rounded-full overflow-hidden">
+                <div className="h-1.5 w-full dark:bg-white/10 bg-slate-200 rounded-full overflow-hidden">
                   <div
                     className="h-full bg-gradient-to-r from-green-500 to-emerald-400 rounded-full"
                     style={{ width: `${user.progress_summary?.global_progress || 0}%` }}
@@ -310,107 +322,107 @@ const UserManagement = () => {
       {/* Modal Ver Detalles Completos - Responsive */}
       {isViewModalOpen && selectedUser && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4">
-          <div className="absolute inset-0 bg-slate-950/60 backdrop-blur-md animate-in fade-in duration-300" onClick={() => setIsViewModalOpen(false)}></div>
+          <div className="absolute inset-0 dark:bg-[#05070a]/60 bg-slate-900/40 backdrop-blur-md animate-in fade-in duration-300" onClick={() => setIsViewModalOpen(false)}></div>
 
-          <div className="bg-slate-900 ring-1 ring-white/10 w-full max-w-4xl max-h-[90vh] sm:max-h-[85vh] rounded-2xl sm:rounded-[2.5rem] relative z-10 flex flex-col shadow-[0_0_100px_-20px_rgba(0,0,0,0.5)] animate-in zoom-in-95 duration-300 overflow-hidden">
+          <div className="dark:bg-[#0a0c10] bg-white ring-1 dark:ring-white/10 ring-slate-200 w-full max-w-4xl max-h-[90vh] sm:max-h-[85vh] rounded-2xl sm:rounded-[2.5rem] relative z-10 flex flex-col dark:shadow-[0_0_100px_-20px_rgba(0,0,0,0.5)] shadow-2xl animate-in zoom-in-95 duration-300 overflow-hidden">
 
             {/* Botón Cerrar Flotante */}
             <button
               onClick={() => setIsViewModalOpen(false)}
-              className="absolute top-3 right-3 sm:top-4 sm:right-4 z-50 p-1.5 sm:p-2 bg-black/20 hover:bg-white/10 text-white/50 hover:text-white rounded-full transition-all backdrop-blur-sm"
+              className="absolute top-3 right-3 sm:top-4 sm:right-4 z-50 p-1.5 sm:p-2 dark:bg-black/20 bg-slate-100/50 hover:bg-slate-200 dark:hover:bg-white/10 dark:text-white/50 text-slate-500 dark:hover:text-white hover:text-slate-900 rounded-full transition-all backdrop-blur-sm"
             >
               <X size={20} />
             </button>
 
             {/* ContenedorScrollableCompleto */}
-            <div className="flex flex-col md:flex-row overflow-hidden flex-1 bg-slate-900">
+            <div className="flex flex-col md:flex-row overflow-hidden flex-1 dark:bg-[#0a0c10] bg-white">
               {/* Columna Izquierda: Perfil - Responsive */}
-              <div className="w-full md:w-1/3 bg-slate-950/40 p-4 sm:p-6 lg:p-10 flex flex-col overflow-y-auto custom-scrollbar relative">
+              <div className="w-full md:w-1/3 dark:bg-[#05070a]/40 bg-slate-50 p-4 sm:p-6 lg:p-10 flex flex-col overflow-y-auto custom-scrollbar relative">
                 {/* Decoración de fondo */}
                 <div className="absolute top-0 left-0 w-full h-32 bg-gradient-to-b from-blue-600/10 to-transparent pointer-events-none" />
 
                 <div className="text-center mb-8 relative z-10">
                   <div className="relative inline-block group">
-                    <div className={`w-28 h-28 sm:w-36 sm:h-36 mx-auto rounded-[2.5rem] flex items-center justify-center text-4xl sm:text-6xl font-black text-white shadow-2xl mb-6 ring-4 ring-white/10 ${selectedUser.role === 'admin' ? 'bg-gradient-to-br from-purple-500 to-indigo-600 shadow-purple-500/20' : 'bg-gradient-to-br from-blue-500 to-emerald-500 shadow-blue-500/20'} transition-transform duration-500 group-hover:scale-105`}>
+                    <div className={`w-28 h-28 sm:w-36 sm:h-36 mx-auto rounded-[2.5rem] flex items-center justify-center text-4xl sm:text-6xl font-black text-white shadow-2xl mb-6 ring-4 dark:ring-white/10 ring-slate-200 ${selectedUser.role === 'admin' ? 'bg-gradient-to-br from-purple-500 to-indigo-600 shadow-purple-500/20' : 'bg-gradient-to-br from-blue-500 to-emerald-500 shadow-blue-500/20'} transition-transform duration-500 group-hover:scale-105`}>
                       {selectedUser.name.charAt(0)}
                     </div>
-                    <div className={`absolute -bottom-2 -right-2 p-2 rounded-2xl border-2 border-slate-950 shadow-xl ${selectedUser.status === 'active' ? 'bg-green-500' : 'bg-red-500'}`}>
+                    <div className={`absolute -bottom-2 -right-2 p-2 rounded-2xl border-2 dark:border-slate-950 border-white shadow-xl ${selectedUser.status === 'active' ? 'bg-green-500' : 'bg-red-500'}`}>
                       <Activity size={16} className="text-white" />
                     </div>
                   </div>
 
-                  <h2 className="text-2xl sm:text-3xl font-black text-white leading-tight mb-2 truncate px-2">{selectedUser.name}</h2>
+                  <h2 className="text-2xl sm:text-3xl font-black dark:text-white text-slate-900 leading-tight mb-2 truncate px-2">{selectedUser.name}</h2>
                   <div className="flex flex-wrap items-center justify-center gap-2">
-                    <span className="px-3 py-1 bg-blue-500/10 border border-blue-500/20 rounded-full text-blue-400 text-[10px] font-black uppercase tracking-widest leading-none">Nivel {Math.floor((selectedUser.xp || 0) / 100) + 1}</span>
-                    <span className={`px-3 py-1 border rounded-full text-[10px] font-black uppercase tracking-widest leading-none ${selectedUser.role === 'admin' ? 'bg-purple-500/10 border-purple-500/20 text-purple-400' : 'bg-white/5 border-white/10 text-white/40'}`}>
+                    <span className="px-3 py-1 bg-blue-500/10 border border-blue-500/20 rounded-full text-blue-500 dark:text-blue-400 text-[10px] font-black uppercase tracking-widest leading-none">Nivel {Math.floor((selectedUser.xp || 0) / 100) + 1}</span>
+                    <span className={`px-3 py-1 border rounded-full text-[10px] font-black uppercase tracking-widest leading-none ${selectedUser.role === 'admin' ? 'bg-purple-500/10 border-purple-500/20 text-purple-600 dark:text-purple-400' : 'dark:bg-white/5 bg-slate-200 dark:border-white/10 border-slate-300 dark:text-white/40 text-slate-500'}`}>
                       {selectedUser.role === 'admin' ? 'Administrador' : 'Estudiante'}
                     </span>
                   </div>
                 </div>
 
                 <div className="space-y-3 flex-1">
-                  <h4 className="text-[10px] font-black text-white/20 uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
+                  <h4 className="text-[10px] font-black dark:text-white/20 text-slate-400 uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
                     <UserCheck size={14} /> Información de Perfil
                   </h4>
 
-                  <div className="bg-slate-900/60 p-4 rounded-2xl border border-white/5 group hover:border-white/10 transition-all hover:bg-slate-900">
-                    <div className="flex items-center gap-3 text-white/30 mb-2 group-hover:text-blue-400 transition-colors">
+                  <div className="dark:bg-[#0a0c10]/60 bg-white p-4 rounded-2xl border dark:border-white/5 border-slate-200 group dark:hover:border-white/10 hover:border-slate-300 transition-all dark:hover:bg-[#0a0c10] hover:bg-slate-50">
+                    <div className="flex items-center gap-3 dark:text-white/30 text-slate-400 mb-2 group-hover:text-blue-500 dark:group-hover:text-blue-400 transition-colors">
                       <Mail size={12} />
                       <span className="text-[9px] uppercase font-black tracking-widest">Email Corporativo / Personal</span>
                     </div>
-                    <div className="text-white font-bold text-sm truncate" title={selectedUser.email}>{selectedUser.email}</div>
+                    <div className="dark:text-white text-slate-900 font-bold text-sm truncate" title={selectedUser.email}>{selectedUser.email}</div>
                   </div>
 
                   <div className="grid grid-cols-2 gap-3">
-                    <div className="bg-slate-900/60 p-4 rounded-2xl border border-white/5 group">
-                      <div className="flex items-center gap-2 text-white/30 mb-1 group-hover:text-emerald-400 transition-colors">
+                    <div className="dark:bg-[#0a0c10]/60 bg-white p-4 rounded-2xl border dark:border-white/5 border-slate-200 group">
+                      <div className="flex items-center gap-2 dark:text-white/30 text-slate-400 mb-1 group-hover:text-emerald-500 dark:group-hover:text-emerald-400 transition-colors">
                         <CreditCard size={12} /> <span className="text-[9px] uppercase font-black tracking-widest">DNI</span>
                       </div>
-                      <div className="text-white font-bold text-sm">{selectedUser.dni || '---'}</div>
+                      <div className="dark:text-white text-slate-900 font-bold text-sm">{selectedUser.dni || '---'}</div>
                     </div>
-                    <div className="bg-slate-900/60 p-4 rounded-2xl border border-white/5 group">
-                      <div className="flex items-center gap-2 text-white/30 mb-1 group-hover:text-amber-400 transition-colors">
+                    <div className="dark:bg-[#0a0c10]/60 bg-white p-4 rounded-2xl border dark:border-white/5 border-slate-200 group">
+                      <div className="flex items-center gap-2 dark:text-white/30 text-slate-400 mb-1 group-hover:text-amber-500 dark:group-hover:text-amber-400 transition-colors">
                         <Phone size={12} /> <span className="text-[9px] uppercase font-black tracking-widest">Tel</span>
                       </div>
-                      <div className="text-white font-bold text-sm">{selectedUser.phone || '---'}</div>
+                      <div className="dark:text-white text-slate-900 font-bold text-sm">{selectedUser.phone || '---'}</div>
                     </div>
                   </div>
 
-                  <div className="bg-slate-900/60 p-4 rounded-2xl border border-white/5 group">
-                    <div className="flex items-center gap-3 text-white/30 mb-2 group-hover:text-purple-400 transition-colors">
+                  <div className="dark:bg-[#0a0c10]/60 bg-white p-4 rounded-2xl border dark:border-white/5 border-slate-200 group">
+                    <div className="flex items-center gap-3 dark:text-white/30 text-slate-400 mb-2 group-hover:text-purple-500 dark:group-hover:text-purple-400 transition-colors">
                       <Calendar size={12} /> <span className="text-[9px] uppercase font-black tracking-widest">Fecha de Registro</span>
                     </div>
-                    <div className="text-white/60 font-bold text-sm tracking-tight">{selectedUser.joinDateFormatted}</div>
+                    <div className="dark:text-white/60 text-slate-600 font-bold text-sm tracking-tight">{selectedUser.joinDateFormatted}</div>
                   </div>
                 </div>
               </div>
 
               {/* Columna Derecha: Métricas y Cursos - Responsive */}
-              <div className="w-full md:w-2/3 p-4 sm:p-6 lg:p-10 flex flex-col bg-slate-900 relative overflow-y-auto custom-scrollbar border-l border-white/5">
+              <div className="w-full md:w-2/3 p-4 sm:p-6 lg:p-10 flex flex-col dark:bg-[#0a0c10] bg-white relative overflow-y-auto custom-scrollbar border-l dark:border-white/5 border-slate-200">
                 <div className="mb-8">
                   <div className="flex items-center gap-3 mb-1">
-                    <GraduationCap className="text-purple-400" size={24} />
-                    <h3 className="text-xl sm:text-3xl font-black text-white tracking-tight">Rendimiento Académico</h3>
+                    <GraduationCap className="text-purple-500 dark:text-purple-400" size={24} />
+                    <h3 className="text-xl sm:text-3xl font-black dark:text-white text-slate-900 tracking-tight">Rendimiento Académico</h3>
                   </div>
-                  <p className="text-white/30 text-xs sm:text-sm font-medium">Estadísticas de aprendizaje sincronizadas con el servidor</p>
+                  <p className="dark:text-white/30 text-slate-500 text-xs sm:text-sm font-medium">Estadísticas de aprendizaje sincronizadas con el servidor</p>
                 </div>
 
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-10">
-                  <div className="bg-white/[0.03] border border-white/5 p-4 sm:p-6 rounded-3xl text-center group hover:border-yellow-500/30 transition-all">
-                    <div className="text-xl sm:text-2xl font-black text-white mb-1 group-hover:text-yellow-500 transition-colors">{selectedUser.xp || 0}</div>
-                    <div className="text-[9px] font-black text-white/20 uppercase tracking-widest flex items-center justify-center gap-1">XP ACUMULADO</div>
+                  <div className="dark:bg-white/[0.03] bg-slate-50 border dark:border-white/5 border-slate-200 p-4 sm:p-6 rounded-3xl text-center group hover:border-yellow-500/30 transition-all">
+                    <div className="text-xl sm:text-2xl font-black dark:text-white text-slate-900 mb-1 group-hover:text-yellow-500 transition-colors">{selectedUser.xp || 0}</div>
+                    <div className="text-[9px] font-black dark:text-white/20 text-slate-400 uppercase tracking-widest flex items-center justify-center gap-1">XP ACUMULADO</div>
                   </div>
-                  <div className="bg-white/[0.03] border border-white/5 p-4 sm:p-6 rounded-3xl text-center group hover:border-blue-500/30 transition-all">
-                    <div className="text-xl sm:text-2xl font-black text-white mb-1 group-hover:text-blue-400 transition-colors">{selectedUser.progress || 0}%</div>
-                    <div className="text-[9px] font-black text-white/20 uppercase tracking-widest flex items-center justify-center gap-1">PROGRESO REAL</div>
+                  <div className="dark:bg-white/[0.03] bg-slate-50 border dark:border-white/5 border-slate-200 p-4 sm:p-6 rounded-3xl text-center group hover:border-blue-500/30 transition-all">
+                    <div className="text-xl sm:text-2xl font-black dark:text-white text-slate-900 mb-1 group-hover:text-blue-500 dark:group-hover:text-blue-400 transition-colors">{selectedUser.progress || 0}%</div>
+                    <div className="text-[9px] font-black dark:text-white/20 text-slate-400 uppercase tracking-widest flex items-center justify-center gap-1">PROGRESO REAL</div>
                   </div>
-                  <div className="bg-white/[0.03] border border-white/5 p-4 sm:p-6 rounded-3xl text-center group hover:border-green-500/30 transition-all">
-                    <div className="text-xl sm:text-2xl font-black text-white mb-1 group-hover:text-green-400 transition-colors">{selectedUser.precision || 0}%</div>
-                    <div className="text-[9px] font-black text-white/20 uppercase tracking-widest flex items-center justify-center gap-1">PRECISIÓN MEDIA</div>
+                  <div className="dark:bg-white/[0.03] bg-slate-50 border dark:border-white/5 border-slate-200 p-4 sm:p-6 rounded-3xl text-center group hover:border-green-500/30 transition-all">
+                    <div className="text-xl sm:text-2xl font-black dark:text-white text-slate-900 mb-1 group-hover:text-green-500 dark:group-hover:text-green-400 transition-colors">{selectedUser.precision || 0}%</div>
+                    <div className="text-[9px] font-black dark:text-white/20 text-slate-400 uppercase tracking-widest flex items-center justify-center gap-1">PRECISIÓN MEDIA</div>
                   </div>
-                  <div className="bg-white/[0.03] border border-white/5 p-4 sm:p-6 rounded-3xl text-center group hover:border-purple-500/30 transition-all">
-                    <div className="text-xl sm:text-2xl font-black text-white mb-1 group-hover:text-purple-400 transition-colors">{selectedUser.module_count || 0}</div>
-                    <div className="text-[9px] font-black text-white/20 uppercase tracking-widest flex items-center justify-center gap-1">MÓDULOS CERRADOS</div>
+                  <div className="dark:bg-white/[0.03] bg-slate-50 border dark:border-white/5 border-slate-200 p-4 sm:p-6 rounded-3xl text-center group hover:border-purple-500/30 transition-all">
+                    <div className="text-xl sm:text-2xl font-black dark:text-white text-slate-900 mb-1 group-hover:text-purple-500 dark:group-hover:text-purple-400 transition-colors">{selectedUser.module_count || 0}</div>
+                    <div className="text-[9px] font-black dark:text-white/20 text-slate-400 uppercase tracking-widest flex items-center justify-center gap-1">MÓDULOS CERRADOS</div>
                   </div>
                 </div>
 
@@ -418,13 +430,13 @@ const UserManagement = () => {
 
                   {/* Desglose de Módulos */}
                   <div>
-                    <h4 className="text-[10px] sm:text-[11px] font-black text-white/20 mb-6 uppercase tracking-[0.25em] sticky top-0 bg-slate-900 py-4 z-20 border-b border-white/5 flex items-center justify-between">
+                    <h4 className="text-[10px] sm:text-[11px] font-black dark:text-white/20 text-slate-400 mb-6 uppercase tracking-[0.25em] sticky top-0 dark:bg-[#0a0c10] bg-white py-4 z-20 border-b dark:border-white/5 border-slate-200 flex items-center justify-between">
                       <span>Maestría por Contenido</span>
-                      <span className="text-blue-400/40">{selectedUser.courses?.length || 0} módulos</span>
+                      <span className="text-blue-500/60 dark:text-blue-400/40">{selectedUser.courses?.length || 0} módulos</span>
                     </h4>
                     <div className="grid grid-cols-1 gap-4">
                       {selectedUser.courses?.map((course, i) => (
-                        <div key={i} className="group flex items-center justify-between bg-slate-950/40 p-5 rounded-3xl border border-white/5 hover:border-blue-500/30 transition-all duration-500 shadow-xl overflow-hidden relative">
+                        <div key={i} className="group flex items-center justify-between bg-[#05070a]/40 p-5 rounded-3xl border border-white/5 hover:border-blue-500/30 transition-all duration-500 shadow-xl overflow-hidden relative">
                           <div className={`absolute top-0 left-0 w-1 h-full ${course.progress >= 95 ? 'bg-green-500' : 'bg-blue-600'} opacity-50`} />
 
                           <div className="flex items-center gap-5 flex-1 min-w-0">
@@ -460,7 +472,7 @@ const UserManagement = () => {
 
                   {/* Últimas Sesiones (NUEVO) */}
                   <div className="pb-10">
-                    <h4 className="text-[10px] sm:text-[11px] font-black text-white/20 mb-6 uppercase tracking-[0.25em] sticky top-0 bg-slate-900 py-4 z-20 border-b border-white/5 flex items-center justify-between">
+                    <h4 className="text-[10px] sm:text-[11px] font-black text-white/20 mb-6 uppercase tracking-[0.25em] sticky top-0 bg-[#0a0c10] py-4 z-20 border-b border-white/5 flex items-center justify-between">
                       <span>Historial Reciente</span>
                       <Sparkles size={14} className="text-yellow-500/40" />
                     </h4>
@@ -505,48 +517,48 @@ const UserManagement = () => {
       {/* Modal Editar - Responsive */}
       {isEditModalOpen && selectedUser && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4">
-          <div className="absolute inset-0 bg-slate-950/80 backdrop-blur-md" onClick={() => setIsEditModalOpen(false)}></div>
-          <form onSubmit={handleSaveUser} className="bg-slate-900 border border-white/10 w-full max-w-2xl rounded-2xl sm:rounded-[3rem] relative z-10 p-6 sm:p-8 lg:p-10 shadow-2xl animate-in zoom-in duration-300 max-h-[90vh] overflow-y-auto custom-scrollbar">
+          <div className="absolute inset-0 dark:bg-[#05070a]/80 bg-slate-900/40 backdrop-blur-md" onClick={() => setIsEditModalOpen(false)}></div>
+          <form onSubmit={handleSaveUser} className="dark:bg-[#0a0c10] bg-white border dark:border-white/10 border-slate-200 w-full max-w-2xl rounded-2xl sm:rounded-[3rem] relative z-10 p-6 sm:p-8 lg:p-10 shadow-2xl animate-in zoom-in duration-300 max-h-[90vh] overflow-y-auto custom-scrollbar">
 
-            <div className="flex items-center gap-4 sm:gap-6 mb-6 sm:mb-8 border-b border-white/10 pb-4 sm:pb-6">
+            <div className="flex items-center gap-4 sm:gap-6 mb-6 sm:mb-8 border-b dark:border-white/10 border-slate-200 pb-4 sm:pb-6">
               <div className="w-12 h-12 sm:w-16 sm:h-16 bg-blue-600 rounded-xl sm:rounded-2xl flex items-center justify-center text-xl sm:text-2xl font-bold text-white shadow-lg">
                 <Edit size={20} />
               </div>
               <div className="flex-1 min-w-0">
-                <h3 className="text-lg sm:text-2xl font-bold text-white truncate">Editar Perfil de Usuario</h3>
-                <p className="text-white/40 text-xs sm:text-sm">Actualiza la información personal y permisos</p>
+                <h3 className="text-lg sm:text-2xl font-bold dark:text-white text-slate-900 truncate">Editar Perfil de Usuario</h3>
+                <p className="dark:text-white/40 text-slate-500 text-xs sm:text-sm">Actualiza la información personal y permisos</p>
               </div>
-              <button type="button" onClick={() => setIsEditModalOpen(false)} className="p-1.5 sm:p-2 bg-white/5 rounded-full text-white/50 hover:text-white shrink-0"><X size={20} /></button>
+              <button type="button" onClick={() => setIsEditModalOpen(false)} className="p-1.5 sm:p-2 dark:bg-white/5 bg-slate-100 rounded-full dark:text-white/50 text-slate-500 dark:hover:text-white hover:text-slate-900 shrink-0"><X size={20} /></button>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 mb-6 sm:mb-8">
               <div className="space-y-2">
-                <label className="text-[9px] sm:text-[10px] font-black text-white/40 uppercase tracking-widest pl-1">Nombre Completo</label>
-                <input type="text" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} className="w-full bg-slate-950 border border-white/10 rounded-xl px-3 sm:px-4 py-2.5 sm:py-3 text-sm sm:text-base text-white font-bold focus:outline-none focus:border-blue-500/50" />
+                <label className="text-[9px] sm:text-[10px] font-black dark:text-white/40 text-slate-500 uppercase tracking-widest pl-1">Nombre Completo</label>
+                <input type="text" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} className="w-full dark:bg-[#05070a] bg-slate-50 border dark:border-white/10 border-slate-200 rounded-xl px-3 sm:px-4 py-2.5 sm:py-3 text-sm sm:text-base dark:text-white text-slate-900 font-bold focus:outline-none focus:border-blue-500/50" />
               </div>
               <div className="space-y-2">
-                <label className="text-[9px] sm:text-[10px] font-black text-white/40 uppercase tracking-widest pl-1">Correo Electrónico</label>
-                <input type="email" value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} className="w-full bg-slate-950 border border-white/10 rounded-xl px-3 sm:px-4 py-2.5 sm:py-3 text-sm sm:text-base text-white font-bold focus:outline-none focus:border-blue-500/50" />
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-[9px] sm:text-[10px] font-black text-white/40 uppercase tracking-widest pl-1">DNI (Documento Identidad)</label>
-                <input type="text" value={formData.dni} onChange={(e) => setFormData({ ...formData, dni: e.target.value })} className="w-full bg-slate-950 border border-white/10 rounded-xl px-3 sm:px-4 py-2.5 sm:py-3 text-sm sm:text-base text-white font-bold focus:outline-none focus:border-blue-500/50" placeholder="00000000" />
-              </div>
-              <div className="space-y-2">
-                <label className="text-[9px] sm:text-[10px] font-black text-white/40 uppercase tracking-widest pl-1">Teléfono</label>
-                <input type="text" value={formData.phone} onChange={(e) => setFormData({ ...formData, phone: e.target.value })} className="w-full bg-slate-950 border border-white/10 rounded-xl px-3 sm:px-4 py-2.5 sm:py-3 text-sm sm:text-base text-white font-bold focus:outline-none focus:border-blue-500/50" placeholder="+51 ..." />
+                <label className="text-[9px] sm:text-[10px] font-black dark:text-white/40 text-slate-500 uppercase tracking-widest pl-1">Correo Electrónico</label>
+                <input type="email" value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} className="w-full dark:bg-[#05070a] bg-slate-50 border dark:border-white/10 border-slate-200 rounded-xl px-3 sm:px-4 py-2.5 sm:py-3 text-sm sm:text-base dark:text-white text-slate-900 font-bold focus:outline-none focus:border-blue-500/50" />
               </div>
 
               <div className="space-y-2">
-                <label className="text-[9px] sm:text-[10px] font-black text-white/40 uppercase tracking-widest pl-1">Rol de Sistema</label>
-                <div className="w-full bg-slate-950/50 border border-white/5 rounded-xl px-4 py-3 text-white/40 font-bold text-sm">
+                <label className="text-[9px] sm:text-[10px] font-black dark:text-white/40 text-slate-500 uppercase tracking-widest pl-1">DNI (Documento Identidad)</label>
+                <input type="text" value={formData.dni} onChange={(e) => setFormData({ ...formData, dni: e.target.value })} className="w-full dark:bg-[#05070a] bg-slate-50 border dark:border-white/10 border-slate-200 rounded-xl px-3 sm:px-4 py-2.5 sm:py-3 text-sm sm:text-base dark:text-white text-slate-900 font-bold focus:outline-none focus:border-blue-500/50" placeholder="00000000" />
+              </div>
+              <div className="space-y-2">
+                <label className="text-[9px] sm:text-[10px] font-black dark:text-white/40 text-slate-500 uppercase tracking-widest pl-1">Teléfono</label>
+                <input type="text" value={formData.phone} onChange={(e) => setFormData({ ...formData, phone: e.target.value })} className="w-full dark:bg-[#05070a] bg-slate-50 border dark:border-white/10 border-slate-200 rounded-xl px-3 sm:px-4 py-2.5 sm:py-3 text-sm sm:text-base dark:text-white text-slate-900 font-bold focus:outline-none focus:border-blue-500/50" placeholder="+51 ..." />
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-[9px] sm:text-[10px] font-black dark:text-white/40 text-slate-500 uppercase tracking-widest pl-1">Rol de Sistema</label>
+                <div className="w-full dark:bg-[#05070a]/50 bg-slate-100 border dark:border-white/5 border-slate-200 rounded-xl px-4 py-3 dark:text-white/40 text-slate-500 font-bold text-sm">
                   Estudiante (user)
                 </div>
               </div>
               <div className="space-y-2">
-                <label className="text-[9px] sm:text-[10px] font-black text-white/40 uppercase tracking-widest pl-1">Estado de Cuenta</label>
-                <select value={formData.status} onChange={(e) => setFormData({ ...formData, status: e.target.value })} className="w-full bg-slate-950 border border-white/10 rounded-xl px-3 sm:px-4 py-2.5 sm:py-3 text-sm sm:text-base text-white font-bold focus:outline-none focus:border-blue-500/50 appearance-none cursor-pointer">
+                <label className="text-[9px] sm:text-[10px] font-black dark:text-white/40 text-slate-500 uppercase tracking-widest pl-1">Estado de Cuenta</label>
+                <select value={formData.status} onChange={(e) => setFormData({ ...formData, status: e.target.value })} className="w-full dark:bg-[#05070a] bg-slate-50 border dark:border-white/10 border-slate-200 rounded-xl px-3 sm:px-4 py-2.5 sm:py-3 text-sm sm:text-base dark:text-white text-slate-900 font-bold focus:outline-none focus:border-blue-500/50 appearance-none cursor-pointer">
                   <option value="active">Activo</option>
                   <option value="inactive">Inactivo</option>
                   <option value="suspended">Suspendido</option>
@@ -554,13 +566,13 @@ const UserManagement = () => {
               </div>
 
               <div className="col-span-1 md:col-span-2 space-y-2 pt-2">
-                <label className="text-[9px] sm:text-[10px] font-black text-white/40 uppercase tracking-widest pl-1">Cambiar Contraseña (Opcional)</label>
-                <input type="password" value={formData.password} onChange={(e) => setFormData({ ...formData, password: e.target.value })} className="w-full bg-slate-950 border border-white/10 rounded-xl px-3 sm:px-4 py-2.5 sm:py-3 text-sm sm:text-base text-white font-bold focus:outline-none focus:border-blue-500/50" placeholder="Dejar en blanco para mantener la actual" />
+                <label className="text-[9px] sm:text-[10px] font-black dark:text-white/40 text-slate-500 uppercase tracking-widest pl-1">Cambiar Contraseña (Opcional)</label>
+                <input type="password" value={formData.password} onChange={(e) => setFormData({ ...formData, password: e.target.value })} className="w-full dark:bg-[#05070a] bg-slate-50 border dark:border-white/10 border-slate-200 rounded-xl px-3 sm:px-4 py-2.5 sm:py-3 text-sm sm:text-base dark:text-white text-slate-900 font-bold focus:outline-none focus:border-blue-500/50" placeholder="Dejar en blanco para mantener la actual" />
               </div>
             </div>
 
-            <div className="flex gap-3 sm:gap-4 border-t border-white/5 pt-4 sm:pt-6">
-              <button type="button" onClick={() => setIsEditModalOpen(false)} className="flex-1 py-3 sm:py-4 rounded-xl border border-white/10 text-sm sm:text-base text-white font-bold hover:bg-white/5 transition-all">Cancelar</button>
+            <div className="flex gap-3 sm:gap-4 border-t dark:border-white/5 border-slate-200 pt-4 sm:pt-6">
+              <button type="button" onClick={() => setIsEditModalOpen(false)} className="flex-1 py-3 sm:py-4 rounded-xl border dark:border-white/10 border-slate-300 text-sm sm:text-base dark:text-white text-slate-600 font-bold hover:bg-slate-50 dark:hover:bg-white/5 transition-all">Cancelar</button>
               <button type="submit" className="flex-1 py-3 sm:py-4 rounded-xl bg-blue-600 text-sm sm:text-base text-white font-bold hover:bg-blue-700 shadow-lg shadow-blue-600/20 transition-all">Guardar Cambios</button>
             </div>
           </form>
@@ -570,17 +582,17 @@ const UserManagement = () => {
       {/* Modal Eliminar - Responsive */}
       {isDeleteModalOpen && selectedUser && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4">
-          <div className="absolute inset-0 bg-slate-950/80 backdrop-blur-md" onClick={() => setIsDeleteModalOpen(false)}></div>
-          <div className="bg-slate-900 border border-red-500/30 w-full max-w-sm rounded-2xl sm:rounded-[2.5rem] relative z-10 p-6 sm:p-8 text-center shadow-[0_0_50px_rgba(239,68,68,0.2)] animate-in zoom-in duration-300">
+          <div className="absolute inset-0 dark:bg-[#05070a]/80 bg-slate-900/40 backdrop-blur-md" onClick={() => setIsDeleteModalOpen(false)}></div>
+          <div className="dark:bg-[#0a0c10] bg-white border border-red-500/30 w-full max-w-sm rounded-2xl sm:rounded-[2.5rem] relative z-10 p-6 sm:p-8 text-center shadow-[0_0_50px_rgba(239,68,68,0.2)] animate-in zoom-in duration-300">
             <div className="w-14 h-14 sm:w-16 sm:h-16 bg-red-500/10 rounded-full flex items-center justify-center mx-auto mb-4 sm:mb-6 border border-red-500/20">
               <AlertCircle size={28} className="text-red-500" />
             </div>
-            <h3 className="text-lg sm:text-xl font-black text-white mb-2">¿Eliminar Usuario?</h3>
-            <p className="text-white/60 text-xs sm:text-sm mb-6 sm:mb-8">
-              Se eliminará a <strong className="text-white">{selectedUser.name}</strong> y todo su historial.
+            <h3 className="text-lg sm:text-xl font-black dark:text-white text-slate-900 mb-2">¿Eliminar Usuario?</h3>
+            <p className="dark:text-white/60 text-slate-600 text-xs sm:text-sm mb-6 sm:mb-8">
+              Se eliminará a <strong className="dark:text-white text-slate-900">{selectedUser.name}</strong> y todo su historial.
             </p>
             <div className="flex gap-2 sm:gap-3">
-              <button onClick={() => setIsDeleteModalOpen(false)} className="flex-1 py-2.5 sm:py-3 rounded-xl border border-white/10 text-sm sm:text-base text-white font-bold hover:bg-white/5">Cancelar</button>
+              <button onClick={() => setIsDeleteModalOpen(false)} className="flex-1 py-2.5 sm:py-3 rounded-xl border dark:border-white/10 border-slate-300 text-sm sm:text-base dark:text-white text-slate-600 font-bold hover:bg-slate-50 dark:hover:bg-white/5">Cancelar</button>
               <button onClick={handleDeleteUser} className="flex-1 py-2.5 sm:py-3 rounded-xl bg-red-500 text-sm sm:text-base text-white font-bold hover:bg-red-600 shadow-lg shadow-red-500/20">Eliminar</button>
             </div>
           </div>
@@ -590,8 +602,9 @@ const UserManagement = () => {
       <style>{`
         .custom-scrollbar::-webkit-scrollbar { width: 6px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.1); border-radius: 10px; }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.2); }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(0, 0, 0, 0.05); border-radius: 10px; }
+        :global(.dark) .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.1); }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(59, 130, 246, 0.2); }
       `}</style>
     </div>
   );

@@ -79,9 +79,9 @@ const AdminSidebar = ({ activeSection, onSectionChange, currentUser, isOpen, onC
     <>
       {/* Sidebar - Desktop: Siempre visible, Mobile: Drawer */}
       <aside className={`
-        bg-slate-900/40 backdrop-blur-2xl 
+        dark:bg-white/[0.02] bg-white backdrop-blur-3xl 
         w-64 sm:w-72 h-full p-4 sm:p-6 
-        border-r border-white/10 
+        dark:border-r dark:border-white/5 border-r border-slate-200 
         flex flex-col overflow-hidden
         fixed lg:relative
         top-0 left-0 z-50
@@ -94,8 +94,8 @@ const AdminSidebar = ({ activeSection, onSectionChange, currentUser, isOpen, onC
             <BrainCircuit className="text-white" size={20} />
           </div>
           <div>
-            <h2 className="text-white font-bold text-base sm:text-lg leading-tight">{siteName}</h2>
-            <p className="text-white/40 text-[9px] sm:text-[10px] uppercase tracking-widest font-bold">Control Center</p>
+            <h2 className="dark:text-white text-slate-900 font-bold text-base sm:text-lg leading-tight">{siteName}</h2>
+            <p className="dark:text-white/40 text-slate-400 text-[9px] sm:text-[10px] uppercase tracking-widest font-bold">Control Center</p>
           </div>
         </div>
 
@@ -103,7 +103,7 @@ const AdminSidebar = ({ activeSection, onSectionChange, currentUser, isOpen, onC
         <div className="flex-1 overflow-y-auto space-y-6 sm:space-y-8 pr-2 custom-scrollbar">
           {menuGroups.map((group, groupIdx) => (
             <div key={groupIdx} className="space-y-2 sm:space-y-3">
-              <h3 className="text-white/30 text-[9px] sm:text-[10px] uppercase tracking-[0.2em] font-black px-3 sm:px-4">
+              <h3 className="dark:text-white/30 text-slate-400 text-[9px] sm:text-[10px] uppercase tracking-[0.2em] font-black px-3 sm:px-4">
                 {group.title}
               </h3>
               <div className="space-y-1">
@@ -114,9 +114,9 @@ const AdminSidebar = ({ activeSection, onSectionChange, currentUser, isOpen, onC
                     <button
                       key={item.id}
                       onClick={() => onSectionChange(item.id)}
-                      className={`w-full flex items-center gap-2 sm:gap-3 px-3 sm:px-4 py-2.5 sm:py-3 rounded-xl sm:rounded-2xl transition-all duration-300 group relative ${isActive
-                        ? 'bg-blue-600/20 text-blue-400'
-                        : 'text-white/60 hover:bg-white/5 hover:text-white'
+                      className={`w-full flex items-center gap-2 sm:gap-3 px-3 sm:px-4 py-2.5 sm:py-3 rounded-[1rem] transition-all duration-500 group relative border ${isActive
+                        ? 'dark:bg-blue-500/10 bg-blue-50 dark:text-blue-400 text-blue-600 dark:border-blue-500/20 border-blue-200'
+                        : 'dark:text-white/40 text-slate-500 dark:hover:bg-white/[0.04] hover:bg-slate-50 dark:hover:text-white hover:text-slate-900 border-transparent dark:hover:border-white/5 hover:border-slate-200'
                         }`}
                     >
                       {isActive && (
@@ -124,7 +124,7 @@ const AdminSidebar = ({ activeSection, onSectionChange, currentUser, isOpen, onC
                       )}
                       <Icon
                         size={18}
-                        className={`${isActive ? 'text-blue-400' : 'group-hover:text-white'} transition-colors duration-300 sm:w-5 sm:h-5`}
+                        className={`${isActive ? 'dark:text-blue-400 text-blue-600' : 'dark:group-hover:text-white group-hover:text-slate-900'} transition-colors duration-300 sm:w-5 sm:h-5`}
                       />
                       <span className="font-semibold text-xs sm:text-sm">{item.label}</span>
 
@@ -140,28 +140,28 @@ const AdminSidebar = ({ activeSection, onSectionChange, currentUser, isOpen, onC
         </div>
 
         {/* System Status - Premium Card - Responsive */}
-        <div className="mt-4 sm:mt-6 pt-4 sm:pt-6 border-t border-white/5">
-          <div className="p-4 sm:p-5 rounded-xl sm:rounded-2xl bg-gradient-to-br from-white/5 to-transparent border border-white/10 relative overflow-hidden group">
+        <div className="mt-4 sm:mt-6 pt-4 sm:pt-6 dark:border-t dark:border-white/5 border-t border-slate-200">
+          <div className="p-4 sm:p-5 rounded-[1.5rem] dark:bg-white/[0.02] bg-slate-50 dark:border dark:border-white/5 border border-slate-200 relative overflow-hidden group dark:hover:bg-white/[0.04] hover:bg-slate-100 transition-colors shadow-sm dark:shadow-none">
             <div className="absolute -right-2 -top-2 opacity-10 group-hover:rotate-12 transition-transform duration-500">
               <Activity className="text-blue-400" size={50} />
             </div>
 
-            <h4 className="text-white text-[10px] sm:text-xs font-bold mb-3 sm:mb-4 flex items-center gap-2">
+            <h4 className="dark:text-white text-slate-900 text-[10px] sm:text-xs font-bold mb-3 sm:mb-4 flex items-center gap-2">
               <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
               System Status
             </h4>
 
             <div className="space-y-2 sm:space-y-3">
               <div className="flex items-center justify-between text-[10px] sm:text-[11px]">
-                <span className="text-white/40">Core Engine</span>
-                <span className="text-green-400 font-bold uppercase tracking-tighter">Running</span>
+                <span className="dark:text-white/40 text-slate-500">Core Engine</span>
+                <span className="text-green-500 font-bold uppercase tracking-tighter">Running</span>
               </div>
-              <div className="w-full h-1 bg-white/5 rounded-full overflow-hidden">
+              <div className="w-full h-1 dark:bg-white/5 bg-slate-200 rounded-full overflow-hidden">
                 <div className="h-full bg-blue-500 w-[85%] rounded-full shadow-[0_0_10px_rgba(59,130,246,0.5)]" />
               </div>
               <div className="flex items-center justify-between text-[10px] sm:text-[11px]">
-                <span className="text-white/40">Efficiency</span>
-                <span className="text-white font-mono">98.4%</span>
+                <span className="dark:text-white/40 text-slate-500">Efficiency</span>
+                <span className="dark:text-white text-slate-800 font-mono">98.4%</span>
               </div>
             </div>
           </div>
@@ -175,11 +175,14 @@ const AdminSidebar = ({ activeSection, onSectionChange, currentUser, isOpen, onC
             background: transparent;
           }
           .custom-scrollbar::-webkit-scrollbar-thumb {
-            background: rgba(255, 255, 255, 0.1);
+            background: rgba(0, 0, 0, 0.05);
             border-radius: 10px;
           }
+          :global(.dark) .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.1);
+          }
           .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-            background: rgba(255, 255, 255, 0.2);
+            background: rgba(59, 130, 246, 0.2);
           }
         `}</style>
       </aside>

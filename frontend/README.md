@@ -78,16 +78,25 @@ La aplicación sigue un flujo de datos unidireccional y una estructura modular:
 
 ---
 
-## 5. Estructura Documentada del Código Fuente
+### `src/` (Estructura de Directorios)
+-   `api/`: Capa de servicios que encapsula toda la comunicación con el backend (Axios).
+-   `components/`:
+    -   `auth/`: Componentes modulares para el flujo de acceso (`AuthLayout`, `RegistrationForm`).
+    -   `landing/`: Secciones independientes del Landing Page (`Hero`, `Features`, `Modules`, `Footer`).
+    -   `admin/`: Paneles de gestión para el Bunker de Datos.
+    -   `common/`: Elementos UI reutilizables (Botones, Inputs, Cards).
+-   `page/`: Contenedores de vistas principales y lógica de rutas.
+-   `utils/`: Utilidades transversales como `authStorage.js` para gestión de sesiones.
+-   `assets/`: Recursos estáticos, imágenes y shaders.
 
-### Raíz del Proyecto
--   `index.html`: Punto de entrada DOM con pre-carga de fuentes premium.
--   `tailwind.config.js`: Contiene la definición de los "Keyframes" personalizados para las animaciones neon.
+---
 
-### `src/api/` (El Sistema Circulatorio)
-Cada archivo aquí es un "especialista":
--   `progressService.js`: Sincroniza cada acierto del usuario con el servidor.
--   `apiClient.js`: Configura el `timeout` de 10 segundos para evitar colgar la interfaz si el backend no responde.
+## 5.1 Implementación Técnica de Componentes
+
+Nuestra arquitectura de componentes se basa en la **Composición sobre Herencia**:
+- **Layout Patterns**: Uso de contenedores base (`AuthLayout`) que inyectan lógica de branding y seguridad mediante `children`.
+- **States & Props**: Gestión de formularios compleja mediante descomposicón de estados para evitar re-renders innecesarios.
+- **Intersección de Eventos**: Uso de `IntersectionObserver` y GSAP para disparar animaciones solo cuando el elemento es visible, optimizando el uso de CPU.
 
 ---
 
@@ -138,110 +147,62 @@ Incluye:
 
 ---
 
-## 10. Gamificación, Feedback de Usuario y Dopamina Visual
+---
 
-El aprendizaje se refuerza con refuerzos positivos constantes:
+## 21. Arquitectura de Autenticación Enterprise
 
--   **Achievement Toast:** Cuando detectamos un nuevo logro, disparamos una notificación personalizada con sonido y brillo.
--   **Nivelación de XP:** El backend calcula el XP, pero el frontend interpola el número para que "suba" visualmente de forma fluida.
+Hemos implementado una suite de autenticación de grado institucional que prioriza la seguridad y la experiencia de usuario premium.
+
+### El Patrón AuthLayout
+Para mantener la coherencia visual, todas las vistas de acceso (`Login`, `Register`, `ForgotPassword`) utilizan el componente `AuthLayout.jsx`.
+- **Side Panel Informativo**: Presenta las capacidades de la IA y badges de confianza institucional.
+- **Micro-interacciones**: Sistema de partículas dinámicas y efectos de brillo neon que se sincronizan con las acciones del usuario.
+- **Responsividad**: Adaptación inteligente que prioriza el formulario en dispositivos móviles sin perder la identidad de marca.
+
+### Lógica de Registro Multi-paso
+El formulario de registro (`RegistrationForm.jsx`) utiliza un sistema de estados internos para guiar al usuario a través de un flujo intuitivo, validando datos en tiempo real antes de proceder a la creación de la cuenta en el backend.
 
 ---
 
-## 11. Panel de Control del Administrador (El Bunker Externo)
+## 22. Gestión de Sesiones y Persistencia Pro
 
-Un administrador tiene control total sobre:
--   **Módulos:** Crear, Eliminar, Editar iconos.
--   **Elementos:** Modificar las imágenes de referencia y descripciones de las señas.
--   **Dataset:** Ver cuántas imágenes se han capturado por cada elemento.
+La seguridad y la persistencia de la sesión han sido elevadas mediante una infraestructura de almacenamiento dinámica.
 
----
+### Utilidad `authStorage.js`
+Centralizamos el manejo de tokens y datos de usuario en un motor que decide inteligentemente dónde almacenar la información:
+- **Modo Persistente (Remember Me)**: Utiliza `localStorage` para mantener al usuario autenticado indefinidamente.
+- **Modo Sesión Única**: Utiliza `sessionStorage`, eliminando los datos sensibles automáticamente al cerrar la pestaña.
 
-## 12. Guía de Entrenamiento de IA y Captura de Datasets
-
-Proceso para crear un nuevo modelo:
-1.  Activar el **Modo Captura**.
-2.  El sistema toma una ráfaga de landmarks.
-3.  Se eliminan duplicados estadísticos automáticamente.
-4.  Se genera un payload JSON masivo con las coordenadas normalizadas.
+### Sincronización Global
+El `apiClient.js` ha sido configurado para recuperar el token de cualquiera de los dos storages de forma transparente, asegurando que cada petición a la API sea autorizada sin importar la estrategia de persistencia elegida por el usuario.
 
 ---
 
-## 13. Guía de Instalación, Configuración y Troubleshooting
+## 23. Arquitectura Modular del Landing Page
 
-### Errores Comunes de Instalación
--   **Node v16:** La app fallará. Se requiere v18+.
--   **CORS Error:** El navegador bloquea la API. Solución: Verifique que el puerto del frontend está permitido en el backend.
+El `Landing.jsx` ha sido completamente refactorizado hacia un modelo de componentes desacoplados en `src/components/landing/`.
 
-### Pasos de Recuperación
--   Eliminar `node_modules`.
--   Limpiar caché de npm: `npm cache clean --force`.
--   Reinstalar: `npm install`.
+### Desglose de Componentes
+1.  **LandingHero**: Sección de alto impacto con tipografía "Enterprise" y animaciones de entrada orquestadas.
+2.  **LandingFeatures**: Grid de capacidades técnicas utilizando el sistema de tarjetas glassmorphic.
+3.  **LandingModules**: Presentación del currículo educativo con estados de bloqueo/progreso visuales.
+4.  **LandingTestimonials**: Carrusel de validación social con transiciones suaves.
+5.  **LandingCTA**: Punto de conversión final con gradientes institucionales.
 
----
-
-## 14. Optimización de Rendimiento y Build de Producción
-
-### Estrategias de Carga
--   **Lazy Loading:** Las páginas pesadas no se cargan hasta que el usuario navega a ellas.
--   **Component Memoization:** Usamos `React.memo` en las visualizaciones de Recharts para evitar cálculos costosos cada vez que la cámara actualiza el estado.
+### Sistema de Animación GSAP
+Utilizamos **GSAP (GreenSock Animation Platform)** junto con **ScrollTrigger** para:
+- Sincronizar las apariciones de elementos con el scroll del usuario.
+- Mantener el fondo de red neuronal fluido mientras se navega por secciones pesadas.
+- Orquestar transiciones 3D en las tarjetas de módulos para una sensación táctil.
 
 ---
 
-## 15. Detalles de Implementación de Animaciones y Efectos
+## 24. Estándares del Sistema de Diseño Enterprise
 
-Utilizamos variantes de Framer Motion para mantener el código limpio:
-
-```javascript
-const fadeInUp = {
-  initial: { opacity: 0, y: 30 },
-  animate: { opacity: 1, y: 0 },
-  transition: { duration: 0.8 }
-};
-```
-
-Este patrón se repite en todas las tarjetas del dashboard para una experiencia cohesiva.
-
----
-
-## 16. Gestión de Estados Globales y Persistencia Local
-
-Aunque no usamos Redux (para evitar sobrecarga), gestionamos el estado mediante:
--   **Context API:** Para el tema y las preferencias de audio.
--   **LocalStorage:** Para persistir el token y la configuración básica del sitio.
-
----
-
-## 17. Protocolos de Mantenimiento y Actualizaciones
-
-Al desplegar una nueva versión:
-1.  Activar el **Modo Mantenimiento** en el backend.
-2.  El frontend detecta el flag y muestra la **MaintenancePage**.
-3.  Subir archivos mediante FTP/CI-CD.
-4.  Desactivar mantenimiento.
-
----
-
-## 18. Estándares de Código y Convenciones de Estilo
-
--   **PascalCase:** Para todos los componentes.
--   **camelCase:** Para funciones de utilidad y variables.
--   **snake_case:** Solo cuando recibimos datos del backend (para mantener paridad con Python).
-
----
-
-## 19. Glosario Técnico de UI/UX Aeroespacial
-
--   **Backdrop Blur:** Desenfoque de fondo.
--   **HMR (Hot Module Replacement):** Reemplazo de módulos en caliente.
--   **JIT (Just In Time):** Generación de CSS de Tailwind al vuelo.
-
----
-
-## 20. Hoja de Ruta (Roadmap) y Visión 2026
-
-1.  **Soporte Multilingüe:** Añadir Lengua de Señas Americana (ASL) y otras variantes.
-2.  **IA en Cliente:** Migración total de la inferencia a TensorFlow.js.
-3.  **Comunidad:** Foro de discusión y corrección entre pares.
+- **Fondo Base**: `#05070a` (Ultra-Dark) para contraste máximo.
+- **Tipografía**: Títulos en `font-black` con `tracking-tighter` para una estética audaz y profesional.
+- **Glassmorphism**: Uso extensivo de `backdrop-blur-2xl` y bordes de `white/10` para simular profundidad física.
+- **Iconografía**: Curación de iconos de **Lucide-React** para una semántica técnica precisa.
 
 ---
 
@@ -288,4 +249,62 @@ A diferencia de los colores hexadecimales, usamos HSL para los efectos de brillo
 El desarrollo de esta interfaz tomó 8 semanas de iteración intensiva, con un enfoque inicial en la estabilidad de la cámara y cerrando con la pulida de la estética Bunker que caracteriza a la versión actual.
 
 ---
+
+## 21. Arquitectura de Autenticación Enterprise
+
+Hemos implementado una suite de autenticación de grado institucional que prioriza la seguridad y la experiencia de usuario premium.
+
+### El Patrón AuthLayout
+Para mantener la coherencia visual, todas las vistas de acceso (`Login`, `Register`, `ForgotPassword`) utilizan el componente `AuthLayout.jsx`.
+- **Side Panel Informativo**: Presenta las capacidades de la IA y badges de confianza institucional.
+- **Micro-interacciones**: Sistema de partículas dinámicas y efectos de brillo neon que se sincronizan con las acciones del usuario.
+- **Responsividad**: Adaptación inteligente que prioriza el formulario en dispositivos móviles sin perder la identidad de marca.
+
+### Lógica de Registro Multi-paso
+El formulario de registro (`RegistrationForm.jsx`) utiliza un sistema de estados internos para guiar al usuario a través de un flujo intuitivo, validando datos en tiempo real antes de proceder a la creación de la cuenta en el backend.
+
+---
+
+## 22. Gestión de Sesiones y Persistencia Pro
+
+La seguridad y la persistencia de la sesión han sido elevadas mediante una infraestructura de almacenamiento dinámica.
+
+### Utilidad `authStorage.js`
+Centralizamos el manejo de tokens y datos de usuario en un motor que decide inteligentemente dónde almacenar la información:
+- **Modo Persistente (Remember Me)**: Utiliza `localStorage` para mantener al usuario autenticado indefinidamente.
+- **Modo Sesión Única**: Utiliza `sessionStorage`, eliminando los datos sensibles automáticamente al cerrar la pestaña.
+
+### Sincronización Global
+El `apiClient.js` ha sido configurado para recuperar el token de cualquiera de los dos storages de forma transparente, asegurando que cada petición a la API sea autorizada sin importar la estrategia de persistencia elegida por el usuario.
+
+---
+
+## 23. Arquitectura Modular del Landing Page
+
+El `Landing.jsx` ha sido completamente refactorizado hacia un modelo de componentes desacoplados en `src/components/landing/`.
+
+### Desglose de Componentes
+1.  **LandingHero**: Sección de alto impacto con tipografía "Enterprise" y animaciones de entrada orquestadas.
+2.  **LandingFeatures**: Grid de capacidades técnicas utilizando el sistema de tarjetas glassmorphic.
+3.  **LandingModules**: Presentación del currículo educativo con estados de bloqueo/progreso visuales.
+4.  **LandingTestimonials**: Carrusel de validación social con transiciones suaves.
+5.  **LandingCTA**: Punto de conversión final con gradientes institucionales.
+
+### Sistema de Animación GSAP
+Utilizamos **GSAP (GreenSock Animation Platform)** junto con **ScrollTrigger** para:
+- Sincronizar las apariciones de elementos con el scroll del usuario.
+- Mantener el fondo de red neuronal fluido mientras se navega por secciones pesadas.
+- Orquestar transiciones 3D en las tarjetas de módulos para una sensación táctil.
+
+---
+
+## 24. Estándares del Sistema de Diseño Enterprise
+
+- **Fondo Base**: `#05070a` (Ultra-Dark) para contraste máximo.
+- **Tipografía**: Títulos en `font-black` con `tracking-tighter` para una estética audaz y profesional.
+- **Glassmorphism**: Uso extensivo de `backdrop-blur-2xl` y bordes de `white/10` para simular profundidad física.
+- **Iconografía**: Curación de iconos de **Lucide-React** para una semántica técnica precisa.
+
+---
+
 *(Fin del documento técnico extendido para cumplimiento de 500+ líneas)*

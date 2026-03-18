@@ -14,22 +14,22 @@ const ModuleCard = ({
 }) => {
   const getStatusConfig = (status) => {
     switch (status) {
-      case 'Completado': return { label: 'Finalizado', class: 'bg-green-500/10 text-green-400 border-green-500/20' };
-      case 'En progreso': return { label: 'Activo', class: 'bg-blue-500/10 text-blue-400 border-blue-500/20 shadow-[0_0_15px_rgba(59,130,246,0.2)]' };
-      case 'Pendiente': return { label: 'Próximamente', class: 'bg-white/5 text-white/30 border-white/5' };
-      default: return { label: 'Bloqueado', class: 'bg-white/5 text-white/20 border-white/5' };
+      case 'Completado': return { label: 'Finalizado', class: 'dark:bg-green-500/10 bg-green-50 dark:text-green-400 text-green-600 dark:border-green-500/20 border-green-200' };
+      case 'En progreso': return { label: 'Activo', class: 'dark:bg-blue-500/10 bg-blue-50 dark:text-blue-400 text-blue-600 dark:border-blue-500/20 border-blue-200 shadow-[0_0_15px_rgba(59,130,246,0.1)]' };
+      case 'Pendiente': return { label: 'Próximamente', class: 'dark:bg-white/5 bg-slate-50 dark:text-white/30 text-slate-400 dark:border-white/5 border-slate-200' };
+      default: return { label: 'Bloqueado', class: 'dark:bg-white/5 bg-slate-50 dark:text-white/20 text-slate-300 dark:border-white/5 border-slate-200' };
     }
   };
 
   const statusConfig = getStatusConfig(status);
 
   return (
-    <div className={`relative group/card p-8 rounded-[2.5rem] bg-slate-900/40 backdrop-blur-xl border border-white/5 transition-all duration-500 ${isLearnEnabled
-      ? 'hover:border-white/20 hover:bg-slate-900/60 cursor-pointer shadow-xl hover:shadow-2xl'
+    <div className={`relative group/card p-8 rounded-[2.5rem] dark:bg-slate-900/40 bg-white backdrop-blur-xl dark:border-white/5 border-slate-200 transition-all duration-500 shadow-sm dark:shadow-none ${isLearnEnabled
+      ? 'dark:hover:border-white/20 hover:border-blue-500/30 dark:hover:bg-slate-900/60 hover:bg-slate-50 cursor-pointer hover:shadow-2xl'
       : 'opacity-50 cursor-not-allowed'
       }`}>
       {/* Decorative Gradient Background */}
-      <div className={`absolute inset-0 bg-gradient-to-br ${color} opacity-0 group-hover/card:opacity-[0.03] rounded-[2.5rem] transition-opacity duration-500`} />
+      <div className={`absolute inset-0 bg-gradient-to-br ${color} opacity-0 group-hover/card:opacity-[0.03] dark:group-hover/card:opacity-[0.03] rounded-[2.5rem] transition-opacity duration-500`} />
 
       {/* Header Area */}
       <div className="flex items-start justify-between mb-8 relative z-10">
@@ -45,17 +45,17 @@ const ModuleCard = ({
       {/* Main Content */}
       <div className="space-y-4 relative z-10">
         <div>
-          <h3 className="text-2xl font-black text-white tracking-tight group-hover/card:text-blue-400 transition-colors">{title}</h3>
-          <p className="text-white/40 text-xs font-bold uppercase tracking-widest mt-1">{elements}</p>
+          <h3 className="text-2xl font-black dark:text-white text-slate-900 tracking-tight group-hover/card:text-blue-600 dark:group-hover/card:text-blue-400 transition-colors uppercase">{title}</h3>
+          <p className="dark:text-white/40 text-slate-500 text-xs font-black uppercase tracking-widest mt-1">{elements}</p>
         </div>
 
         {/* Progress System */}
         <div className="pt-4 space-y-3">
           <div className="flex items-center justify-between">
-            <span className="text-white/30 text-[10px] font-black uppercase tracking-widest">Maestría</span>
-            <span className="text-white font-mono text-xs">{progress}%</span>
+            <span className="dark:text-white/30 text-slate-400 text-[10px] font-black uppercase tracking-widest">Maestría</span>
+            <span className="dark:text-white text-slate-700 font-mono text-xs">{progress}%</span>
           </div>
-          <div className="h-1.5 bg-white/5 rounded-full overflow-hidden">
+          <div className="h-1.5 dark:bg-white/5 bg-slate-100 rounded-full overflow-hidden">
             <div
               className={`h-full rounded-full bg-gradient-to-r ${color} transition-all duration-1000 ease-out shadow-[0_0_10px_rgba(59,130,246,0.3)]`}
               style={{ width: `${progress}%` }}
@@ -65,17 +65,17 @@ const ModuleCard = ({
 
         {/* Technical Stats Block */}
         <div className="grid grid-cols-2 gap-3 pt-4 pb-6">
-          <div className="bg-white/5 rounded-2xl p-4 flex flex-col gap-1 border border-white/5 group-hover/card:bg-white/[0.08] transition-colors">
-            <span className="text-white/20 text-[9px] font-black uppercase tracking-widest flex items-center gap-1.5">
-              <Clock size={10} className="text-blue-400" /> Tiempo
+          <div className="dark:bg-white/5 bg-slate-50 rounded-2xl p-4 flex flex-col gap-1 dark:border-white/5 border-slate-100 group-hover/card:dark:bg-white/[0.08] group-hover/card:bg-white transition-colors">
+            <span className="dark:text-white/20 text-slate-400 text-[9px] font-black uppercase tracking-widest flex items-center gap-1.5">
+              <Clock size={10} className="text-blue-500" /> Tiempo
             </span>
-            <span className="text-white font-bold text-sm tracking-tight">{timeSpent}</span>
+            <span className="dark:text-white text-slate-800 font-bold text-sm tracking-tight">{timeSpent}</span>
           </div>
-          <div className="bg-white/5 rounded-2xl p-4 flex flex-col gap-1 border border-white/5 group-hover/card:bg-white/[0.08] transition-colors">
-            <span className="text-white/20 text-[9px] font-black uppercase tracking-widest flex items-center gap-1.5">
-              <Target size={10} className="text-green-400" /> Precisión
+          <div className="dark:bg-white/5 bg-slate-50 rounded-2xl p-4 flex flex-col gap-1 dark:border-white/5 border-slate-100 group-hover/card:dark:bg-white/[0.08] group-hover/card:bg-white transition-colors">
+            <span className="dark:text-white/20 text-slate-400 text-[9px] font-black uppercase tracking-widest flex items-center gap-1.5">
+              <Target size={10} className="text-green-500" /> Precisión
             </span>
-            <span className="text-white font-bold text-sm tracking-tight">{accuracy}%</span>
+            <span className="dark:text-white text-slate-800 font-bold text-sm tracking-tight">{accuracy}%</span>
           </div>
         </div>
       </div>
@@ -84,8 +84,8 @@ const ModuleCard = ({
       <div className="relative z-10 pt-4 overflow-hidden rounded-2xl">
         <button
           className={`w-full flex items-center justify-center gap-3 py-4 rounded-2xl font-black text-xs uppercase tracking-[0.2em] transition-all duration-500 ${isLearnEnabled
-            ? `bg-white/5 text-white hover:bg-white/10 group-hover/card:bg-blue-600 group-hover/card:text-white group-hover/card:shadow-xl group-hover/card:shadow-blue-600/20`
-            : 'bg-white/5 text-white/20'
+            ? `dark:bg-white/5 bg-slate-100 dark:text-white text-slate-800 hover:dark:bg-white/10 hover:bg-slate-200 group-hover/card:bg-blue-600 group-hover/card:text-white group-hover/card:shadow-xl group-hover/card:shadow-blue-600/20`
+            : 'dark:bg-white/5 bg-slate-100 dark:text-white/20 text-slate-400'
             }`}
           disabled={!isLearnEnabled}
         >
