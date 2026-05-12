@@ -61,6 +61,7 @@ El cerebro del sistema. Gestiona la lógica de negocio y contiene el motor de pr
 | 📚 **Aprendizaje por módulos** | Contenido estructurado (Vocales, Saludos, etc.) con progresión guiada y bloqueo por dificultad. |
 | 🏆 **Gamificación Integrada** | Puntos de experiencia (XP), rachas diarias, ranking global de estudiantes y logros desbloqueables con animaciones impactantes. |
 | 🛡️ **Panel de Administración** | CMS completo para crear módulos, gestionar usuarios y capturar de forma visual **nuevos datos de entrenamiento** para la IA directamente desde el navegador. |
+| 🎮 **Modo Demo Resiliente** | Sistema fallback que intercepta peticiones caídas y activa datos simulados permitiendo explorar la interfaz de lectura completa aunque el backend esté apagado. |
 | 🔐 **Seguridad y Accesibilidad** | Autenticación con JWT, soporte para **Google OAuth**, recuperación por correo (SMTP) y soporte nativo para Tema Oscuro/Claro. |
 
 ---
