@@ -1,5 +1,7 @@
 import axios from 'axios';
 import { authStorage } from '../utils/authStorage';
+import { toast } from 'react-hot-toast';
+import { getMockData } from './demoMockData';
 
 const API_BASE_URL = 'https://lenguaje-senas-ia-j0a3.onrender.com/api/v1';
 // const API_BASE_URL = 'http://localhost:8000/api/v1';
@@ -32,10 +34,31 @@ const getFromPersistentCache = (key) => {
     try {
         const item = localStorage.getItem(PERSISTENT_CACHE_PREFIX + key);
         return item ? JSON.parse(item) : null;
-    } catch (e) { return null; }
+    } catch { return null; }
 };
 
 apiClient.interceptors.request.use(async (config) => {
+    const user = authStorage.getUser();
+    const isDemo = user?.is_demo === true;
+
+    // ----- LOGICA MODO DEMO -----
+    if (isDemo) {
+        if (config.method !== 'get') {
+            setTimeout(() => toast.error('Acción deshabilitada en Modo Demo (Solo Lectura)', { id: 'demo-toast' }), 100);
+            return Promise.reject({ response: { data: { detail: "Acción deshabilitada en Modo Demo" } } });
+        } else {
+            config.adapter = () => Promise.resolve({
+                data: getMockData(config.url),
+                status: 200,
+                statusText: 'OK (Demo Mock)',
+                headers: config.headers,
+                config: config,
+            });
+            return config;
+        }
+    }
+    // ----------------------------
+
     const token = authStorage.getToken();
     if (token && !config.headers['X-Skip-Auth']) {
         config.headers.Authorization = `Bearer ${token}`;

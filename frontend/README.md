@@ -20,14 +20,15 @@ Interfaz web de la plataforma de aprendizaje de lenguaje de señas con reconocim
 5. [Variables de entorno y configuración](#️-variables-de-entorno-y-configuración)
 6. [Rutas de la aplicación](#️-rutas-de-la-aplicación)
 7. [Sistema de autenticación](#-sistema-de-autenticación)
-8. [Reconocimiento con MediaPipe](#-reconocimiento-con-mediapipe)
-9. [Capa de API y servicios](#-capa-de-api-y-servicios)
-10. [Sistema de gamificación](#-sistema-de-gamificación)
-11. [Panel de administración](#-panel-de-administración)
-12. [Comandos útiles](#-comandos-útiles)
-13. [Problemas conocidos y soluciones](#-problemas-conocidos-y-soluciones)
-14. [Deploy en Vercel](#-deploy-en-vercel)
-15. [Contribuir](#-contribuir)
+8. [Modo Demo (Resiliencia)](#-modo-demo-resiliencia)
+9. [Reconocimiento con MediaPipe](#-reconocimiento-con-mediapipe)
+10. [Capa de API y servicios](#-capa-de-api-y-servicios)
+11. [Sistema de gamificación](#-sistema-de-gamificación)
+12. [Panel de administración](#-panel-de-administración)
+13. [Comandos útiles](#-comandos-útiles)
+14. [Problemas conocidos y soluciones](#-problemas-conocidos-y-soluciones)
+15. [Deploy en Vercel](#-deploy-en-vercel)
+16. [Contribuir](#-contribuir)
 
 ---
 
@@ -272,6 +273,21 @@ apiClient.interceptors.request.use(config => {
 ### Google OAuth
 
 El componente de login usa `@react-oauth/google`. Al hacer clic en "Continuar con Google", se obtiene un `credential` (ID Token de Google) que se envía al backend vía `POST /api/v1/auth/google`. El backend lo verifica con las APIs de Google y devuelve el JWT de la app.
+
+---
+
+## 🎮 Modo Demo (Resiliencia)
+
+Para garantizar que la plataforma siempre pueda ser mostrada (por ejemplo, en un portafolio de proyectos) incluso si el servidor backend entra en hibernación por inactividad (típico en hosts gratuitos), el frontend implementa un **Modo Demo Activo**.
+
+### ¿Cómo funciona?
+1. Si el usuario intenta iniciar sesión o cargar la app y el backend devuelve un `Network Error` o un error `500+`, la pantalla de Login muestra automáticamente botones para acceder en modo demostración.
+2. Al ingresar en Demo, se asigna una flag `is_demo: true` en el `authStorage`.
+3. El `apiClient.js` cuenta con un interceptor inteligente que atrapa todas las peticiones si el usuario es de tipo Demo:
+   - Las peticiones `GET` (lecturas) se responden instantáneamente con datos ficticios realistas desde `src/api/demoMockData.js`.
+   - Las peticiones de escritura (`POST`, `PUT`, `DELETE`, `PATCH`) son bloqueadas automáticamente para evitar efectos secundarios, mostrando una notificación visual de acción no permitida.
+
+Esto asegura que toda la interfaz de usuario (Dashboards, estadísticas, paneles de admin) funcione perfectamente en modo lectura sin requerir una conexión viva con la API.
 
 ---
 

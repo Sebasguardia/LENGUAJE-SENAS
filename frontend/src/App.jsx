@@ -92,7 +92,7 @@ function AchievementListener() {
 }
 
 function App() {
-  const [config, setConfig] = React.useState({
+  const [, setConfig] = React.useState({
     maintenance_mode: 'false',
     site_name: 'Lenguaje de Señas IA',
     public_registration: 'true'
@@ -179,6 +179,7 @@ function App() {
       window.removeEventListener('login-success', handleLogin);
       clearInterval(pollingInterval);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   if (loadingConfig && !localStorage.getItem('public_config')) {
